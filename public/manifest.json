@@ -1,0 +1,50 @@
+{
+  "name": "Abiding Pages",
+  "short_name": "Abiding",
+  "description": "반려동물을 잃은 보호자를 위한 49일 AI 편지 동행 서비스",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1C0F2E",
+  "theme_color": "#1C0F2E",
+  "lang": "ko",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "categories": ["lifestyle", "health"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "홈 화면"
+    }
+  ]
+}

@@ -1,26 +1,136 @@
 @import "tailwindcss";
 
+/* ── Google Fonts ─────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Allura&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Caveat:wght@400;600&display=swap');
+
+/* ── Pretendard (CDN) ─────────────────────────────── */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+/* ── Abiding Pages Design Tokens ─────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Lavender palette */
+  --lav-50:  #f7f3fb;
+  --lav-100: #ede4f3;
+  --lav-150: #e0d2ea;
+  --lav-200: #d2bee0;
+  --lav-300: #bca4d6;
+  --lav-400: #a685c7;
+  --lav-500: #8b6bb8;
+  --lav-600: #6f4f9e;
+  --lav-700: #524080;
+  --lav-800: #3d3358;
+  --lav-900: #2a223f;
+
+  /* Peach accent */
+  --peach-50:  #fef4ec;
+  --peach-100: #faddca;
+  --peach-200: #f5c4a7;
+  --peach-300: #fbb489;
+  --peach-400: #f99c69;
+  --peach-500: #ea7e4a;
+
+  /* Paper / cream */
+  --paper-50:  #faf6ef;
+  --paper-100: #f3ecdf;
+  --paper-200: #e9dec9;
+  --paper-300: #d8c8ad;
+  --paper-400: #b9a787;
+
+  /* Ink */
+  --ink-900: #2a223f;
+  --ink-700: #3d3358;
+  --ink-500: #6b5e85;
+  --ink-300: #a496b3;
+  --ink-100: #e6dfeb;
+
+  /* App canvas */
+  --bg-app:   #f3eef6;
+  --bg-app-2: #ece2f0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ── Colors ──────────────────────────────────────── */
+  --color-primary:   #6f4f9e;
+  --color-accent:    #fbb489;
+  --color-bg:        #f3eef6;
+  --color-lavender:  #ede4f3;
+  --color-cream:     #f3ecdf;
+
+  --color-lav-50:    #f7f3fb;
+  --color-lav-100:   #ede4f3;
+  --color-lav-150:   #e0d2ea;
+  --color-lav-200:   #d2bee0;
+  --color-lav-300:   #bca4d6;
+  --color-lav-400:   #a685c7;
+  --color-lav-500:   #8b6bb8;
+  --color-lav-600:   #6f4f9e;
+  --color-lav-700:   #524080;
+  --color-lav-800:   #3d3358;
+  --color-lav-900:   #2a223f;
+
+  --color-peach-50:  #fef4ec;
+  --color-peach-100: #faddca;
+  --color-peach-200: #f5c4a7;
+  --color-peach-300: #fbb489;
+  --color-peach-400: #f99c69;
+  --color-peach-500: #ea7e4a;
+
+  --color-paper-50:  #faf6ef;
+  --color-paper-100: #f3ecdf;
+  --color-paper-200: #e9dec9;
+  --color-paper-300: #d8c8ad;
+  --color-paper-400: #b9a787;
+
+  --color-ink-900:   #2a223f;
+  --color-ink-700:   #3d3358;
+  --color-ink-500:   #6b5e85;
+  --color-ink-300:   #a496b3;
+  --color-ink-100:   #e6dfeb;
+
+  /* ── Fonts ───────────────────────────────────────── */
+  --font-sans:        'Pretendard', 'Noto Sans KR', -apple-system, system-ui, sans-serif;
+  --font-serif:       'Nanum Myeongjo', 'Noto Serif KR', serif;
+  --font-handwriting: 'Nanum Pen Script', 'Caveat', cursive;
+  --font-brand:       'Allura', 'Dancing Script', cursive;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ─────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  max-width: 430px;
+  margin: 0 auto;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+  background-color: var(--bg-app);
+  color: var(--ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Paper texture utilities ─────────────────────── */
+.paper-tex {
+  background-color: #f6efe2;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(255,255,255,0.7), transparent 50%),
+    radial-gradient(circle at 75% 80%, rgba(218,196,164,0.18), transparent 60%),
+    repeating-linear-gradient(43deg, rgba(184,160,120,0.04) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(133deg, rgba(184,160,120,0.035) 0 1px, transparent 1px 2px);
+}
+
+.paper-tex-cool {
+  background-color: #f1eaf3;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6), transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(166,133,199,0.16), transparent 60%),
+    repeating-linear-gradient(43deg, rgba(80,60,128,0.035) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(133deg, rgba(80,60,128,0.025) 0 1px, transparent 1px 2px);
+}
+
+.wax-shadow {
+  filter: drop-shadow(0 2px 3px rgba(86,52,140,0.35));
 }

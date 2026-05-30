@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#1C0F2E"/>
+
+  <!-- Outer soft glow ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#6f4f9e" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Envelope body -->
+  <rect x="128" y="180" width="256" height="180" rx="16" fill="#ede4f3" opacity="0.95"/>
+
+  <!-- Envelope flap (V shape) -->
+  <path d="M128 180 L256 282 L384 180Z" fill="#d2bee0" opacity="0.9"/>
+
+  <!-- Envelope bottom folds -->
+  <path d="M128 360 L218 270 M384 360 L294 270" stroke="#bca4d6" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Wax seal circle -->
+  <circle cx="256" cy="270" r="26" fill="#6f4f9e"/>
+
+  <!-- Paw print in seal -->
+  <!-- Main pad -->
+  <ellipse cx="256" cy="274" rx="9" ry="8" fill="#fbb489"/>
+  <!-- Toe pads -->
+  <ellipse cx="243" cy="262" rx="5" ry="4.5" fill="#fbb489"/>
+  <ellipse cx="256" cy="259" rx="5" ry="4.5" fill="#fbb489"/>
+  <ellipse cx="269" cy="262" rx="5" ry="4.5" fill="#fbb489"/>
+
+  <!-- Star dots (letter feeling) -->
+  <circle cx="180" cy="140" r="2" fill="#bca4d6" opacity="0.6"/>
+  <circle cx="210" cy="128" r="1.5" fill="#fbb489" opacity="0.5"/>
+  <circle cx="320" cy="135" r="2" fill="#bca4d6" opacity="0.6"/>
+  <circle cx="345" cy="148" r="1.5" fill="#fbb489" opacity="0.5"/>
+
+  <!-- Rainbow arc above envelope -->
+  <path d="M176 178 Q256 108 336 178" fill="none" stroke="#fbb489" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M188 178 Q256 120 324 178" fill="none" stroke="#a685c7" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+  <path d="M200 178 Q256 132 312 178" fill="none" stroke="#ede4f3" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+</svg>
