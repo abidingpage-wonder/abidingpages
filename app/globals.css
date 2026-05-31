@@ -1,11 +1,5 @@
 @import "tailwindcss";
 
-/* ── Google Fonts ─────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Allura&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Caveat:wght@400;600&display=swap');
-
-/* ── Pretendard (CDN) ─────────────────────────────── */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
-
 /* ── Abiding Pages Design Tokens ─────────────────── */
 :root {
   /* Lavender palette */
@@ -46,6 +40,12 @@
   /* App canvas */
   --bg-app:   #f3eef6;
   --bg-app-2: #ece2f0;
+
+  /* Night Sky */
+  --night-sky-top:    #1a1530;
+  --night-sky-mid:    #2a223f;
+  --night-sky-bottom: #3d3358;
+  --bg-night-sky: linear-gradient(180deg, #1a1530 0%, #2a223f 50%, #3d3358 100%);
 }
 
 @theme inline {

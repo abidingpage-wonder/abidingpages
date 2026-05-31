@@ -2,6 +2,16 @@
 
 import { createClient } from '@/lib/supabase/client'
 
+// 민들레 씨앗 좌표 — 서버/클라이언트 hydration 일치를 위해 미리 계산
+const DANDELION_SEEDS = Array.from({ length: 18 }, (_, i) => {
+  const a = (i / 18) * Math.PI * 2
+  const r = 16 + (i % 3) * 1.2
+  return {
+    x2: parseFloat((Math.cos(a) * r).toFixed(4)),
+    y2: parseFloat((Math.sin(a) * r).toFixed(4)),
+  }
+})
+
 export default function LoginPage() {
   const supabase = createClient()
 
@@ -17,12 +27,7 @@ export default function LoginPage() {
   return (
     <div
       className="paper-tex-cool"
-      style={{
-        width: '100%',
-        height: '100dvh',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+      style={{ width: '100%', height: '100dvh', position: 'relative', overflow: 'hidden' }}
     >
       {/* soft floating lights */}
       <div style={{
@@ -45,23 +50,12 @@ export default function LoginPage() {
         <svg width="78" height="78" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.55)" />
           <g transform="translate(50,46)">
-            {Array.from({ length: 18 }).map((_, i) => {
-              const a = (i / 18) * Math.PI * 2
-              const r = 16 + (i % 3) * 1.2
-              return (
-                <g key={i}>
-                  <line
-                    x1="0" y1="0"
-                    x2={Math.cos(a) * r} y2={Math.sin(a) * r}
-                    stroke="#bca4d6" strokeWidth="0.6"
-                  />
-                  <circle
-                    cx={Math.cos(a) * r} cy={Math.sin(a) * r}
-                    r="1" fill="#a685c7" opacity="0.7"
-                  />
-                </g>
-              )
-            })}
+            {DANDELION_SEEDS.map((s, i) => (
+              <g key={i}>
+                <line x1="0" y1="0" x2={s.x2} y2={s.y2} stroke="#bca4d6" strokeWidth="0.6" />
+                <circle cx={s.x2} cy={s.y2} r="1" fill="#a685c7" opacity="0.7" />
+              </g>
+            ))}
             <circle cx="0" cy="0" r="2.5" fill="#8b6bb8" />
           </g>
         </svg>
@@ -118,21 +112,11 @@ export default function LoginPage() {
         <button
           onClick={handleKakaoLogin}
           style={{
-            width: '100%',
-            padding: '14px',
-            border: 'none',
-            borderRadius: 14,
-            background: '#FEE500',
-            color: '#191919',
-            fontFamily: 'var(--font-sans)',
-            fontSize: 14,
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            marginBottom: 10,
-            cursor: 'pointer',
+            width: '100%', padding: '14px', border: 'none', borderRadius: 14,
+            background: '#FEE500', color: '#191919',
+            fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            marginBottom: 10, cursor: 'pointer',
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -145,12 +129,8 @@ export default function LoginPage() {
         </button>
 
         <p style={{
-          marginTop: 20,
-          fontFamily: 'var(--font-sans)',
-          fontSize: 11,
-          color: 'var(--ink-300)',
-          textAlign: 'center',
-          lineHeight: 1.7,
+          marginTop: 20, fontFamily: 'var(--font-sans)', fontSize: 11,
+          color: 'var(--ink-300)', textAlign: 'center', lineHeight: 1.7,
         }}>
           계속 진행하면 서비스 이용약관 및<br />개인정보 처리방침에 동의하는 것으로 간주합니다.
         </p>

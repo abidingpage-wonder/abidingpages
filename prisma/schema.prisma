@@ -13,8 +13,10 @@ model User {
   providerId  String    @map("provider_id")
   plan        String    @default("free") // free | pro
   planExpires DateTime? @map("plan_expires") @db.Timestamptz
-  activePetId String?   @map("active_pet_id") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  activePetId    String?   @map("active_pet_id") @db.Uuid
+  onboardingDone Boolean   @default(false) @map("onboarding_done")
+  nickname       String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   pets              Pet[]
   letters           Letter[]
@@ -39,8 +41,9 @@ model Pet {
   favoriteThings  String[] @map("favorite_things")
   farewellType    String?  @map("farewell_type") // natural | euthanasia | accident | other
   ownerNickname   String?  @map("owner_nickname")
-  lastMessage     String?  @map("last_message")
+  firstWord       String?  @map("first_word")
   profileImageUrl String?  @map("profile_image_url")
+  togetherDays    Int      @default(0) @map("together_days")
   gardenPublic    Boolean  @default(true) @map("garden_public")
   commentAllowed  Boolean  @default(true) @map("comment_allowed")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
