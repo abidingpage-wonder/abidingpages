@@ -37,7 +37,7 @@ async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 공개 경로 — 인증 불필요
-  const publicPaths = ['/', '/login', '/auth/callback']
+  const publicPaths = ['/login', '/auth/callback']
   const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith('/auth/'))
 
   if (!user && !isPublic) {
