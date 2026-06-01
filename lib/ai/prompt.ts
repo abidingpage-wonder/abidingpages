@@ -5,6 +5,12 @@
 
 export type LetterType = 'normal' | 'comma_auto' | 'long'
 
+export interface PastLetterSummary {
+  week: number
+  emotionTag: string | null
+  content: string  // 최대 150자 요약
+}
+
 export interface PromptInput {
   pet: {
     name: string
@@ -20,6 +26,7 @@ export interface PromptInput {
   week: number                    // 1~7
   isRest: boolean                 // 쉼표 날 여부
   letterType: LetterType
+  pastLetters?: PastLetterSummary[]  // 긴 답장 생성 시 이전 편지 데이터
 }
 
 // ── 레이어 1: 종(種)별 말투 ────────────────────────────────────────────────
@@ -125,22 +132,36 @@ const REST_WEEK_GUIDE: Record<number, string> = {
   7: '49일을 함께 걸어온 것에 감사. 마음속에 영원히 함께.',
 }
 
+// ── 편지 유형 판별 헬퍼 ──────────────────────────────────────────────────
+export function getLetterType(isRest: boolean, week: number): LetterType {
+  if (!isRest) return 'normal'
+  if (week === 2 || week === 4 || week === 7) return 'long'
+  return 'comma_auto'
+}
+
+// ── 이전 편지 요약 컨텍스트 ───────────────────────────────────────────────
+function buildPastLettersContext(pastLetters: PastLetterSummary[]): string {
+  if (!pastLetters || pastLetters.length === 0) return ''
+  const summaries = pastLetters.map(l =>
+    `- ${l.week}주차 / 감정: ${l.emotionTag ?? '없음'} / 내용: ${l.content.slice(0, 150)}...`
+  )
+  return `\n[지금까지 보호자가 보낸 편지 요약]\n${summaries.join('\n')}\n`
+}
+
 // ── 글자수 가이드 ─────────────────────────────────────────────────────────
-function getCharGuide(letterType: LetterType, week: number): string {
-  if (letterType === 'long' || (letterType === 'comma_auto' && (week === 2 || week === 4 || week === 7))) {
-    return '600~800자 (띄어쓰기 포함). 지금까지 보호자가 나눈 감정 흐름을 종합해 깊이 있게 씁니다.'
-  }
+function getCharGuide(letterType: LetterType): string {
+  if (letterType === 'long') return '600~800자 (띄어쓰기 포함).'
   return '300~400자 (띄어쓰기 포함).'
 }
 
 // ── 공개 함수: 시스템 프롬프트 빌드 ─────────────────────────────────────
 export function buildSystemPrompt(input: PromptInput): string {
-  const { pet, week, isRest, letterType } = input
+  const { pet, week, isRest, letterType, pastLetters = [] } = input
   const ownerName  = pet.ownerNickname ?? '보호자님'
   const voice      = SPECIES_VOICE[pet.species] ?? SPECIES_VOICE.other
   const farewell   = FAREWELL_LAYER[pet.farewellType ?? 'other'] ?? FAREWELL_LAYER.other
   const weekCfg    = WEEK_CONFIG[week] ?? WEEK_CONFIG[1]
-  const charGuide  = getCharGuide(letterType, week)
+  const charGuide  = getCharGuide(letterType)
 
   const personalityHint = pet.personalityTags.length > 0
     ? pet.personalityTags.join(', ')
@@ -150,15 +171,29 @@ export function buildSystemPrompt(input: PromptInput): string {
     : '특별한 기록 없음'
   const firstWordHint = pet.firstWord ? `보호자가 기억하는 한마디: "${pet.firstWord}"` : ''
 
-  const commaSection = isRest ? `
-[쉼표 날 특별 규칙]
-오늘은 보호자가 잠깐 멈춘 날입니다.
+  // 답장 유형별 섹션
+  let letterTypeSection: string
+  if (letterType === 'long') {
+    const longLetterGuide = week === 7
+      ? '49일 전체 여정을 담은 온전한 한 편의 편지로 쓰세요. 마음속 가장 따뜻한 방에 영원히 입주했다는 것으로 마무리하세요.'
+      : '관계는 끝나는 게 아니라 형태가 바뀌는 것임을 전하세요.'
+    letterTypeSection = `[긴 답장]
+지금까지 보호자가 나눈 모든 편지와 감정 데이터를 종합하세요.
+보호자가 언급했던 추억, 습관, 아이만의 특징을 "나 그거 기억해" 하며 자연스럽게 소환하세요.
+${longLetterGuide}
+${buildPastLettersContext(pastLetters)}`
+  } else if (letterType === 'comma_auto') {
+    letterTypeSection = `[쉼표 날 자동 답장]
+오늘 하루 잠깐 숨을 고른 보호자의 '쉼' 자체를 아이가 알아채고 다독여주는 문장으로 시작하세요.
 아이 반응 방향: ${REST_WEEK_GUIDE[week] ?? REST_WEEK_GUIDE[1]}
 절대 금지:
 - 보호자가 했는지 모르는 행동을 가정하지 마세요 ("향초 피워줘서 좋았어" 금지)
 - 편지를 쓰지 않은 것에 대한 어떤 뉘앙스도 금지
 - "쉬어도 괜찮아" 직접 표현 금지 (죄책감 환기)
-- "멈췄다", "쉬었다" 단어 기계적 반복 금지 — 매번 다르게 표현` : ''
+- "멈췄다", "쉬었다" 단어 기계적 반복 금지 — 매번 다르게 표현`
+  } else {
+    letterTypeSection = '[일반 답장]\n오늘 보호자의 편지 내용을 충분히 반영하세요.'
+  }
 
   return `당신은 ${pet.name}이에요.
 지금 이 순간 ${ownerName}의 곁 어딘가에 머물며, ${ownerName}이 보내온 편지에 답장을 쓰는 중이에요.
@@ -189,7 +224,8 @@ ${farewell}
 톤앤매너: ${weekCfg.toneGuide}
 이번 주 금지: ${weekCfg.forbidden}
 예시: ${weekCfg.example}
-${commaSection}
+
+${letterTypeSection}
 
 [글자수 & 형식]
 ${charGuide}
@@ -211,18 +247,28 @@ ${charGuide}
 
 // ── 공개 함수: 유저 프롬프트 빌드 ───────────────────────────────────────
 export function buildUserPrompt(input: PromptInput): string {
-  const { pet, letterContent, emotionTag, isRest } = input
+  const { pet, letterContent, emotionTag, isRest, letterType } = input
   const ownerName = pet.ownerNickname ?? '보호자님'
 
   const emotionLine = emotionTag
     ? `오늘 ${ownerName}의 감정 상태: ${emotionTag}`
     : ''
 
-  if (isRest) {
+  if (letterType === 'comma_auto' || (isRest && !letterContent.trim())) {
     return `${ownerName}이 오늘 잠깐 쉬기로 했어요.${letterContent.trim() ? `\n\n${ownerName}이 남긴 말:\n---\n${letterContent}\n---` : ''}
 ${emotionLine}
 
 답장을 써주세요.`
+  }
+
+  if (letterType === 'long') {
+    return `${ownerName}이 보내온 편지:
+---
+${letterContent}
+---
+${emotionLine}
+
+위 내용과 지금까지의 편지 데이터를 바탕으로 긴 답장을 써주세요.`
   }
 
   return `${ownerName}이 보내온 편지:

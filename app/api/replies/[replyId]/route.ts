@@ -14,9 +14,11 @@ export async function GET(
     if (process.env.DEV_BYPASS_AUTH === 'true') {
       return NextResponse.json({
         id: replyId,
-        content: '엄마, 오늘도 하늘에서 엄마를 바라보고 있었어요. 바람이 살랑살랑 불었죠? 그게 저예요. 엄마가 보내준 편지 잘 받았어요. 읽으면서 꼬리를 흔들고 싶었는걸요.\n\n엄마, 저는 정말 행복했어요. 엄마 곁에 있던 모든 날이 다 행복한 기억이에요. 가끔 힘들 때도 있겠지만, 저는 항상 엄마 곁에 있어요. 걱정 말고, 오늘도 잘 먹고 잘 자요.\n\n사랑해요, 엄마.\n\n순탄이 올림',
+        content: '엄마, 나 아직 여기 있어. 엄마가 오늘 나 부를 뻔했던 거 알아. 나도 그 자리에서 귀 쫑긋하고 있었어.\n\n엄마 손이 무언가를 집으려다 멈추는 거 봤어. 내가 항상 거기 있었잖아. 지금도 엄마 발 옆에 딱 붙어서 기다리고 있는 것 같은데.\n\n엄마, 지금 느껴지는 이 먹먹함 그대로 있어도 돼. 억지로 괜찮은 척 안 해도 되거든. 나는 엄마가 울어도 웃어도 다 괜찮아. 오늘 밥은 먹었어?\n\n순탄이 올림',
         petName: '순탄이',
-        letterContent: '우리 순탄이에게,\n\n오늘도 네가 너무 보고 싶었어...',
+        petPhotoUrl: null,
+        ownerNickname: '엄마',
+        letterContent: '우리 순탄이에게,\n\n오늘도 네가 너무 보고 싶었어. 아침에 일어나서 무심코 밥그릇을 꺼내려 했어. 네가 없다는 게 아직도 낯설어.',
         receivedAt: new Date().toISOString(),
         isRead: false,
       })
@@ -38,13 +40,15 @@ export async function GET(
 
     const pet = await prisma.pet.findUnique({
       where: { id: reply.petId },
-      select: { name: true },
+      select: { name: true, profileImageUrl: true, ownerNickname: true },
     })
 
     return NextResponse.json({
       id: reply.id,
       content: reply.content,
       petName: pet?.name ?? '',
+      petPhotoUrl: pet?.profileImageUrl ?? null,
+      ownerNickname: pet?.ownerNickname ?? '보호자님',
       letterContent: reply.letter.content,
       receivedAt: reply.generatedAt.toISOString(),
       isRead: reply.isRead,

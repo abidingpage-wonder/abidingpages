@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
+import FeedbackCard from '@/components/ui/FeedbackCard'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   // 기본값
@@ -70,6 +71,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       </main>
 
       <BottomNav />
+      <FeedbackCard />
     </div>
   )
 }

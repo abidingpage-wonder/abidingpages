@@ -9,11 +9,21 @@ const MAX_WEEK = 7
 // ── POST /api/letters ──────────────────────────────────────────────────────
 export async function POST(req: Request) {
   try {
+    // DEV 우회
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+      return NextResponse.json({
+        id:               'dev-letter-id',
+        weekAdvanced:     false,
+        journeyCompleted: false,
+        weekLetterCount:  1,
+      })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { content, questionId, emotionTag } = await req.json()
+    const { content, questionId, emotionTag, imageUrls } = await req.json()
     if (!content?.trim()) {
       return NextResponse.json({ error: 'content required' }, { status: 400 })
     }
@@ -44,7 +54,7 @@ export async function POST(req: Request) {
         stage,
         week:      currentWeek,
         day:       currentDay + 1,  // 표시용 일차 (1-based)
-        imageUrls: [],
+        imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
         ...(questionId ? { questionId } : {}),
         ...(emotionTag ? { emotionTag } : {}),
       },

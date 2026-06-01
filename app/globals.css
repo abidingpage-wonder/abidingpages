@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* ── 윤초록우산어린이 만세 ────────────────────────────── */
+@font-face {
+  font-family: 'YoonChildfundManSeh';
+  src: url('/fonts/YoonChildfundkoreaManSeh.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── Abiding Pages Design Tokens ─────────────────── */
 :root {
   /* Lavender palette */
@@ -92,6 +101,7 @@
   --font-serif:       'Nanum Myeongjo', 'Noto Serif KR', serif;
   --font-handwriting: 'Nanum Pen Script', 'Caveat', cursive;
   --font-brand:       'Allura', 'Dancing Script', cursive;
+  --font-child:       'YoonChildfundManSeh', 'Nanum Pen Script', cursive;
 }
 
 /* ── Base ─────────────────────────────────────────── */

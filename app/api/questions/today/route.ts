@@ -2,27 +2,61 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
-// ── DEV 목업 ──────────────────────────────────────────────────────────────
-const DEV_QUESTION = {
-  id:         null as string | null,
-  content:    '가만히 눈을 감고 아이의 보드라운 털끝이나 말랑한 발바닥의 감촉을 떠올려본다면 어떤 느낌인가요?',
-  category:   '감각의 기억',
-  hintText:   null as string | null,
-  restGuide:  null as string | null,
-  isRest:     false,
-  week:       1,
-  day:        3,
-  orderIndex: 3,
-  weekGuide:  { keyword: '머무름', title: '익숙한 온기 속에서' },
-  fromDb:     false,
-}
+// ── DEV 목업 질문 풀 (질문 바꾸기 순환용) ─────────────────────────────────
+const DEV_QUESTIONS = [
+  {
+    id:         'dev-q-1',
+    content:    '가만히 눈을 감고 아이의 보드라운 털끝이나 말랑한 발바닥의 감촉을 떠올려본다면 어떤 느낌인가요?',
+    category:   '감각의 기억',
+    hintText:   null as string | null,
+    restGuide:  null as string | null,
+    isRest:     false,
+    week:       1,
+    day:        1,
+    orderIndex: 1,
+    weekGuide:  { keyword: '머무름', title: '익숙한 온기 속에서' },
+    fromDb:     false,
+  },
+  {
+    id:         'dev-q-2',
+    content:    '아이가 가장 좋아했던 간식이나 장난감이 있었나요? 그것을 주었을 때 아이의 반응이 떠오르나요?',
+    category:   '우리가 처음 자석처럼 끌린 날',
+    hintText:   '아주 사소한 것도 괜찮아요.' as string | null,
+    restGuide:  null as string | null,
+    isRest:     false,
+    week:       1,
+    day:        2,
+    orderIndex: 2,
+    weekGuide:  { keyword: '머무름', title: '익숙한 온기 속에서' },
+    fromDb:     false,
+  },
+  {
+    id:         'dev-q-3',
+    content:    '아이와 함께했던 아침 풍경을 떠올려보세요. 눈을 뜨면 아이는 어디에 있었나요?',
+    category:   '일상의 조각',
+    hintText:   null as string | null,
+    restGuide:  null as string | null,
+    isRest:     false,
+    week:       1,
+    day:        3,
+    orderIndex: 3,
+    weekGuide:  { keyword: '머무름', title: '익숙한 온기 속에서' },
+    fromDb:     false,
+  },
+]
 
 // ── GET /api/questions/today ───────────────────────────────────────────────
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // DEV 우회
+    // 질문 바꾸기 시 현재 표시 중인 질문 제외
+    const { searchParams } = new URL(req.url)
+    const excludeId = searchParams.get('excludeId')
+
+    // DEV 우회 — excludeId 기반으로 다음 질문 순환
     if (process.env.DEV_BYPASS_AUTH === 'true') {
-      return NextResponse.json(DEV_QUESTION)
+      const available = DEV_QUESTIONS.filter(q => q.id !== excludeId)
+      const next = available[0] ?? DEV_QUESTIONS[0]
+      return NextResponse.json(next)
     }
 
     const supabase = await createClient()
@@ -58,11 +92,13 @@ export async function GET() {
     const answeredIds = answeredLetters.map(l => l.questionId!)
 
     // 미답변 비쉼표 질문 중 orderIndex 가장 작은 것
+    // excludeId: 현재 보고 있는 질문 제외 (질문 바꾸기 기능)
+    const excludeIds = [...answeredIds, ...(excludeId ? [excludeId] : [])]
     const nextQuestion = await prisma.question.findFirst({
       where: {
         week:   currentWeek,
         isRest: false,
-        ...(answeredIds.length > 0 ? { id: { notIn: answeredIds } } : {}),
+        ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
       },
       orderBy: { orderIndex: 'asc' },
     })

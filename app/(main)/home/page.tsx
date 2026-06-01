@@ -7,7 +7,7 @@ import type { HomeStatusResponse } from '@/app/api/home/status/route'
 // ── 개발용 목업 데이터 ─────────────────────────────────────────────────
 // DEV_BYPASS_AUTH=true 일 때 DB 없이도 화면 확인 가능
 // 'A' | 'B' | 'C' 로 바꾸면 각 상태 UI 확인 가능
-const DEV_STATUS: HomeStatusResponse['status'] = 'B'
+const DEV_STATUS: HomeStatusResponse['status'] = 'A'
 
 const DEV_MOCK: HomeStatusResponse = {
   status: DEV_STATUS,

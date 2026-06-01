@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-
-const NIGHT_BG = 'linear-gradient(180deg, #1c0f2e 0%, #2a1c44 38%, #574a7e 72%, #8d80ab 100%)'
+import Image from 'next/image'
+import { SoftCTAButton } from '@/components/ui/Button'
 
 interface ReplyData {
   id: string
   content: string
   petName: string
+  petPhotoUrl: string | null
+  ownerNickname: string
   letterContent: string
   receivedAt: string
   isRead: boolean
@@ -18,10 +20,9 @@ export default function ReplyPage() {
   const router = useRouter()
   const { replyId } = useParams<{ replyId: string }>()
 
-  const [reply, setReply]       = useState<ReplyData | null>(null)
-  const [loading, setLoading]   = useState(true)
-  const [visible, setVisible]   = useState(false)
-  const [showLetter, setShowLetter] = useState(false)
+  const [reply, setReply]   = useState<ReplyData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [closing, setClosing] = useState(false)
 
   useEffect(() => {
     fetch(`/api/replies/${replyId}`)
@@ -29,247 +30,311 @@ export default function ReplyPage() {
       .then(data => {
         setReply(data)
         setLoading(false)
-        setTimeout(() => setVisible(true), 80)
       })
       .catch(() => setLoading(false))
   }, [replyId])
 
-  // 읽음 처리
   useEffect(() => {
     if (!reply || reply.isRead) return
     fetch(`/api/replies/${replyId}`, { method: 'PATCH' })
   }, [reply, replyId])
+
+  /** 피드백 컨텍스트를 sessionStorage에 남기고 이동 */
+  const saveFeedbackContext = useCallback((petName: string) => {
+    if (typeof window === 'undefined') return
+    sessionStorage.setItem('pendingFeedback', JSON.stringify({
+      replyId,
+      petName,
+      timestamp: Date.now(),
+    }))
+  }, [replyId])
+
+  const handleClose = useCallback(() => {
+    if (reply) saveFeedbackContext(reply.petName)
+    setClosing(true)
+    setTimeout(() => router.replace('/home'), 420)
+  }, [router, reply, saveFeedbackContext])
+
+  const handleWriteLetter = useCallback(() => {
+    if (reply) saveFeedbackContext(reply.petName)
+    setClosing(true)
+    setTimeout(() => router.replace('/write'), 420)
+  }, [router, reply, saveFeedbackContext])
+
+  function formatDateTime(iso: string) {
+    const d = new Date(iso)
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  }
 
   function formatDate(iso: string) {
     const d = new Date(iso)
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`
   }
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100%', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        position: 'relative',
-      }}>
-        <div style={{ position: 'fixed', inset: 0, background: NIGHT_BG, zIndex: -1 }} />
-        <div style={{
-          fontFamily: 'var(--font-sans)', fontSize: 13,
-          color: 'rgba(255,255,255,0.4)',
-        }}>
-          답장을 불러오는 중...
-        </div>
-      </div>
-    )
-  }
-
-  if (!reply) {
-    return (
-      <div style={{
-        minHeight: '100%', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        position: 'relative',
-      }}>
-        <div style={{ position: 'fixed', inset: 0, background: NIGHT_BG, zIndex: -1 }} />
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-sans)', fontSize: 14 }}>
-          답장을 찾을 수 없어요.
-        </div>
-        <button onClick={() => router.back()} style={{
-          marginTop: 20, background: 'none', border: 'none',
-          color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer',
-        }}>
-          돌아가기
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ minHeight: '100%', position: 'relative', paddingBottom: 40 }}>
-      {/* 전체 배경 */}
-      <div style={{ position: 'fixed', inset: 0, background: NIGHT_BG, zIndex: -1 }} />
+    <>
+      <style>{`
+        @font-face {
+          font-family: 'YoonChildfundManSeh';
+          src: url('/fonts/YoonChildfundkoreaManSeh.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to   { opacity: 0; }
+        }
+        @keyframes dimIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes dimOut { from { opacity: 1; } to { opacity: 0; } }
+        .reply-scroll::-webkit-scrollbar { display: none; }
+        .reply-letter-text {
+          font-family: 'YoonChildfundManSeh', 'Nanum Pen Script', cursive !important;
+        }
+      `}</style>
 
-      {/* 별 장식 */}
-      <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-        {[...Array(16)].map((_, i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            width: i % 4 === 0 ? 3 : 2,
-            height: i % 4 === 0 ? 3 : 2,
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,0.7)',
-            top: `${5 + (i * 19) % 75}%`,
-            left: `${3 + (i * 29) % 94}%`,
-            opacity: 0.3 + (i % 5) * 0.1,
-          }} />
-        ))}
-      </div>
+      {/* ── 딤 레이어 ── */}
+      <div
+        onClick={handleClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          zIndex: 50,
+          animation: closing ? 'dimOut 0.4s ease forwards' : 'dimIn 0.3s ease forwards',
+        }}
+      />
 
-      <div style={{
-        position: 'relative', zIndex: 1,
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(20px)',
-        transition: 'opacity 0.6s ease, transform 0.6s ease',
-      }}>
-
+      {/* ── 바텀 시트 ── */}
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: 'fixed',
+          bottom: 0, left: 0, right: 0,
+          height: '95dvh',
+          background: '#f5f0e8',
+          borderRadius: '20px 20px 0 0',
+          zIndex: 51,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          animation: closing
+            ? 'fadeOut 0.4s ease forwards'
+            : 'slideUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards',
+        }}
+      >
         {/* ── 헤더 ── */}
         <div style={{
-          padding: '16px 20px 10px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0,
+          padding: '14px 16px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}>
-          <button
-            onClick={() => router.replace('/home')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: 4, color: 'rgba(255,255,255,0.6)',
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M14 17L8 11L14 5" stroke="currentColor" strokeWidth="1.8"
-                strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          <div style={{ textAlign: 'center', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* 드래그 핸들 */}
             <div style={{
-              fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700,
-              color: 'rgba(251,180,137,0.85)', letterSpacing: '0.14em',
-              marginBottom: 3,
-            }}>
-              답장이 도착했어요
-            </div>
-            <div style={{
-              fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 600,
-              color: '#fff',
-            }}>
-              {reply.petName}에게서
-            </div>
-          </div>
-
-          <div style={{ width: 30 }} />
-        </div>
-
-        {/* ── 날짜 ── */}
-        <div style={{
-          textAlign: 'center', marginBottom: 20,
-          fontFamily: 'var(--font-sans)', fontSize: 11,
-          color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em',
-        }}>
-          {formatDate(reply.receivedAt)}
-        </div>
-
-        {/* ── 답장 봉투 열림 애니메이션 아이콘 ── */}
-        <div style={{
-          display: 'flex', justifyContent: 'center', marginBottom: 24,
-        }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: 'rgba(251,180,137,0.18)',
-            border: '1px solid rgba(251,180,137,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28,
-          }}>
-            🌙
-          </div>
-        </div>
-
-        {/* ── 답장 편지지 ── */}
-        <div style={{ padding: '0 16px', marginBottom: 16 }}>
-          <div style={{
-            borderRadius: 20,
-            padding: '24px 22px 28px',
-            background: 'rgba(255,255,255,0.08)',
-            border: '0.5px solid rgba(255,255,255,0.15)',
-            boxShadow: '0 4px 32px rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            position: 'relative',
-          }}>
-            {/* 줄선 */}
-            <div style={{
-              position: 'absolute', inset: '24px 22px 20px',
-              backgroundImage: 'linear-gradient(0deg, transparent 0px, transparent 27px, rgba(255,255,255,0.05) 27px, rgba(255,255,255,0.05) 28px)',
-              backgroundSize: '100% 28px',
-              pointerEvents: 'none',
+              width: 36, height: 4, borderRadius: 2,
+              background: 'rgba(140,110,70,0.2)',
+              marginBottom: 6,
             }} />
+            {reply && (
+              <>
+                <div style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700,
+                  color: '#5c4a3a', letterSpacing: '-0.01em',
+                }}>
+                  {reply.petName}가 {reply.ownerNickname}에게
+                </div>
+                <div style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bba089',
+                }}>
+                  {formatDate(reply.receivedAt)} · {formatDateTime(reply.receivedAt)}
+                </div>
+              </>
+            )}
+          </div>
 
-            <div style={{
-              fontFamily: 'var(--font-handwriting)',
-              fontSize: 16.5,
-              lineHeight: '28px',
-              color: '#fff',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'keep-all',
-              position: 'relative', zIndex: 1,
-            }}>
-              {reply.content}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {reply && (
+              <div style={{
+                padding: '5px 12px', borderRadius: 999,
+                background: 'rgba(212,184,140,0.85)',
+                fontFamily: 'var(--font-sans)', fontSize: 11,
+                color: '#fff', fontWeight: 600, whiteSpace: 'nowrap',
+              }}>
+                아이의 답장
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── 보낸 편지 보기 (토글) ── */}
-        <div style={{ padding: '0 16px', marginBottom: 24 }}>
-          <button
-            onClick={() => setShowLetter(v => !v)}
-            style={{
-              width: '100%',
-              padding: '12px 20px',
-              borderRadius: 14,
-              background: 'rgba(255,255,255,0.06)',
-              border: '0.5px solid rgba(255,255,255,0.15)',
-              color: 'rgba(255,255,255,0.55)',
-              fontFamily: 'var(--font-sans)', fontSize: 13,
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}
-          >
-            <span>내가 보낸 편지 보기</span>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-              style={{ transform: showLetter ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-              <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.5"
-                strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {showLetter && (
+        {/* ── 스크롤 영역 ── */}
+        <div
+          className="reply-scroll"
+          style={{ flex: 1, overflowY: 'auto' }}
+        >
+          {/* 로딩 */}
+          {loading && (
             <div style={{
-              marginTop: 8,
-              borderRadius: 14,
-              padding: '18px 20px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '0.5px solid rgba(255,255,255,0.1)',
-              fontFamily: 'var(--font-handwriting)', fontSize: 15,
-              lineHeight: '26px',
-              color: 'rgba(255,255,255,0.55)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'keep-all',
+              height: '100%', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--font-sans)', fontSize: 13, color: '#bba089',
             }}>
-              {reply.letterContent}
+              답장을 불러오는 중...
+            </div>
+          )}
+
+          {/* 에러 */}
+          {!loading && !reply && (
+            <div style={{
+              height: '100%', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--font-sans)', fontSize: 13, color: '#bba089',
+            }}>
+              답장을 찾을 수 없어요.
+            </div>
+          )}
+
+          {/* 편지 이미지 + 텍스트 */}
+          {!loading && reply && (
+            <div style={{ position: 'relative', width: '100%', paddingBottom: '150%' }}>
+
+              {/* ── 별 장식 ── */}
+              <svg
+                viewBox="0 0 100 150"
+                style={{
+                  position: 'absolute', inset: 0,
+                  width: '100%', height: '100%',
+                  zIndex: 2, pointerEvents: 'none',
+                }}
+              >
+                <g transform="translate(14, 3)" opacity="0.55">
+                  <path d="M0 -2 C0.28 -0.56 0.56 -0.28 2 0 C0.56 0.28 0.28 0.56 0 2 C-0.28 0.56 -0.56 0.28 -2 0 C-0.56 -0.28 -0.28 -0.56 0 -2 Z" fill="#c9a96e"/>
+                </g>
+                <g transform="translate(84, 5)">
+                  <path d="M0 -1.2 L0.36 -0.37 L1.14 -0.37 L0.56 0.14 L0.76 0.94 L0 0.48 L-0.76 0.94 L-0.56 0.14 L-1.14 -0.37 L-0.36 -0.37 Z"
+                    fill="none" stroke="#c9a96e" strokeWidth="0.32" opacity="0.5"/>
+                </g>
+                <g transform="translate(50, 4)" opacity="0.42">
+                  <path d="M0 -1.8 C0.25 -0.5 0.5 -0.25 1.8 0 C0.5 0.25 0.25 0.5 0 1.8 C-0.25 0.5 -0.5 0.25 -1.8 0 C-0.5 -0.25 -0.25 -0.5 0 -1.8 Z" fill="#c9a96e"/>
+                </g>
+                <ellipse cx="5" cy="74" rx="1" ry="1.5" fill="#c9a96e" opacity="0.28" transform="rotate(-18, 5, 74)"/>
+                <ellipse cx="97" cy="68" rx="0.9" ry="1.4" fill="#c9a96e" opacity="0.26" transform="rotate(12, 97, 68)"/>
+                <g transform="translate(6, 102)">
+                  <path d="M0 -1.5 L0.45 -0.46 L1.43 -0.46 L0.7 0.18 L0.95 1.17 L0 0.6 L-0.95 1.17 L-0.7 0.18 L-1.43 -0.46 L-0.45 -0.46 Z"
+                    fill="none" stroke="#c9a96e" strokeWidth="0.35" opacity="0.5"/>
+                </g>
+                <g transform="translate(5, 128)" opacity="0.48">
+                  <path d="M0 -2.2 C0.3 -0.6 0.6 -0.3 2.2 0 C0.6 0.3 0.3 0.6 0 2.2 C-0.3 0.6 -0.6 0.3 -2.2 0 C-0.6 -0.3 -0.3 -0.6 0 -2.2 Z" fill="#c9a96e"/>
+                </g>
+                <g transform="translate(95, 110)" opacity="0.5">
+                  <path d="M0 -2.4 C0.33 -0.67 0.67 -0.33 2.4 0 C0.67 0.33 0.33 0.67 0 2.4 C-0.33 0.67 -0.67 0.33 -2.4 0 C-0.67 -0.33 -0.33 -0.67 0 -2.4 Z" fill="#c9a96e"/>
+                </g>
+                <g transform="translate(93, 135)">
+                  <path d="M0 -1.1 L0.33 -0.34 L1.05 -0.34 L0.51 0.13 L0.69 0.89 L0 0.46 L-0.69 0.89 L-0.51 0.13 L-1.05 -0.34 L-0.33 -0.34 Z"
+                    fill="none" stroke="#c9a96e" strokeWidth="0.32" opacity="0.4"/>
+                </g>
+              </svg>
+
+              {/* 봉투+편지지 배경 이미지 */}
+              <Image
+                src="/letter-cream-bg.png"
+                alt="편지 봉투"
+                fill
+                style={{
+                  objectFit: 'fill',
+                  zIndex: 0,
+                  filter: 'drop-shadow(4px 6px 12px rgba(120,90,50,0.18))',
+                }}
+                priority
+              />
+
+              {/* 편지 텍스트 오버레이 */}
+              <div style={{
+                position: 'absolute',
+                top: '8%', left: '10%', right: '10%',
+                height: '62%',
+                overflow: 'hidden',
+                zIndex: 1,
+                backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 27.5px, rgba(180,148,100,0.13) 27.5px, rgba(180,148,100,0.13) 28.5px)',
+              }}>
+                <div
+                  className="reply-letter-text"
+                  style={{
+                    fontSize: 15,
+                    lineHeight: '1.9',
+                    color: '#5c4a3a',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'keep-all',
+                    letterSpacing: '0.01em',
+                  }}
+                >
+                  {reply.content}
+                </div>
+              </div>
+
+              {/* Abiding 로고 */}
+              <div style={{
+                position: 'absolute',
+                bottom: '3%', left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 10, pointerEvents: 'none', userSelect: 'none',
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-brand)', fontSize: 22,
+                  color: '#c9a96e', letterSpacing: '0.04em', whiteSpace: 'nowrap',
+                }}>
+                  Abiding
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ── 봉투 아래 버튼 영역 ── */}
+          {!loading && reply && (
+            <div style={{
+              padding: '16px 16px 24px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 10,
+            }}>
+              {/* 닫기 */}
+              <button
+                onClick={handleClose}
+                style={{
+                  padding: '13px 0',
+                  borderRadius: 12,
+                  background: 'transparent',
+                  border: '1px solid rgba(140,110,70,0.3)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 14, fontWeight: 500,
+                  color: '#8a6a45',
+                }}
+              >
+                닫기
+              </button>
+              {/* 답장쓰기 — SoftCTA */}
+              <SoftCTAButton
+                onClick={handleWriteLetter}
+                style={{
+                  padding: '13px 0',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #d4a96e 0%, #a07840 100%)',
+                  color: '#fff',
+                  boxShadow: '0 2px 10px rgba(160,120,64,0.3)',
+                }}
+              >
+                답장쓰기
+              </SoftCTAButton>
             </div>
           )}
         </div>
-
-        {/* ── 하단 CTA ── */}
-        <div style={{ padding: '0 16px' }}>
-          <button
-            onClick={() => router.replace('/home')}
-            style={{
-              width: '100%',
-              padding: '16px 0',
-              borderRadius: 999,
-              border: 'none',
-              background: 'linear-gradient(135deg, #faddca, #fbb489)',
-              color: '#2a1c44',
-              fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
-              letterSpacing: '-0.01em',
-              boxShadow: '0 8px 28px rgba(251,180,137,0.3)',
-              cursor: 'pointer',
-            }}
-          >
-            홈으로 돌아가기
-          </button>
-        </div>
       </div>
-    </div>
+    </>
   )
 }
