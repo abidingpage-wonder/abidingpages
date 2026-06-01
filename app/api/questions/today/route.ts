@@ -55,6 +55,20 @@ function getSeedQuestion(week: number, day: number, petName: string): string {
 
 export async function GET() {
   try {
+    // DEV_BYPASS_AUTH=true 이면 목업 질문 반환
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+      return NextResponse.json({
+        id: null,
+        content: getSeedQuestion(1, 3, '순탄이'),
+        hintText: '떠오르는 대로 자유롭게 써보세요.',
+        week: 1,
+        day: 3,
+        stage: 1,
+        petName: '순탄이',
+        fromDb: false,
+      })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

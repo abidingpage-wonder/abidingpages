@@ -23,6 +23,7 @@ export default function LetterSentPage() {
       justifyContent: 'center',
       minHeight: '100%',
       padding: '32px 24px',
+      background: 'linear-gradient(180deg, #1c0f2e 0%, #2a1c44 38%, #574a7e 72%, #8d80ab 100%)',
       opacity: visible ? 1 : 0,
       transform: visible ? 'translateY(0)' : 'translateY(16px)',
       transition: 'opacity 0.55s ease, transform 0.55s ease',
@@ -42,7 +43,7 @@ export default function LetterSentPage() {
 
       <div style={{
         fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 600,
-        color: 'var(--lav-900)', letterSpacing: '-0.02em',
+        color: '#fff', letterSpacing: '-0.02em',
         marginBottom: 10, textAlign: 'center',
       }}>
         편지를 보냈어요
@@ -50,7 +51,7 @@ export default function LetterSentPage() {
 
       <div style={{
         fontFamily: 'var(--font-sans)', fontSize: 14,
-        color: 'var(--ink-500)', lineHeight: 1.7, textAlign: 'center',
+        color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, textAlign: 'center',
         maxWidth: 260,
       }}>
         오늘의 마음을 잘 전달했어요.<br/>
@@ -60,7 +61,7 @@ export default function LetterSentPage() {
       <div style={{
         marginTop: 40,
         fontFamily: 'var(--font-sans)', fontSize: 12,
-        color: 'var(--ink-300)',
+        color: 'rgba(255,255,255,0.3)',
       }}>
         홈으로 돌아가는 중...
       </div>

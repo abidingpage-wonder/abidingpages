@@ -10,6 +10,10 @@ const EMOTION_LABELS: Record<string, string> = {
   calm: '차분함', grateful: '고마움', unknown: '모르겠음',
 }
 
+// ── 나이트스카이 배경 ───────────────────────────────────────────────
+// 디자인 파일: #1c0f2e → #2a1c44 → #574a7e → #8d80ab
+const NIGHT_BG = 'linear-gradient(180deg, #1c0f2e 0%, #2a1c44 38%, #574a7e 72%, #8d80ab 100%)'
+
 interface Question {
   id: string | null
   content: string
@@ -29,21 +33,19 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const [question, setQuestion]     = useState<Question | null>(null)
-  const [loadingQ, setLoadingQ]     = useState(true)
-  const [freeMode, setFreeMode]     = useState(false)
-  const [content, setContent]       = useState(`우리 ${petName}에게,\n\n`)
-  const [sending, setSending]       = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+  const [question, setQuestion] = useState<Question | null>(null)
+  const [loadingQ, setLoadingQ] = useState(true)
+  const [freeMode, setFreeMode] = useState(false)
+  const [content, setContent]   = useState(`우리 ${petName}에게,\n\n`)
+  const [sending, setSending]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
 
-  // 질문 불러오기
   async function fetchQuestion() {
     setLoadingQ(true)
     try {
       const res = await fetch('/api/questions/today')
       if (!res.ok) throw new Error()
-      const data = await res.json()
-      setQuestion(data)
+      setQuestion(await res.json())
     } catch {
       setQuestion(null)
     } finally {
@@ -53,7 +55,6 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
 
   useEffect(() => { fetchQuestion() }, [])
 
-  // 텍스트에어리어 자동 높이
   function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setContent(e.target.value)
     const el = e.target
@@ -61,7 +62,6 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
     el.style.height = el.scrollHeight + 'px'
   }
 
-  // 커서를 편지 본문 끝으로
   useEffect(() => {
     if (!loadingQ && textareaRef.current) {
       const el = textareaRef.current
@@ -104,7 +104,8 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100%',
-      padding: '0 0 32px',
+      background: NIGHT_BG,
+      padding: '0 0 36px',
     }}>
 
       {/* ── 헤더 ── */}
@@ -119,7 +120,7 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             padding: 4,
-            color: 'var(--lav-500)',
+            color: 'rgba(255,255,255,0.7)',
           }}
         >
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -132,12 +133,12 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
         <div style={{ textAlign: 'center', flex: 1 }}>
           <div style={{
             fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 600,
-            color: 'var(--lav-900)', letterSpacing: '-0.01em',
+            color: '#fff', letterSpacing: '-0.01em',
           }}>
             {petName}에게
           </div>
           <div style={{
-            marginTop: 2,
+            marginTop: 3,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
             {emotionLabel && (
@@ -145,10 +146,10 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
                 display: 'inline-flex', alignItems: 'center',
                 padding: '2px 10px',
                 borderRadius: 999,
-                background: 'rgba(251,180,137,0.18)',
-                border: '0.5px solid rgba(251,180,137,0.45)',
+                background: 'rgba(251,180,137,0.2)',
+                border: '0.5px solid rgba(251,180,137,0.5)',
                 fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
-                color: 'var(--peach-500)',
+                color: '#fbb489',
                 letterSpacing: '0.03em',
               }}>
                 {emotionLabel}
@@ -156,14 +157,13 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
             )}
             <span style={{
               fontFamily: 'var(--font-sans)', fontSize: 11,
-              color: 'var(--ink-300)', letterSpacing: '0.08em',
+              color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em',
             }}>
               {week}주차 · DAY {day}
             </span>
           </div>
         </div>
 
-        {/* 오른쪽 여백 균형 */}
         <div style={{ width: 30 }} />
       </div>
 
@@ -173,16 +173,16 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
           <div style={{
             borderRadius: 20,
             padding: '18px 20px 16px',
-            background: 'rgba(243,236,223,0.92)',
-            border: '0.5px solid rgba(184,160,120,0.25)',
-            boxShadow: '0 2px 12px rgba(86,52,140,0.07)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
+            background: 'rgba(255,255,255,0.09)',
+            border: '0.5px solid rgba(255,255,255,0.18)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
           }}>
             {/* 카드 라벨 */}
             <div style={{
               fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700,
-              color: 'var(--lav-500)', letterSpacing: '0.14em',
+              color: 'rgba(251,180,137,0.9)', letterSpacing: '0.14em',
               marginBottom: 10,
             }}>
               오늘의 질문
@@ -191,12 +191,12 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
             {/* 질문 본문 */}
             <div style={{
               fontFamily: 'var(--font-serif)', fontSize: 15.5, fontWeight: 600,
-              color: 'var(--ink-900)', lineHeight: 1.65,
+              color: '#fff', lineHeight: 1.7,
               letterSpacing: '-0.01em',
               minHeight: 48,
             }}>
               {loadingQ
-                ? <span style={{ color: 'var(--ink-300)' }}>질문을 불러오는 중...</span>
+                ? <span style={{ color: 'rgba(255,255,255,0.35)' }}>질문을 불러오는 중...</span>
                 : (question?.content ?? '오늘 하루 어떠셨나요?')
               }
             </div>
@@ -205,18 +205,15 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
             {!loadingQ && question?.hintText && (
               <div style={{
                 marginTop: 8,
-                fontFamily: 'var(--font-handwriting)', fontSize: 12.5,
-                color: 'var(--ink-300)', lineHeight: 1.5,
+                fontFamily: 'var(--font-handwriting)', fontSize: 13,
+                color: 'rgba(255,255,255,0.45)', lineHeight: 1.5,
               }}>
                 {question.hintText}
               </div>
             )}
 
             {/* 하단 버튼 행 */}
-            <div style={{
-              marginTop: 14,
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
+            <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
                 onClick={fetchQuestion}
                 disabled={loadingQ}
@@ -224,12 +221,12 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '7px 14px',
                   borderRadius: 999,
-                  background: 'rgba(140,100,190,0.09)',
-                  border: '0.5px solid rgba(140,100,190,0.25)',
-                  color: 'var(--lav-600)',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '0.5px solid rgba(255,255,255,0.22)',
+                  color: 'rgba(255,255,255,0.85)',
                   fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600,
                   cursor: loadingQ ? 'default' : 'pointer',
-                  opacity: loadingQ ? 0.5 : 1,
+                  opacity: loadingQ ? 0.4 : 1,
                   transition: 'opacity 0.15s',
                 }}
               >
@@ -248,8 +245,8 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
                   padding: '7px 14px',
                   borderRadius: 999,
                   background: 'none',
-                  border: '0.5px solid rgba(140,100,190,0.2)',
-                  color: 'var(--lav-400)',
+                  border: '0.5px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.55)',
                   fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
                   cursor: 'pointer',
                 }}
@@ -261,7 +258,7 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
         </div>
       )}
 
-      {/* 자유 모드 토글 복귀 */}
+      {/* 자유 모드 복귀 버튼 */}
       {freeMode && (
         <div style={{ padding: '0 20px', marginBottom: 10 }}>
           <button
@@ -269,7 +266,7 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--lav-400)',
+              color: 'rgba(255,255,255,0.5)',
               fontFamily: 'var(--font-sans)', fontSize: 12,
             }}
           >
@@ -284,21 +281,22 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
 
       {/* ── 편지지 ── */}
       <div style={{ flex: 1, padding: '0 16px' }}>
-        <div
-          className="paper-tex"
-          style={{
-            borderRadius: 20,
-            border: '0.5px solid rgba(184,160,120,0.2)',
-            boxShadow: '0 4px 20px rgba(86,52,140,0.08)',
-            padding: '20px 20px 24px',
-            position: 'relative',
-          }}
-        >
-          {/* 편지지 줄 */}
+        <div style={{
+          borderRadius: 20,
+          border: '0.5px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 4px 32px rgba(0,0,0,0.3)',
+          padding: '20px 20px 28px',
+          position: 'relative',
+          // 반투명 유리 느낌
+          background: 'rgba(255,255,255,0.07)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        }}>
+          {/* 편지지 줄 — 디자인 파일과 동일한 흰색 반투명 */}
           <div style={{
             position: 'absolute', inset: '56px 20px 20px',
-            backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(184,160,120,0.15) 31px, rgba(184,160,120,0.15) 32px)',
-            backgroundSize: '100% 32px',
+            backgroundImage: 'linear-gradient(0deg, transparent 0px, transparent 27px, rgba(255,255,255,0.06) 27px, rgba(255,255,255,0.06) 28px)',
+            backgroundSize: '100% 28px',
             pointerEvents: 'none',
           }} />
 
@@ -316,9 +314,9 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
               overflow: 'hidden',
               fontFamily: 'var(--font-handwriting)',
               fontSize: 16,
-              lineHeight: '32px',
-              color: 'var(--ink-700)',
-              caretColor: 'var(--lav-600)',
+              lineHeight: '28px',
+              color: '#fff',
+              caretColor: '#fbb489',
               minHeight: 200,
               position: 'relative',
               zIndex: 1,
@@ -333,7 +331,7 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
           <div style={{
             marginBottom: 10, textAlign: 'center',
             fontFamily: 'var(--font-sans)', fontSize: 12,
-            color: 'var(--peach-500)',
+            color: '#fbb489',
           }}>
             {error}
           </div>
@@ -347,12 +345,12 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
             borderRadius: 999,
             border: 'none',
             background: letterIsEmpty
-              ? 'rgba(180,160,210,0.25)'
-              : 'linear-gradient(96deg, var(--lav-600), #8b5cb8)',
-            color: letterIsEmpty ? 'var(--lav-400)' : '#fff',
-            fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600,
+              ? 'rgba(255,255,255,0.1)'
+              : 'linear-gradient(135deg, #faddca, #fbb489)',
+            color: letterIsEmpty ? 'rgba(255,255,255,0.3)' : '#2a1c44',
+            fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
             letterSpacing: '-0.01em',
-            boxShadow: letterIsEmpty ? 'none' : '0 8px 24px rgba(86,52,140,0.28)',
+            boxShadow: letterIsEmpty ? 'none' : '0 8px 28px rgba(251,180,137,0.35)',
             cursor: letterIsEmpty ? 'default' : 'pointer',
             transition: 'all 0.2s ease',
           }}

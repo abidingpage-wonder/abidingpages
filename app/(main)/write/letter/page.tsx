@@ -7,8 +7,28 @@ interface Props {
   searchParams: Promise<{ emotion?: string }>
 }
 
+// ── 개발용 목업 ────────────────────────────────────────────────────────
+const DEV_MOCK = {
+  petName: '순탄이',
+  week: 1,
+  day: 3,
+}
+// ──────────────────────────────────────────────────────────────────────
+
 export default async function LetterPage({ searchParams }: Props) {
   const { emotion } = await searchParams
+
+  // DEV_BYPASS_AUTH=true 이면 목업으로 바로 렌더
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    return (
+      <LetterEditor
+        petName={DEV_MOCK.petName}
+        week={DEV_MOCK.week}
+        day={DEV_MOCK.day}
+        emotionTag={emotion ?? null}
+      />
+    )
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
