@@ -193,7 +193,6 @@ export default function EmotionSelectPage() {
             width: '100%',
             padding: '16px 0',
             borderRadius: 999,
-            border: 'none',
             background: selected
               ? 'linear-gradient(96deg, var(--lav-600), #8b5cb8)'
               : 'rgba(255,255,255,0.45)',
