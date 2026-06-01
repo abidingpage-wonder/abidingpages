@@ -53,8 +53,15 @@ export default function EmotionSelectPage() {
       flexDirection: 'column',
       padding: '8px 18px 32px',
       minHeight: '100%',
-      background: 'radial-gradient(at 50% 30%, #ece4f3 0%, #d8c8d8 60%, #b7a4c8 100%)',
+      position: 'relative',
     }}>
+      {/* 전체 뷰포트 배경 — max-width 제한 밖으로 확장 */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'radial-gradient(at 50% 30%, #ece4f3 0%, #d8c8d8 60%, #b7a4c8 100%)',
+        zIndex: -1,
+      }} />
 
       {/* 헤더 */}
       <div style={{ marginBottom: 22 }}>
@@ -189,8 +196,9 @@ export default function EmotionSelectPage() {
             border: 'none',
             background: selected
               ? 'linear-gradient(96deg, var(--lav-600), #8b5cb8)'
-              : 'rgba(180,160,210,0.25)',
-            color: selected ? '#fff' : 'var(--lav-400)',
+              : 'rgba(255,255,255,0.45)',
+            color: selected ? '#fff' : 'var(--lav-700)',
+            border: selected ? 'none' : '1px solid rgba(140,100,190,0.3)',
             fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600,
             letterSpacing: '-0.01em',
             boxShadow: selected ? '0 8px 24px rgba(86,52,140,0.28)' : 'none',
