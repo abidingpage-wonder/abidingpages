@@ -58,20 +58,37 @@ model Pet {
   @@map("pets")
 }
 
+// 49일 여정 질문 (7주 × 7일)
 model Question {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  stage    Int     // 1~5
-  week     Int     // 1~7
-  day      Int     // 1~6 (7은 쉼표)
-  isComma  Boolean @default(false) @map("is_comma")
-  category String?
-  content  String
-  hintText String? @map("hint_text")
-  isSmile  Boolean @default(false) @map("is_smile")
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  week       Int     // 1~7 주차
+  day        Int     // 1~7 (7=쉼표)
+  orderIndex Int     @map("order_index") // 전체 정렬 1~49
+  category   String? // 소제목
+  content    String  // 질문 본문
+  isRest     Boolean @default(false) @map("is_rest")   // true = 7일차 쉼표
+  restGuide  String? @map("rest_guide")                // 쉼표 날 안내 문구
+  hintText   String? @map("hint_text")                 // 선택적 힌트
+  // 하위 호환 필드
+  stage      Int     @default(1)                       // week 와 동일값으로 유지
+  isComma    Boolean @default(false) @map("is_comma")  // isRest alias
+  isSmile    Boolean @default(false) @map("is_smile")
 
   letters Letter[]
 
   @@map("questions")
+}
+
+// 주차별 안내문 (7개)
+model WeekGuide {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  week     Int    @unique // 1~7
+  keyword  String         // 머무름, 쏟아냄 ...
+  title    String
+  subtitle String
+  guide    String
+
+  @@map("week_guides")
 }
 
 model Letter {
@@ -144,16 +161,18 @@ model EmotionLog {
 }
 
 model JourneyProgress {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId             String   @map("user_id") @db.Uuid
-  petId              String   @unique @map("pet_id") @db.Uuid
-  currentStage       Int      @default(1) @map("current_stage")
-  currentWeek        Int      @default(1) @map("current_week")
-  currentDay         Int      @default(1) @map("current_day")
-  nextStageAvailable Boolean  @default(false) @map("next_stage_available")
-  totalLetters       Int      @default(0) @map("total_letters")
-  totalMinutes       Int      @default(0) @map("total_minutes")
-  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  petId              String    @unique @map("pet_id") @db.Uuid
+  currentStage       Int       @default(1) @map("current_stage")
+  currentWeek        Int       @default(1) @map("current_week")
+  // 이번 주 완료한 비쉼표 문항 수 (0~6). 3 이상이면 다음 주 진행.
+  currentDay         Int       @default(0) @map("current_day")
+  nextStageAvailable Boolean   @default(false) @map("next_stage_available")
+  totalLetters       Int       @default(0) @map("total_letters")
+  totalMinutes       Int       @default(0) @map("total_minutes")
+  completedAt        DateTime? @map("completed_at") @db.Timestamptz // 7주차 완료
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   pet Pet @relation(fields: [petId], references: [id])
 
