@@ -53,6 +53,7 @@ export default function EmotionSelectPage() {
       flexDirection: 'column',
       padding: '8px 18px 32px',
       minHeight: '100%',
+      background: 'radial-gradient(at 50% 30%, #ece4f3 0%, #d8c8d8 60%, #b7a4c8 100%)',
     }}>
 
       {/* 헤더 */}
@@ -94,8 +95,8 @@ export default function EmotionSelectPage() {
                 borderRadius: 20,
                 padding: '18px 8px 16px',
                 background: isSel
-                  ? 'rgba(255,255,255,0.82)'
-                  : 'rgba(255,255,255,0.55)',
+                  ? 'rgba(255,255,255,0.95)'
+                  : 'rgba(255,255,255,0.6)',
                 border: e.skip
                   ? `1.5px dashed ${isSel ? 'var(--peach-300)' : 'rgba(140,100,190,0.3)'}`
                   : isSel
