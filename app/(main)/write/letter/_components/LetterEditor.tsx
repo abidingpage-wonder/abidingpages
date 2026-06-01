@@ -104,9 +104,16 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100%',
-      background: NIGHT_BG,
+      position: 'relative',
       padding: '0 0 36px',
     }}>
+      {/* 전체 뷰포트 배경 */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: NIGHT_BG,
+        zIndex: -1,
+      }} />
 
       {/* ── 헤더 ── */}
       <div style={{
@@ -343,11 +350,11 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
             width: '100%',
             padding: '16px 0',
             borderRadius: 999,
-            border: 'none',
             background: letterIsEmpty
-              ? 'rgba(255,255,255,0.1)'
+              ? 'rgba(255,255,255,0.12)'
               : 'linear-gradient(135deg, #faddca, #fbb489)',
-            color: letterIsEmpty ? 'rgba(255,255,255,0.3)' : '#2a1c44',
+            color: letterIsEmpty ? 'rgba(255,255,255,0.6)' : '#2a1c44',
+            border: letterIsEmpty ? '1px solid rgba(255,255,255,0.25)' : 'none',
             fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
             letterSpacing: '-0.01em',
             boxShadow: letterIsEmpty ? 'none' : '0 8px 28px rgba(251,180,137,0.35)',
