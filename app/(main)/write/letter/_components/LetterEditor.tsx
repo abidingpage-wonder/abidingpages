@@ -89,7 +89,8 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
         }),
       })
       if (!res.ok) throw new Error()
-      router.push('/write/sent')
+      const { id: letterId } = await res.json()
+      router.push(`/write/sent?letterId=${letterId}`)
     } catch {
       setError('편지를 보내지 못했어요. 다시 시도해주세요.')
       setSending(false)
