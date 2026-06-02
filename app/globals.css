@@ -3,7 +3,7 @@
 /* ── 윤초록우산어린이 만세 ────────────────────────────── */
 @font-face {
   font-family: 'YoonChildfundManSeh';
-  src: url('/fonts/YoonChildfundkoreaManSeh.ttf') format('truetype');
+  src: url('/fonts/YoonChildfundkoreaManSeh.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -143,4 +143,21 @@ body {
 
 .wax-shadow {
   filter: drop-shadow(0 2px 3px rgba(86,52,140,0.35));
+}
+
+/* ── Reply modal ──────────────────────────────────── */
+@keyframes replySlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes replyFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes replyDimIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes replyDimOut { from { opacity: 1; } to { opacity: 0; } }
+
+.reply-scroll::-webkit-scrollbar { display: none; }
+.reply-letter-text {
+  font-family: 'YoonChildfundManSeh', 'Nanum Pen Script', cursive !important;
 }

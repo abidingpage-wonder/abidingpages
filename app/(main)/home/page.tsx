@@ -439,12 +439,12 @@ const CARD_BASE: React.CSSProperties = {
 }
 
 /* ── 상태 A: 편지 도착 ── */
-function StatusCardA({ petName, replyId, letterId }: {
+function StatusCardA({ petName, letterId }: {
   petName: string; ownerNickname: string | null; preview: string
   replyId: string; letterId: string
 }) {
   return (
-    <a href={`/reply/${replyId}?letterId=${letterId}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <a href={`/reply/${letterId}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div style={{
         ...CARD_BASE,
         background: '#E0D2EA',

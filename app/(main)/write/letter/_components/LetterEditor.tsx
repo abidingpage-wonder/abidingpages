@@ -112,9 +112,7 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
   const letterIsEmpty = content.trim() === '' || content.trim() === `우리 ${petName}에게,`
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', position: 'relative', padding: '0 0 36px' }}>
-      {/* 배경 */}
-      <div style={{ position: 'fixed', inset: 0, background: NIGHT_BG, zIndex: -1 }} />
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', background: NIGHT_BG, padding: '0 0 36px' }}>
 
       {/* ── 헤더 ── */}
       <div style={{ padding: '16px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -231,7 +229,7 @@ export default function LetterEditor({ petName, week, day, emotionTag }: Props) 
       )}
 
       {/* ── 편지지 ── */}
-      <div style={{ flex: 1, padding: '0 16px' }}>
+      <div style={{ padding: '0 16px' }}>
         <div style={{
           borderRadius: 20, border: '0.5px solid rgba(255,255,255,0.12)',
           boxShadow: '0 4px 32px rgba(0,0,0,0.3)', padding: '20px 20px 28px',

@@ -52,16 +52,9 @@ export default function EmotionSelectPage() {
       display: 'flex',
       flexDirection: 'column',
       padding: '8px 18px 32px',
-      minHeight: '100%',
-      position: 'relative',
+      minHeight: '100dvh',
+      background: 'radial-gradient(at 50% 30%, #ece4f3 0%, #d8c8d8 60%, #b7a4c8 100%)',
     }}>
-      {/* 전체 뷰포트 배경 — max-width 제한 밖으로 확장 */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'radial-gradient(at 50% 30%, #ece4f3 0%, #d8c8d8 60%, #b7a4c8 100%)',
-        zIndex: -1,
-      }} />
 
       {/* 헤더 */}
       <div style={{ marginBottom: 22 }}>

@@ -1,12 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Image from 'next/image'
 
 const NIGHT_BG  = 'linear-gradient(180deg, #1c0f2e 0%, #2a1c44 38%, #574a7e 72%, #8d80ab 100%)'
 const PEACH_TOP = 'linear-gradient(180deg, rgba(251,180,137,0.18) 0%, rgba(251,180,137,0.06) 18%, transparent 100%)'
+
+/** 별 파티클 — props 없으므로 memo로 렌더 고정 */
+const StarParticles = memo(function StarParticles() {
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      {[...Array(14)].map((_, i) => (
+        <div key={i} style={{
+          position:     'absolute',
+          width:        i % 3 === 0 ? 3 : 2,
+          height:       i % 3 === 0 ? 3 : 2,
+          borderRadius: '50%',
+          background:   'rgba(255,255,255,0.7)',
+          top:          `${8 + (i * 19) % 72}%`,
+          left:         `${4 + (i * 27) % 92}%`,
+          opacity:      0.3 + (i % 5) * 0.1,
+          willChange:   'opacity, transform',
+          animation:    `twinkle ${3 + (i % 4)}s ease-in-out ${(i * 0.35) % 4}s infinite`,
+        }} />
+      ))}
+    </div>
+  )
+})
 
 function SentContent() {
   const router       = useRouter()
@@ -53,27 +75,14 @@ function SentContent() {
       minHeight:      '100%',
       padding:        '80px 24px 48px',
       position:       'relative',
+      background:     PEACH_TOP,
       opacity:        visible ? 1 : 0,
       transform:      visible ? 'translateY(0)' : 'translateY(20px)',
       transition:     'opacity 0.65s ease, transform 0.65s ease',
     }}>
 
       {/* 별 파티클 */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {[...Array(14)].map((_, i) => (
-          <div key={i} style={{
-            position:     'absolute',
-            width:        i % 3 === 0 ? 3 : 2,
-            height:       i % 3 === 0 ? 3 : 2,
-            borderRadius: '50%',
-            background:   'rgba(255,255,255,0.7)',
-            top:          `${8 + (i * 19) % 72}%`,
-            left:         `${4 + (i * 27) % 92}%`,
-            opacity:      0.3 + (i % 5) * 0.1,
-            animation:    `twinkle ${3 + (i % 4)}s ease-in-out ${(i * 0.35) % 4}s infinite`,
-          }} />
-        ))}
-      </div>
+      <StarParticles />
 
       {/* 봉투 일러스트 */}
       <div style={{
@@ -201,9 +210,7 @@ function SentContent() {
 
 export default function LetterSentPage() {
   return (
-    <div style={{ minHeight: '100%', position: 'relative' }}>
-      <div style={{ position: 'fixed', inset: 0, background: NIGHT_BG, zIndex: -1 }} />
-      <div style={{ position: 'fixed', inset: 0, background: PEACH_TOP, zIndex: -1 }} />
+    <div style={{ minHeight: '100dvh', background: NIGHT_BG }}>
       <Suspense>
         <SentContent />
       </Suspense>
