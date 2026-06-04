@@ -193,23 +193,22 @@ export default function ReplyPage() {
 
       {/* ── 편지 이미지 ── */}
       <div style={{ position: 'relative', width: '100%', paddingBottom: '150%' }}>
-        <svg viewBox="0 0 100 150" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 2, pointerEvents: 'none' }}>
-          <g transform="translate(14, 3)" opacity="0.55"><path d="M0 -2 C0.28 -0.56 0.56 -0.28 2 0 C0.56 0.28 0.28 0.56 0 2 C-0.28 0.56 -0.56 0.28 -2 0 C-0.56 -0.28 -0.28 -0.56 0 -2 Z" fill="#c9a96e"/></g>
-          <g transform="translate(84, 5)"><path d="M0 -1.2 L0.36 -0.37 L1.14 -0.37 L0.56 0.14 L0.76 0.94 L0 0.48 L-0.76 0.94 L-0.56 0.14 L-1.14 -0.37 L-0.36 -0.37 Z" fill="none" stroke="#c9a96e" strokeWidth="0.32" opacity="0.5"/></g>
-          <g transform="translate(50, 4)" opacity="0.42"><path d="M0 -1.8 C0.25 -0.5 0.5 -0.25 1.8 0 C0.5 0.25 0.25 0.5 0 1.8 C-0.25 0.5 -0.5 0.25 -1.8 0 C-0.5 -0.25 -0.25 -0.5 0 -1.8 Z" fill="#c9a96e"/></g>
-          <ellipse cx="5" cy="74" rx="1" ry="1.5" fill="#c9a96e" opacity="0.28" transform="rotate(-18, 5, 74)"/>
-          <ellipse cx="97" cy="68" rx="0.9" ry="1.4" fill="#c9a96e" opacity="0.26" transform="rotate(12, 97, 68)"/>
-          <g transform="translate(6, 102)"><path d="M0 -1.5 L0.45 -0.46 L1.43 -0.46 L0.7 0.18 L0.95 1.17 L0 0.6 L-0.95 1.17 L-0.7 0.18 L-1.43 -0.46 L-0.45 -0.46 Z" fill="none" stroke="#c9a96e" strokeWidth="0.35" opacity="0.5"/></g>
-          <g transform="translate(5, 128)" opacity="0.48"><path d="M0 -2.2 C0.3 -0.6 0.6 -0.3 2.2 0 C0.6 0.3 0.3 0.6 0 2.2 C-0.3 0.6 -0.6 0.3 -2.2 0 C-0.6 -0.3 -0.3 -0.6 0 -2.2 Z" fill="#c9a96e"/></g>
-          <g transform="translate(95, 110)" opacity="0.5"><path d="M0 -2.4 C0.33 -0.67 0.67 -0.33 2.4 0 C0.67 0.33 0.33 0.67 0 2.4 C-0.33 0.67 -0.67 0.33 -2.4 0 C-0.67 -0.33 -0.33 -0.67 0 -2.4 Z" fill="#c9a96e"/></g>
-          <g transform="translate(93, 135)"><path d="M0 -1.1 L0.33 -0.34 L1.05 -0.34 L0.51 0.13 L0.69 0.89 L0 0.46 L-0.69 0.89 L-0.51 0.13 L-1.05 -0.34 L-0.33 -0.34 Z" fill="none" stroke="#c9a96e" strokeWidth="0.32" opacity="0.4"/></g>
-        </svg>
-        <Image src="/letter-cream-bg.png" alt="편지 봉투" fill style={{ objectFit: 'fill', zIndex: 0, filter: 'drop-shadow(4px 6px 12px rgba(120,90,50,0.18))' }} priority />
-        <div style={{ position: 'absolute', top: '8%', left: '10%', right: '10%', height: '62%', overflow: 'hidden', zIndex: 1, backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 27.5px, rgba(180,148,100,0.13) 27.5px, rgba(180,148,100,0.13) 28.5px)' }}>
+        <Image
+          src="/letter-cream-bg.png" alt="편지 봉투" fill
+          style={{ objectFit: 'fill', zIndex: 0, filter: 'drop-shadow(4px 6px 12px rgba(120,90,50,0.18))' }}
+          priority
+        />
+        {/* 텍스트 영역 */}
+        <div style={{
+          position: 'absolute', top: '8%', left: '10%', right: '10%', height: '62%',
+          overflow: 'hidden', zIndex: 1,
+          backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 27.5px, rgba(180,148,100,0.13) 27.5px, rgba(180,148,100,0.13) 28.5px)',
+        }}>
           <div className="reply-letter-text" style={{ fontSize: 15, lineHeight: '1.9', color: '#5c4a3a', whiteSpace: 'pre-wrap', wordBreak: 'keep-all', letterSpacing: '0.01em' }}>
             {reply.content}
           </div>
         </div>
+        {/* Abiding 로고 */}
         <div style={{ position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none', userSelect: 'none' }}>
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: 22, color: '#c9a96e', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Abiding</span>
         </div>
@@ -234,7 +233,7 @@ export default function ReplyPage() {
                   key={r}
                   onClick={() => handleRating(r)}
                   style={{
-                    padding: '10px 0', borderRadius: 10,
+                    padding: '10px 0', borderRadius: 999,
                     border: isSelected
                       ? `1.5px solid ${r === 'positive' ? '#c9a96e' : '#b09070'}`
                       : '1px solid rgba(140,110,70,0.25)',
@@ -256,7 +255,7 @@ export default function ReplyPage() {
 
           {/* 아쉬웠어요 옵션 */}
           {showNegOpts && (
-            <div style={{ marginTop: 10, borderRadius: 10, border: '1px solid rgba(140,110,70,0.18)', overflow: 'hidden' }}>
+            <div style={{ marginTop: 10, borderRadius: 14, border: '1px solid rgba(140,110,70,0.18)', overflow: 'hidden' }}>
               {NEG_OPTIONS.map((opt, i) => {
                 const isChosen = selectedNeg === opt
                 return (
@@ -297,7 +296,7 @@ export default function ReplyPage() {
           <button
             onClick={() => router.back()}
             style={{
-              padding: '13px 0', borderRadius: 12,
+              padding: '13px 0', borderRadius: 999,
               background: 'transparent',
               border: '1px solid rgba(140,110,70,0.3)',
               cursor: 'pointer',
@@ -310,7 +309,7 @@ export default function ReplyPage() {
           <SoftCTAButton
             onClick={() => router.push('/write')}
             style={{
-              padding: '13px 0', borderRadius: 12,
+              padding: '13px 0', borderRadius: 999,
               background: 'linear-gradient(135deg, #d4a96e 0%, #a07840 100%)',
               color: '#fff',
               boxShadow: '0 2px 10px rgba(160,120,64,0.3)',
