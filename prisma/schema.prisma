@@ -22,6 +22,7 @@ model User {
   letters           Letter[]
   gardenMessages    GardenMessage[]
   gardenStickers    GardenSticker[]
+  gardenComments    GardenComment[]
   pushSubscriptions PushSubscription[]
   payments          Payment[]
 
@@ -54,6 +55,7 @@ model Pet {
   journeyProgress JourneyProgress?
   photoCards      PhotoCard[]
   gardenStickers  GardenSticker[]
+  gardenComments  GardenComment[]
 
   @@map("pets")
 }
@@ -217,6 +219,19 @@ model GardenMessage {
   user User @relation(fields: [userId], references: [id])
 
   @@map("garden_messages")
+}
+
+model GardenComment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  toPetId   String   @map("to_pet_id") @db.Uuid
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user  User @relation(fields: [userId], references: [id])
+  toPet Pet  @relation(fields: [toPetId], references: [id])
+
+  @@map("garden_comments")
 }
 
 model PushSubscription {

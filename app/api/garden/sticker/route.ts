@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
-// POST /api/garden/sticker — 스티커 전송
+// POST /api/garden/sticker — 스티커 전송 (archive + garden 공용)
 export async function POST(req: NextRequest) {
   try {
     const { petId, stickerType } = await req.json()
@@ -13,34 +13,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'invalid stickerType' }, { status: 400 })
     }
 
+    let userId: string
+
     if (process.env.DEV_BYPASS_AUTH === 'true') {
       const devUser = await prisma.user.findFirst()
       if (!devUser) return NextResponse.json({ error: 'No dev user' }, { status: 400 })
-      try {
-        await prisma.gardenSticker.create({
-          data: { fromUserId: devUser.id, toPetId: petId, stickerType },
-        })
-      } catch {
-        // unique constraint — already sent this sticker type
-      }
-      return NextResponse.json({ ok: true })
+      userId = devUser.id
+    } else {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+      const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
+      if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      userId = dbUser.id
     }
-
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const dbUser = await prisma.user.findUnique({ where: { supabaseId: user.id } })
-    if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
     try {
       await prisma.gardenSticker.create({
-        data: { fromUserId: dbUser.id, toPetId: petId, stickerType },
+        data: { fromUserId: userId, toPetId: petId, stickerType },
       })
     } catch {
-      // unique constraint — already sent
+      // unique constraint hit — already sent this sticker type; treat as success
     }
-    return NextResponse.json({ ok: true })
+
+    // 현재 집계 반환
+    const stickers = await prisma.gardenSticker.groupBy({
+      by: ['stickerType'],
+      where: { toPetId: petId },
+      _count: { stickerType: true },
+    })
+    const stickerMap: Record<string, number> = { candle: 0, flower: 0, heart: 0 }
+    for (const s of stickers) stickerMap[s.stickerType] = s._count.stickerType
+
+    const senders = await prisma.gardenSticker.findMany({
+      where: { toPetId: petId },
+      distinct: ['fromUserId'],
+      select: { fromUserId: true },
+    })
+
+    return NextResponse.json({ ok: true, stickers: stickerMap, stickerSenders: senders.length })
   } catch (e) {
     console.error('[POST /api/garden/sticker]', e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

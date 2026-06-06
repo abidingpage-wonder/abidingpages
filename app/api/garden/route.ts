@@ -2,62 +2,40 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/garden — 공개 펫 목록 + 스티커 집계 + 메시지 수
+// GET /api/garden — 공개 펫 목록 + 스티커 집계 + 최신 전광판 메시지 15개
 export async function GET() {
   try {
-    if (process.env.DEV_BYPASS_AUTH === 'true') {
-      const [pets, messageCount] = await Promise.all([
-        prisma.pet.findMany({
-          where: { gardenPublic: true },
-          select: { id: true, name: true, birthDate: true, deathDate: true, profileImageUrl: true },
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-        }),
-        prisma.gardenMessage.count({ where: { isHidden: false } }),
-      ])
+    const isDevBypass = process.env.DEV_BYPASS_AUTH === 'true'
 
-      const petCards = await Promise.all(pets.map(async (pet) => {
-        const stickers = await prisma.gardenSticker.groupBy({
-          by: ['stickerType'],
-          where: { toPetId: pet.id },
-          _count: { stickerType: true },
-        })
-        const stickerMap: Record<string, number> = {}
-        for (const s of stickers) stickerMap[s.stickerType] = s._count.stickerType
-
-        const birth = pet.birthDate ? new Date(pet.birthDate).toLocaleDateString('ko', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '') : ''
-        const death = pet.deathDate ? new Date(pet.deathDate).toLocaleDateString('ko', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '') : ''
-
-        return {
-          id: pet.id,
-          name: pet.name,
-          span: birth && death ? `${birth} — ${death}` : '',
-          quote: '오늘도 보고 싶어, 사랑해',
-          tone: '#dcc6ee',
-          face: '🐾',
-          heartColor: '#b787e0',
-          candle: stickerMap['candle'] ?? 0,
-          flower: stickerMap['flower'] ?? 0,
-          heart: stickerMap['heart'] ?? 0,
-          supports: Object.values(stickerMap).reduce((a, b) => a + b, 0),
-        }
-      }))
-
-      return NextResponse.json({ pets: petCards, messageCount })
+    let userId: string | null = null
+    if (!isDevBypass) {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      userId = user.id
+    } else {
+      const devUser = await prisma.user.findFirst({ select: { id: true } })
+      userId = devUser?.id ?? null
     }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const [pets, messageCount] = await Promise.all([
+    const [pets, messages] = await Promise.all([
       prisma.pet.findMany({
         where: { gardenPublic: true },
-        select: { id: true, name: true, birthDate: true, deathDate: true, profileImageUrl: true },
+        select: {
+          id: true, name: true, species: true, breed: true,
+          bornAt: true, diedAt: true, profileImageUrl: true,
+          ownerNickname: true, firstWord: true, togetherDays: true,
+          commentAllowed: true, createdAt: true,
+        },
         orderBy: { createdAt: 'desc' },
-        take: 20,
+        take: 30,
       }),
-      prisma.gardenMessage.count({ where: { isHidden: false } }),
+      prisma.gardenMessage.findMany({
+        where: { isHidden: false },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        select: { id: true, content: true, createdAt: true },
+      }),
     ])
 
     const petCards = await Promise.all(pets.map(async (pet) => {
@@ -69,25 +47,51 @@ export async function GET() {
       const stickerMap: Record<string, number> = {}
       for (const s of stickers) stickerMap[s.stickerType] = s._count.stickerType
 
-      const birth = pet.birthDate ? new Date(pet.birthDate).toLocaleDateString('ko', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '') : ''
-      const death = pet.deathDate ? new Date(pet.deathDate).toLocaleDateString('ko', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '') : ''
+      const stickerSenders = await prisma.gardenSticker.findMany({
+        where: { toPetId: pet.id },
+        distinct: ['fromUserId'],
+        select: { fromUserId: true },
+      })
+
+      // 로그인 유저가 이 펫에 보낸 스티커 종류
+      let myStickers: string[] = []
+      if (userId) {
+        const mine = await prisma.gardenSticker.findMany({
+          where: { fromUserId: userId, toPetId: pet.id },
+          select: { stickerType: true },
+        })
+        myStickers = mine.map(s => s.stickerType)
+      }
 
       return {
         id: pet.id,
         name: pet.name,
-        span: birth && death ? `${birth} — ${death}` : '',
-        quote: '오늘도 보고 싶어, 사랑해',
-        tone: '#dcc6ee',
-        face: '🐾',
-        heartColor: '#b787e0',
+        species: pet.species,
+        breed: pet.breed,
+        bornAt: pet.bornAt.toISOString().split('T')[0],
+        diedAt: pet.diedAt?.toISOString().split('T')[0] ?? null,
+        profileImageUrl: pet.profileImageUrl,
+        ownerNickname: pet.ownerNickname,
+        firstWord: pet.firstWord,
+        togetherDays: pet.togetherDays,
+        commentAllowed: pet.commentAllowed,
         candle: stickerMap['candle'] ?? 0,
         flower: stickerMap['flower'] ?? 0,
         heart: stickerMap['heart'] ?? 0,
-        supports: Object.values(stickerMap).reduce((a, b) => a + b, 0),
+        stickerSenders: stickerSenders.length,
+        myStickers,
       }
     }))
 
-    return NextResponse.json({ pets: petCards, messageCount })
+    return NextResponse.json({
+      pets: petCards,
+      messages: messages.map(m => ({
+        id: m.id,
+        content: m.content,
+        createdAt: m.createdAt.toISOString(),
+      })),
+      messageCount: await prisma.gardenMessage.count({ where: { isHidden: false } }),
+    })
   } catch (e) {
     console.error('[GET /api/garden]', e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

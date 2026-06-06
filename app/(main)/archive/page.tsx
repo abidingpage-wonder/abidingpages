@@ -119,6 +119,25 @@ export default function ArchivePage() {
       .catch(() => setLoading(false))
   }, [])
 
+  async function handleSticker(type: 'candle' | 'flower' | 'heart') {
+    if (!data?.pet?.id) return
+    try {
+      const res = await fetch('/api/garden/sticker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ petId: data.pet.id, stickerType: type }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        setData(prev => prev ? {
+          ...prev,
+          stickers: d.stickers,
+          stickerSenders: d.stickerSenders,
+        } : prev)
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     fetch('/api/archive/timeline')
       .then(r => r.json())
@@ -308,7 +327,7 @@ export default function ArchivePage() {
                 ] as const).filter(s => s.count > 0).map(s => (
                   <button
                     key={s.key}
-                    onClick={() => {/* TODO: 스티커 추가 API */}}
+                    onClick={() => handleSticker(s.key === 'heart-cream' ? 'heart' : s.key as 'candle' | 'flower')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 4,
                       padding: '5px 10px 5px 7px', borderRadius: 20,
