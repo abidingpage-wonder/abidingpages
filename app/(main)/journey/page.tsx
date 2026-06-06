@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 // ── 7주차 메타데이터 ────────────────────────────────────────────────
@@ -143,10 +143,23 @@ function StageCard({
   )
 }
 
+// ── useSearchParams는 Suspense 경계 안에서만 사용 가능 ──────────────
+function ToastFromParams({ onToast }: { onToast: (msg: string) => void }) {
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const msg = searchParams.get('toast')
+    if (!msg) return
+    onToast(decodeURIComponent(msg))
+    const url = new URL(window.location.href)
+    url.searchParams.delete('toast')
+    window.history.replaceState(null, '', url.toString())
+  }, [searchParams, onToast])
+  return null
+}
+
 // ── 메인 페이지 ────────────────────────────────────────────────────
 export default function JourneyPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [data, setData] = useState<JourneyData | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -156,17 +169,6 @@ export default function JourneyPage() {
       .then(setData)
       .catch(console.error)
   }, [])
-
-  // URL ?toast= 파라미터 처리
-  useEffect(() => {
-    const msg = searchParams.get('toast')
-    if (!msg) return
-    setToast(decodeURIComponent(msg))
-    // URL에서 파라미터 제거
-    const url = new URL(window.location.href)
-    url.searchParams.delete('toast')
-    window.history.replaceState(null, '', url.toString())
-  }, [searchParams])
 
   // toast 자동 닫기
   useEffect(() => {
@@ -180,6 +182,11 @@ export default function JourneyPage() {
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-app)', position: 'relative' }}>
+
+      {/* URL ?toast= 파라미터 처리 — Suspense 필수 */}
+      <Suspense fallback={null}>
+        <ToastFromParams onToast={setToast} />
+      </Suspense>
 
       {/* 헤더 그라데이션 배경 */}
       <div style={{

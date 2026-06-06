@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 // ── 감정 데이터 ──────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ const EMOTIONS: Emotion[] = [
   { tag: 'skip',      label: '건너뛰기', emoji: '→',   sub: '나중에 할게요', skip: true },
 ]
 
-export default function EmotionSelectPage() {
+function EmotionSelectInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isFree = searchParams.get('free') === '1'
@@ -205,5 +205,13 @@ export default function EmotionSelectPage() {
       </div>
 
     </div>
+  )
+}
+
+export default function EmotionSelectPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: 'radial-gradient(at 50% 30%, #ece4f3 0%, #d8c8d8 60%, #b7a4c8 100%)' }} />}>
+      <EmotionSelectInner />
+    </Suspense>
   )
 }
