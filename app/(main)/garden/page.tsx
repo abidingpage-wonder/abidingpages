@@ -41,14 +41,16 @@ function getRadialPosition(index: number, heroH: number, heroW: number) {
 
   const raw = {
     x: cx + Math.cos(angleRad) * radius,
-    y: cy + Math.sin(angleRad) * radius * 0.68,  // 세로 압축 (화면 비율)
+    y: cy + Math.sin(angleRad) * radius * 0.68,
   }
 
-  // 경계 안으로 클램핑 (텍스트 잘림 방지)
-  const pad = 28
+  // transform: translate(-50%, -50%) 로 텍스트 중앙 정렬이므로
+  // 텍스트 반너비(최대 ~70px)만큼 여유를 둬야 잘리지 않음
+  const xPad = 72
+  const yPad = 20
   return {
-    x: Math.max(pad, Math.min(heroW - pad, raw.x)),
-    y: Math.max(pad + 10, Math.min(heroH - 80, raw.y)),  // 하단 배너 피하기
+    x: Math.max(xPad, Math.min(heroW - xPad, raw.x)),
+    y: Math.max(yPad, Math.min(heroH - 80, raw.y)),
   }
 }
 
