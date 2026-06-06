@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     if (!isCommaAuto && !content?.trim()) {
       return NextResponse.json({ error: 'content required' }, { status: 400 })
     }
-    const letterType = rawLetterType ?? 'normal'
+    // letterType: schema에 정의됐으나 DB 마이그레이션 전 — 추후 적용 예정
+    // const letterType = rawLetterType ?? 'normal'
 
     // ── DEV 우회 ─────────────────────────────────────────────────────
     if (process.env.DEV_BYPASS_AUTH === 'true') {
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
         data: {
           userId: devPet.userId, petId: devPet.id,
           content: (content ?? '').trim(), stage, week: currentWeek, day: currentDay + 1,
-          letterType, imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
+          imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
           ...(questionId ? { questionId } : {}),
           ...(emotionTag ? { emotionTag } : {}),
         },
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
       data: {
         userId: user.id, petId,
         content: (content ?? '').trim(), stage, week: currentWeek, day: currentDay + 1,
-        letterType, imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
+        imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
         ...(questionId ? { questionId } : {}),
         ...(emotionTag ? { emotionTag } : {}),
       },
