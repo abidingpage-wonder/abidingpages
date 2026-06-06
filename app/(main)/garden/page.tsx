@@ -45,8 +45,8 @@ function getRadialPosition(index: number, heroH: number, heroW: number) {
   }
 
   // transform: translate(-50%, -50%) 로 텍스트 중앙 정렬이므로
-  // 텍스트 반너비(최대 ~70px)만큼 여유를 둬야 잘리지 않음
-  const xPad = 72
+  // 텍스트 반너비(최대 ~85px)만큼 여유를 둬야 잘리지 않음
+  const xPad = 90
   const yPad = 20
   return {
     x: Math.max(xPad, Math.min(heroW - xPad, raw.x)),
@@ -154,12 +154,7 @@ function MemorialCard({
             }}>
               {pet.name}
             </div>
-            {pet.ownerNickname && (
-              <div style={{
-                fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--lav-500)',
-              }}>의 {pet.ownerNickname}</div>
-            )}
-          </div>
+            </div>
           <div style={{
             marginTop: 5, fontFamily: 'var(--font-sans)', fontSize: 11,
             fontWeight: 500, color: 'var(--lav-600)', letterSpacing: '0.04em',
@@ -189,25 +184,33 @@ function MemorialCard({
           const count = kind === 'candle' ? candle : kind === 'flower' ? flower : heart
           const sent = myStickers.includes(kind)
           const icon = kind === 'candle' ? '/icons/candle.webp' : kind === 'flower' ? '/icons/flower.webp' : '/icons/heart-cream.webp'
+          const isEmpty = count === 0
           return (
             <button
               key={kind}
               onClick={() => onSticker(kind)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 10px 5px 7px', borderRadius: 20,
-                background: sent ? 'rgba(166,133,199,0.18)' : 'rgba(255,255,255,0.4)',
-                border: sent ? '0.5px solid rgba(166,133,199,0.45)' : '0.5px solid rgba(166,133,199,0.2)',
+                display: 'flex', alignItems: 'center', gap: isEmpty ? 2 : 4,
+                padding: isEmpty ? '5px 9px 5px 7px' : '5px 10px 5px 7px', borderRadius: 20,
+                background: sent ? 'rgba(166,133,199,0.18)' : isEmpty ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.4)',
+                border: sent ? '0.5px solid rgba(166,133,199,0.45)' : isEmpty ? '0.5px dashed rgba(166,133,199,0.4)' : '0.5px solid rgba(166,133,199,0.2)',
                 boxShadow: '0 1px 4px rgba(86,52,140,0.04)',
-                cursor: 'pointer',
+                cursor: 'pointer', opacity: isEmpty ? 0.75 : 1,
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={icon} alt="" width={20} height={20} style={{ objectFit: 'contain' }}/>
-              <span style={{
-                fontFamily: 'var(--font-sans)', fontSize: 11.5,
-                fontWeight: 600, color: 'var(--lav-700)',
-              }}>{count}</span>
+              <img src={icon} alt="" width={20} height={20} style={{ objectFit: 'contain', opacity: isEmpty ? 0.6 : 1 }}/>
+              {isEmpty ? (
+                <span style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 10,
+                  fontWeight: 700, color: 'var(--lav-500)', lineHeight: 1,
+                }}>+</span>
+              ) : (
+                <span style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 11.5,
+                  fontWeight: 600, color: 'var(--lav-700)',
+                }}>{count}</span>
+              )}
             </button>
           )
         })}
@@ -247,17 +250,29 @@ export default function GardenPage() {
     return () => ro.disconnect()
   }, [])
 
-  // 초기 데이터 로드
+  // 초기 데이터 로드 + 20초 자동 폴링
   useEffect(() => {
-    fetch('/api/garden')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (!d) return
-        if (d.pets?.length) setPets(d.pets)
-        if (d.messages) setMessages(d.messages)
-        if (d.messageCount !== undefined) setMessageCount(d.messageCount)
-      })
-      .catch(() => {})
+    function loadGarden() {
+      fetch('/api/garden')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (!d) return
+          if (d.pets?.length) setPets(d.pets)
+          if (d.messages) {
+            setMessages(prev => {
+              // 새 메시지가 있을 때만 교체 (id 비교)
+              const prevIds = new Set(prev.map(m => m.id))
+              const hasNew = d.messages.some((m: GardenMessage) => !prevIds.has(m.id))
+              return hasNew ? d.messages : prev
+            })
+          }
+          if (d.messageCount !== undefined) setMessageCount(d.messageCount)
+        })
+        .catch(() => {})
+    }
+    loadGarden()
+    const interval = setInterval(loadGarden, 20000)
+    return () => clearInterval(interval)
   }, [])
 
   function showToast(msg: string) {
@@ -304,6 +319,18 @@ export default function GardenPage() {
   }
 
   async function handleSticker(petId: string, type: 'candle' | 'flower' | 'heart') {
+    // 낙관적 업데이트 (즉시 UI 반영)
+    setPets(prev => prev.map(p => {
+      if (p.id !== petId || p.myStickers.includes(type)) return p
+      return {
+        ...p,
+        candle: type === 'candle' ? p.candle + 1 : p.candle,
+        flower: type === 'flower' ? p.flower + 1 : p.flower,
+        heart:  type === 'heart'  ? p.heart  + 1 : p.heart,
+        stickerSenders: p.stickerSenders + 1,
+        myStickers: [...p.myStickers, type],
+      }
+    }))
     try {
       const res = await fetch('/api/garden/sticker', {
         method: 'POST',
@@ -311,7 +338,8 @@ export default function GardenPage() {
         body: JSON.stringify({ petId, stickerType: type }),
       })
       const data = await res.json()
-      if (res.ok) {
+      if (res.ok && data.stickers) {
+        // 서버 응답으로 정확한 값 동기화
         setPets(prev => prev.map(p => {
           if (p.id !== petId) return p
           return {
@@ -320,7 +348,6 @@ export default function GardenPage() {
             flower: data.stickers.flower,
             heart: data.stickers.heart,
             stickerSenders: data.stickerSenders,
-            myStickers: [...new Set([...p.myStickers, type])],
           }
         }))
       }

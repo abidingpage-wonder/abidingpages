@@ -15,6 +15,13 @@ export async function POST(req: NextRequest) {
 
     let userId: string
 
+    // DEV 모드: mock petId (mock-으로 시작)는 DB 없이 가상 응답 반환
+    if (process.env.DEV_BYPASS_AUTH === 'true' && petId.startsWith('mock-')) {
+      const mockBase: Record<string, number> = { candle: 10, flower: 5, heart: 3 }
+      mockBase[stickerType] = mockBase[stickerType] + 1
+      return NextResponse.json({ ok: true, stickers: mockBase, stickerSenders: 19 })
+    }
+
     if (process.env.DEV_BYPASS_AUTH === 'true') {
       const devUser = await prisma.user.findFirst()
       if (!devUser) return NextResponse.json({ error: 'No dev user' }, { status: 400 })
