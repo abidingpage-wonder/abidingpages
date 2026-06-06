@@ -106,6 +106,7 @@ function fmtDate(iso: string) {
 
 // ── 메인 페이지 ──────────────────────────────────────────────────
 export default function ArchivePage() {
+  const router = useRouter()
   const [data, setData]         = useState<ArchiveData | null>(null)
   const [loading, setLoading]   = useState(true)
   const [tab, setTab]           = useState<'timeline' | 'photos'>('timeline')
@@ -208,8 +209,10 @@ export default function ArchivePage() {
 
       {/* ── 추모관 카드 ── */}
       <div style={{ padding: '14px 16px 0' }}>
-        <div style={{
-          padding: '16px 16px 14px', borderRadius: 20,
+        <div
+          onClick={() => router.push(`/garden/${data.pet.id}`)}
+          style={{
+          padding: '16px 16px 14px', borderRadius: 20, cursor: 'pointer',
           backgroundColor: '#e8e0f0',
           backgroundImage: [
             'radial-gradient(ellipse at 10% 0%, rgba(255,255,255,0.72), transparent 55%)',
@@ -327,7 +330,7 @@ export default function ArchivePage() {
                 ] as const).filter(s => s.count > 0).map(s => (
                   <button
                     key={s.key}
-                    onClick={() => handleSticker(s.key === 'heart-cream' ? 'heart' : s.key as 'candle' | 'flower')}
+                    onClick={e => { e.stopPropagation(); handleSticker(s.key === 'heart-cream' ? 'heart' : s.key as 'candle' | 'flower') }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 4,
                       padding: '5px 10px 5px 7px', borderRadius: 20,

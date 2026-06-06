@@ -319,7 +319,7 @@ export default function GardenPage() {
   }
 
   async function handleSticker(petId: string, type: 'candle' | 'flower' | 'heart') {
-    // 낙관적 업데이트 (즉시 UI 반영)
+    // 낙관적 업데이트 (stickerSenders는 첫 스티커일 때만 +1)
     setPets(prev => prev.map(p => {
       if (p.id !== petId || p.myStickers.includes(type)) return p
       return {
@@ -327,7 +327,7 @@ export default function GardenPage() {
         candle: type === 'candle' ? p.candle + 1 : p.candle,
         flower: type === 'flower' ? p.flower + 1 : p.flower,
         heart:  type === 'heart'  ? p.heart  + 1 : p.heart,
-        stickerSenders: p.stickerSenders + 1,
+        stickerSenders: p.myStickers.length === 0 ? p.stickerSenders + 1 : p.stickerSenders,
         myStickers: [...p.myStickers, type],
       }
     }))
@@ -360,7 +360,7 @@ export default function GardenPage() {
     : PLACEHOLDERS.map((t, i) => ({ id: `ph${i}`, content: t, createdAt: '' }))
 
   return (
-    <div style={{ minHeight: '100%', background: '#F0EBF4', fontFamily: 'var(--font-sans)' }}>
+    <div style={{ minHeight: '100%', background: '#d9ccdf', fontFamily: 'var(--font-sans)' }}>
       <style>{`
         @keyframes gardenTwinkle {
           0%,100% { opacity:1; filter:brightness(1); }
@@ -447,8 +447,8 @@ export default function GardenPage() {
         {/* CARDS PANEL */}
         <div style={{
           marginTop: -18, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-          background: '#F0EBF4', padding: '20px 16px 18px',
-          position: 'relative', zIndex: 2, minHeight: 340,
+          background: '#d9ccdf', padding: '20px 16px 18px',
+          position: 'relative', zIndex: 2, minHeight: 'calc(100dvh - 422px)',
         }}>
           {/* 섹션 타이틀 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 14 }}>
@@ -492,7 +492,7 @@ export default function GardenPage() {
       <div style={{
         position: 'fixed', left: 0, right: 0, bottom: 86,
         padding: '10px 12px 8px', zIndex: 5,
-        background: 'linear-gradient(180deg, rgba(240,235,244,0) 0%, #F0EBF4 45%)',
+        background: 'transparent',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1, position: 'relative' }}>
@@ -524,13 +524,17 @@ export default function GardenPage() {
             onClick={handlePost}
             disabled={posting || !inputText.trim()}
             style={{
-              height: 40, padding: '0 15px', borderRadius: 20, border: 'none',
-              background: '#8F44D0', color: '#fff', fontWeight: 700, fontSize: 12,
-              fontFamily: 'var(--font-sans)', cursor: 'pointer', letterSpacing: '-0.01em',
-              whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(143,68,208,0.4)',
+              width: 40, height: 40, borderRadius: '50%', border: 'none',
+              background: '#8F44D0', cursor: 'pointer', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(143,68,208,0.4)',
               opacity: posting || !inputText.trim() ? 0.55 : 1,
             }}
-          >보내기</button>
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
         </div>
       </div>
 

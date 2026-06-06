@@ -10,7 +10,7 @@ interface TopBarProps {
 export default function TopBar({ petName, dayCount }: TopBarProps) {
   const pathname = usePathname()
   // 정원 페이지: hero 위에 투명하게 오버레이
-  const isGarden = pathname === '/garden'
+  const isGarden = pathname.startsWith('/garden')
 
   return (
     <header

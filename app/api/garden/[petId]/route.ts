@@ -21,6 +21,33 @@ export async function GET(
       userId = user.id
     }
 
+    // DEV 모드: mock petId 처리
+    if (process.env.DEV_BYPASS_AUTH === 'true' && petId.startsWith('mock-')) {
+      return NextResponse.json({
+        pet: {
+          id: petId,
+          name: '순탄이',
+          species: 'dog',
+          breed: '말티즈',
+          bornAt: '2014-03-12',
+          diedAt: '2024-05-20',
+          profileImageUrl: null,
+          ownerNickname: '엄마',
+          firstWord: '언제나 내 마음속에 따뜻하게 머물러 있어',
+          togetherDays: 3650,
+          commentAllowed: true,
+        },
+        stickers: { candle: 10, flower: 5, heart: 3 },
+        stickerSenders: 18,
+        myStickers: [],
+        comments: [
+          { id: 'c1', content: '순탄아, 보고 싶어. 잘 지내고 있지?', createdAt: new Date(Date.now() - 86400000).toISOString(), authorLabel: '하늘이·엄마', isOwner: true },
+          { id: 'c2', content: '따뜻한 곳에서 잘 쉬고 있기를 바라요 🕯️', createdAt: new Date(Date.now() - 172800000).toISOString(), authorLabel: '별이·아빠', isOwner: false },
+        ],
+        daysSince: Math.floor((Date.now() - new Date('2024-05-20').getTime()) / 86400000) + 1,
+      })
+    }
+
     const pet = await prisma.pet.findUnique({
       where: { id: petId },
       select: {
@@ -56,7 +83,7 @@ export async function GET(
         orderBy: { createdAt: 'desc' },
         take: 50,
         select: {
-          id: true, content: true, createdAt: true,
+          id: true, content: true, createdAt: true, userId: true,
           user: {
             select: {
               activePetId: true,
@@ -82,6 +109,7 @@ export async function GET(
         content: c.content,
         createdAt: c.createdAt.toISOString(),
         authorLabel,
+        isOwner: userId ? c.userId === userId : false,
       }
     })
 
