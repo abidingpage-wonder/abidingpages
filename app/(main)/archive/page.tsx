@@ -122,6 +122,11 @@ export default function ArchivePage() {
 
   async function handleSticker(type: 'candle' | 'flower' | 'heart') {
     if (!data?.pet?.id) return
+    // 낙관적 업데이트
+    setData(prev => prev ? {
+      ...prev,
+      stickers: { ...prev.stickers, [type]: prev.stickers[type] + 1 },
+    } : prev)
     try {
       const res = await fetch('/api/garden/sticker', {
         method: 'POST',
@@ -129,11 +134,11 @@ export default function ArchivePage() {
         body: JSON.stringify({ petId: data.pet.id, stickerType: type }),
       })
       const d = await res.json()
-      if (res.ok) {
+      if (res.ok && d.stickers) {
+        // 해당 type만 서버 값으로 교정
         setData(prev => prev ? {
           ...prev,
-          stickers: d.stickers,
-          stickerSenders: d.stickerSenders,
+          stickers: { ...prev.stickers, [type]: d.stickers[type] },
         } : prev)
       }
     } catch {}
@@ -327,32 +332,33 @@ export default function ArchivePage() {
                   { key: 'candle',      icon: '/icons/candle.webp',      count: stickers.candle },
                   { key: 'flower',      icon: '/icons/flower.webp',      count: stickers.flower },
                   { key: 'heart-cream', icon: '/icons/heart-cream.webp', count: stickers.heart  },
-                ] as const).filter(s => s.count > 0).map(s => (
+                ] as const).map(s => (
                   <button
                     key={s.key}
                     onClick={e => { e.stopPropagation(); handleSticker(s.key === 'heart-cream' ? 'heart' : s.key as 'candle' | 'flower') }}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '5px 10px 5px 7px', borderRadius: 20,
-                      background: 'rgba(255,255,255,0.4)',
-                      border: '0.5px solid rgba(166,133,199,0.2)',
+                      display: 'flex', alignItems: 'center', gap: s.count === 0 ? 2 : 4,
+                      padding: s.count === 0 ? '5px 9px 5px 7px' : '5px 10px 5px 7px', borderRadius: 20,
+                      background: s.count === 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.4)',
+                      border: s.count === 0 ? '0.5px dashed rgba(166,133,199,0.4)' : '0.5px solid rgba(166,133,199,0.2)',
                       boxShadow: '0 1px 4px rgba(86,52,140,0.04)',
-                      cursor: 'pointer',
+                      cursor: 'pointer', opacity: s.count === 0 ? 0.75 : 1,
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.icon} alt="" width={20} height={20} style={{ objectFit: 'contain' }}/>
-                    <span style={{
-                      fontFamily: 'var(--font-sans)', fontSize: 11.5,
-                      fontWeight: 600, color: 'var(--lav-700)',
-                    }}>{s.count}</span>
+                    <img src={s.icon} alt="" width={20} height={20} style={{ objectFit: 'contain', opacity: s.count === 0 ? 0.6 : 1 }}/>
+                    {s.count === 0 ? (
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, color: 'var(--lav-500)' }}>+</span>
+                    ) : (
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11.5, fontWeight: 600, color: 'var(--lav-700)' }}>{s.count}</span>
+                    )}
                   </button>
                 ))}
                 <span style={{
                   fontFamily: 'var(--font-sans)', fontSize: 11.5,
                   color: '#9b8bb0', whiteSpace: 'nowrap',
                 }}>
-                  · {stickerSenders}명이 마음을 전했어요
+                  · {stickers.candle + stickers.flower + stickers.heart}개의 마음이 전해졌어요
                 </span>
               </div>
             </div>
