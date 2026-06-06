@@ -67,6 +67,7 @@ function StageCard({
         border: isDoing ? `1.5px solid ${color}` : '0.5px solid rgba(166,133,199,0.18)',
         boxShadow: isDoing ? `0 6px 20px ${color}33` : '0 2px 8px rgba(86,52,140,0.04)',
         cursor: isLocked ? 'default' : 'pointer',
+        opacity: isLocked ? 0.52 : 1,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

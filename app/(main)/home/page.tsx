@@ -142,7 +142,7 @@ export default async function HomePage() {
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10.5, color: '#7a4f30', marginTop: 1 }}>&apos;49일의 여정&apos; 시작하기 ›</div>
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#5a3722', fontWeight: 600, whiteSpace: 'nowrap' }}>플랜 안내</div>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#5a3722', fontWeight: 600, whiteSpace: 'nowrap' }}>플랜 안내 </div>
         </div>
       </div>
 

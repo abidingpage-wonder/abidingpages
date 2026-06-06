@@ -10,4 +10,7 @@ const datasourceUrl = process.env.DIRECT_URL || process.env.DATABASE_URL
 export default defineConfig({
   schema: path.join('prisma', 'schema.prisma'),
   ...(datasourceUrl ? { datasource: { url: datasourceUrl } } : {}),
+  migrations: {
+    seed: 'npx ts-node --compiler-options {"module":"CommonJS"} prisma/seed.ts',
+  },
 })

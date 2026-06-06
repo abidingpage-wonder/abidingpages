@@ -4,8 +4,11 @@ import { prisma } from '@/lib/prisma'
 import LetterEditor from './_components/LetterEditor'
 
 interface Props {
-  searchParams: Promise<{ emotion?: string }>
+  searchParams: Promise<{ emotion?: string; questionId?: string; free?: string }>
 }
+
+const WEEK_TOTAL_NON_REST = 6
+const MAX_WEEK = 7
 
 // ── 개발용 목업 ────────────────────────────────────────────────────────
 const DEV_MOCK = {
@@ -15,17 +18,41 @@ const DEV_MOCK = {
 }
 // ──────────────────────────────────────────────────────────────────────
 
-export default async function LetterPage({ searchParams }: Props) {
-  const { emotion } = await searchParams
+async function checkJourneyCompleted(petId: string, week: number): Promise<boolean> {
+  if (week < MAX_WEEK) return false
+  const restIds = (await prisma.question.findMany({
+    where: { week: MAX_WEEK, isRest: true }, select: { id: true },
+  })).map(q => q.id)
+  const week7Letters = await prisma.letter.findMany({
+    where: { petId, week: MAX_WEEK, questionId: { not: null } },
+    select: { questionId: true },
+  })
+  const uniqueNonRest = new Set(week7Letters.map(l => l.questionId!).filter(id => !restIds.includes(id)))
+  return uniqueNonRest.size >= WEEK_TOTAL_NON_REST
+}
 
-  // DEV_BYPASS_AUTH=true 이면 목업으로 바로 렌더
+export default async function LetterPage({ searchParams }: Props) {
+  const { emotion, questionId, free } = await searchParams
+  const freeEntry = free === '1'
+
+  // DEV_BYPASS_AUTH=true 이면 DB에서 여정 상태 조회 후 렌더
   if (process.env.DEV_BYPASS_AUTH === 'true') {
+    const devPet = await prisma.pet.findFirst({ select: { id: true, name: true } })
+    const devJourney = devPet
+      ? await prisma.journeyProgress.findUnique({ where: { petId: devPet.id }, select: { currentWeek: true, currentDay: true } })
+      : null
+    const devWeek = devJourney?.currentWeek ?? DEV_MOCK.week
+    const devDay  = devJourney?.currentDay  ?? DEV_MOCK.day
+    const devJourneyCompleted = devPet ? await checkJourneyCompleted(devPet.id, devWeek) : false
     return (
       <LetterEditor
-        petName={DEV_MOCK.petName}
-        week={DEV_MOCK.week}
-        day={DEV_MOCK.day}
+        petName={devPet?.name ?? DEV_MOCK.petName}
+        week={devWeek}
+        day={devDay}
         emotionTag={emotion ?? null}
+        initialQuestionId={questionId ?? null}
+        journeyCompleted={devJourneyCompleted}
+        freeEntry={freeEntry}
       />
     )
   }
@@ -53,6 +80,7 @@ export default async function LetterPage({ searchParams }: Props) {
 
   const week = journey?.currentWeek ?? 1
   const day  = journey?.currentDay  ?? 1
+  const journeyCompleted = await checkJourneyCompleted(pet.id, week)
 
   return (
     <LetterEditor
@@ -60,6 +88,9 @@ export default async function LetterPage({ searchParams }: Props) {
       week={week}
       day={day}
       emotionTag={emotion ?? null}
+      initialQuestionId={questionId ?? null}
+      journeyCompleted={journeyCompleted}
+      freeEntry={freeEntry}
     />
   )
 }

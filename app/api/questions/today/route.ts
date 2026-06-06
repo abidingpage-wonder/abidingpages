@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // ── DEV 목업 질문 풀 (질문 바꾸기 순환용) ─────────────────────────────────
 const DEV_QUESTIONS = [
   {
@@ -48,15 +50,72 @@ const DEV_QUESTIONS = [
 // ── GET /api/questions/today ───────────────────────────────────────────────
 export async function GET(req: Request) {
   try {
-    // 질문 바꾸기 시 현재 표시 중인 질문 제외
     const { searchParams } = new URL(req.url)
-    const excludeId = searchParams.get('excludeId')
+    const excludeId  = searchParams.get('excludeId')
+    const questionId = searchParams.get('questionId')  // 특정 질문 직접 조회
+    const randomWeek = searchParams.get('randomWeek')  // 해당 week 랜덤 조회 (질문 바꾸기)
 
-    // DEV 우회 — excludeId 기반으로 다음 질문 순환
+    // DEV 우회 — 인증 없이 DB에서 직접 조회
     if (process.env.DEV_BYPASS_AUTH === 'true') {
-      const available = DEV_QUESTIONS.filter(q => q.id !== excludeId)
-      const next = available[0] ?? DEV_QUESTIONS[0]
-      return NextResponse.json(next)
+      // 특정 questionId 직접 조회
+      if (questionId) {
+        const q = await prisma.question.findUnique({
+          where: { id: questionId },
+          select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
+        })
+        if (q) {
+          const weekGuide = await prisma.weekGuide.findUnique({ where: { week: q.week }, select: { keyword: true, title: true } })
+          return NextResponse.json({ ...q, weekGuide, fromDb: true })
+        }
+      }
+
+      // 질문 바꾸기: randomWeek 기준 전체 7개에서 랜덤 (현재 포함, 중복 가능)
+      if (randomWeek) {
+        const targetWeek = parseInt(randomWeek)
+        const candidates = await prisma.question.findMany({
+          where: { week: targetWeek },
+          select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
+        })
+        const pick = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null
+        if (pick) {
+          const weekGuide = await prisma.weekGuide.findUnique({ where: { week: pick.week }, select: { keyword: true, title: true } })
+          return NextResponse.json({ ...pick, weekGuide, fromDb: true })
+        }
+        return NextResponse.json(DEV_QUESTIONS[0])
+      }
+
+      // 직접 진입: 현재 주차 미완료 질문 순서대로
+      const devPet = await prisma.pet.findFirst({ select: { id: true } })
+      const devJourney = devPet
+        ? await prisma.journeyProgress.findUnique({ where: { petId: devPet.id }, select: { currentWeek: true } })
+        : null
+      const devWeek = devJourney?.currentWeek ?? 1
+      const devAnswered = devPet
+        ? (await prisma.letter.findMany({ where: { petId: devPet.id, week: devWeek, questionId: { not: null } }, select: { questionId: true } })).map(l => l.questionId!)
+        : []
+      const devNext = await prisma.question.findFirst({
+        where: {
+          week: devWeek, isRest: false,
+          ...(devAnswered.length > 0 ? { id: { notIn: devAnswered } } : {}),
+        },
+        orderBy: { orderIndex: 'asc' },
+        select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
+      })
+      if (devNext) {
+        const weekGuide = await prisma.weekGuide.findUnique({ where: { week: devNext.week }, select: { keyword: true, title: true } })
+        return NextResponse.json({ ...devNext, weekGuide, fromDb: true, allAnswered: false })
+      }
+      // 이번 주 질문 모두 완료 → day1 (orderIndex 최소) 기본 반환
+      const devFirstQ = await prisma.question.findFirst({
+        where: { week: devWeek, isRest: false },
+        orderBy: { orderIndex: 'asc' },
+        select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
+      })
+      if (devFirstQ) {
+        const weekGuide = await prisma.weekGuide.findUnique({ where: { week: devFirstQ.week }, select: { keyword: true, title: true } })
+        return NextResponse.json({ ...devFirstQ, weekGuide, fromDb: true, allAnswered: true })
+      }
+      return NextResponse.json({ allAnswered: true, week: devWeek })
     }
 
     const supabase = await createClient()
@@ -76,6 +135,34 @@ export async function GET(req: Request) {
     })
     if (!pet) return NextResponse.json({ error: 'Pet not found' }, { status: 404 })
 
+    // questionId 직접 지정 시 해당 질문 바로 반환
+    if (questionId) {
+      const q = await prisma.question.findUnique({
+        where: { id: questionId },
+        select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
+      })
+      if (q) {
+        const weekGuide = await prisma.weekGuide.findUnique({ where: { week: q.week }, select: { keyword: true, title: true } })
+        const content = q.content.replace(/\{petName\}/g, pet.name)
+        return NextResponse.json({ ...q, content, weekGuide, fromDb: true })
+      }
+    }
+
+    // randomWeek 지정 시 해당 week 전체에서 랜덤 반환 (질문 바꾸기)
+    if (randomWeek) {
+      const targetWeek = parseInt(randomWeek)
+      const candidates = await prisma.question.findMany({
+        where: { week: targetWeek },
+        select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
+      })
+      const pick = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null
+      if (pick) {
+        const weekGuide = await prisma.weekGuide.findUnique({ where: { week: pick.week }, select: { keyword: true, title: true } })
+        const content = pick.content.replace(/\{petName\}/g, pet.name)
+        return NextResponse.json({ ...pick, content, weekGuide, fromDb: true })
+      }
+    }
+
     // 현재 여정 진행 상태
     const journey = await prisma.journeyProgress.findUnique({
       where:  { petId: pet.id },
@@ -92,13 +179,12 @@ export async function GET(req: Request) {
     const answeredIds = answeredLetters.map(l => l.questionId!)
 
     // 미답변 비쉼표 질문 중 orderIndex 가장 작은 것
-    // excludeId: 현재 보고 있는 질문 제외 (질문 바꾸기 기능)
-    const excludeIds = [...answeredIds, ...(excludeId ? [excludeId] : [])]
+    // 직접 진입: 미답변 비쉼표 질문 순서대로 (excludeId 무시)
     const nextQuestion = await prisma.question.findFirst({
       where: {
         week:   currentWeek,
         isRest: false,
-        ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
+        ...(answeredIds.length > 0 ? { id: { notIn: answeredIds } } : {}),
       },
       orderBy: { orderIndex: 'asc' },
     })
@@ -109,28 +195,34 @@ export async function GET(req: Request) {
       select: { keyword: true, title: true },
     })
 
-    // 미답변 일반 질문 없음 → 쉼표 질문 반환
+    // 미답변 일반 질문 없음 → day1 (orderIndex 최소) 기본 반환 (allAnswered: true 포함)
     if (!nextQuestion) {
-      const restQuestion = await prisma.question.findFirst({
-        where:   { week: currentWeek, isRest: true },
+      const firstQuestion = await prisma.question.findFirst({
+        where: { week: currentWeek, isRest: false },
         orderBy: { orderIndex: 'asc' },
       })
-      return NextResponse.json({
-        id:        restQuestion?.id ?? null,
-        content:   restQuestion?.content ?? null,
-        category:  restQuestion?.category ?? null,
-        hintText:  restQuestion?.hintText ?? null,
-        restGuide: restQuestion?.restGuide ?? null,
-        isRest:    true,
-        week:      currentWeek,
-        day:       restQuestion?.day ?? 7,
-        orderIndex: restQuestion?.orderIndex ?? null,
-        weekGuide,
-        fromDb:    !!restQuestion,
-      })
+      if (firstQuestion) {
+        const firstContent = firstQuestion.content.replace(/\{petName\}/g, pet.name)
+        return NextResponse.json({
+          id:         firstQuestion.id,
+          content:    firstContent,
+          category:   firstQuestion.category,
+          hintText:   firstQuestion.hintText,
+          restGuide:  null,
+          isRest:     false,
+          week:       currentWeek,
+          day:        firstQuestion.day,
+          orderIndex: firstQuestion.orderIndex,
+          completedCount,
+          weekGuide,
+          fromDb:     true,
+          allAnswered: true,
+        })
+      }
+      return NextResponse.json({ allAnswered: true, week: currentWeek })
     }
 
-    // 일반 질문 반환 (petName 치환)
+    // 미답변 질문 반환 (petName 치환)
     const content = nextQuestion.content.replace(/\{petName\}/g, pet.name)
 
     return NextResponse.json({

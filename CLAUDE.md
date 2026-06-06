@@ -63,30 +63,47 @@
 
 ---
 
-## 현재 Sprint — Sprint 8: 무지개정원
+### Sprint 8 — 추모 정원 (기완료)
 
-### 목표
-공개 추모 커뮤니티 공간 — 전광판 메시지 + 아이 카드 리스트 + 스티커 + 한 줄 입력창
+**파일**:
+- `app/(main)/garden/page.tsx` — 추모 정원 메인 (전광판 + 카드 패널 + 입력바)
+- `app/(main)/garden/[petId]/page.tsx` — 추모관 상세 페이지
+- `app/(main)/archive/page.tsx` — 추모관 카드 스티커 연결 + 상세 페이지 이동
+- `app/api/garden/route.ts` — 정원 데이터 API
+- `app/api/garden/[petId]/route.ts` — 추모관 상세 API (mock 포함)
+- `app/api/garden/[petId]/comment/[commentId]/route.ts` — 댓글 수정/삭제
+- `app/api/garden/sticker/route.ts` — 스티커 API (타입별 독립 카운트)
+- `app/api/archive/route.ts` — 보관함 API (petId: mock-pet-suntan 통일)
+- `components/layout/TopBar.tsx` — `/garden/*` 투명 헤더
 
-### Task 목록
-- [x] **8-1. 정원 메인 페이지** (`app/(main)/garden/page.tsx`)
-  - Hero: `garden-night.png` 배경, 떠다니는 메시지 twinkle 애니메이션, "23명" 배너
-  - 카드 패널: borderTopRadius 24, 아이 카드 리스트
-  - 하단 고정 입력바: 텍스트 입력 + "전광판에 올리기" 버튼
-- [ ] **8-2. API 라우트**
-  - `GET /api/garden` — gardenPublic=true 펫 + 스티커 집계
-  - `POST /api/garden/message` — 전광판 메시지 등록
-  - `POST /api/garden/sticker` — 스티커 전송
+**구현 내용**:
+- Hero: `garden-night.png` 배경 (full-bleed, marginTop: -72), 전광판 메시지 twinkle 애니메이션, 20s 폴링
+- 카드 패널: `background: #d9ccdf`, 추모관 카드 리스트 (스티커 + 클릭 → 상세)
+- 추모관 카드: `background: #e8e0f0`, 캔버스 질감 제거, radial-gradient만 유지
+- 스티커: `candle/flower/heart` 타입별 독립 (`@@unique([fromUserId, toPetId, stickerType])`), 클릭 시 해당 타입만 서버 응답으로 업데이트
+- `N개의 마음이 전해졌어요` = `candle + flower + heart` 총합
+- 스티커 0개일 때 `+` 배지 (dashed border)
+- 추모관 상세 페이지: garden-night.png 동일 구조, 카드 투명 오버레이(흰색 텍스트), 댓글 패널
+- 댓글: 본인 글 `···` 메뉴 → 인라인 수정 / 삭제 (`isOwner` 서버사이드 판별)
+- 입력바: `bottom: 86`, 종이비행기 SVG 전송 버튼, `마음 한 줄` 섹션명
+- DEV mock: `petId.startsWith('mock-')` → `mock-pet-suntan` 통일 (garden/archive/sticker API 모두)
+- 보관함 → 추모관 상세 연결: 카드 클릭 → `router.push('/garden/mock-pet-suntan')`
 
-### DB 모델 (schema에 이미 존재)
-- `GardenMessage`: id, userId, content, isHidden, createdAt
-- `GardenSticker`: id, fromUserId, toPetId, stickerType, createdAt (unique [fromUserId, toPetId, stickerType])
-- `Pet.gardenPublic: Boolean @default(true)`
+**여정 탭 추가**:
+- 잠긴 주차 카드(2~7주) `opacity: 0.52` 적용
 
-### 디자인 참조
-- `v2-garden-v3.jsx` 함수: `V2GardenV3()`, `GardenHero()`, `GardenChildCard()`
-- 배경: `public/garden-night.png`
-- 색상: bg `#1C0F2E`, primary `#8F44D0`, accent `#FEBE98`, cards panel `#F0EBF4`
+**DB 모델**:
+- `GardenMessage`, `GardenSticker`, `GardenComment` (Prisma)
+- `GardenComment`: `PATCH/DELETE /api/garden/[petId]/comment/[commentId]`
+
+---
+
+## 현재 Sprint — Sprint 9: (미정)
+
+### 다음 작업 후보
+- 내정보 페이지 (온보딩 내용 수정)
+- 편지쓰기 개선
+- 실제 DB 연동 (DEV_BYPASS_AUTH 제거)
 
 ---
 

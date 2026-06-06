@@ -104,8 +104,6 @@ function MemorialCard({
         backgroundImage: [
           'radial-gradient(ellipse at 10% 0%, rgba(255,255,255,0.72), transparent 55%)',
           'radial-gradient(circle at 80% 85%, rgba(140,110,190,0.14), transparent 45%)',
-          'repeating-linear-gradient(43deg,  rgba(100,70,160,0.03) 0 1px, transparent 1px 3px)',
-          'repeating-linear-gradient(133deg, rgba(100,70,160,0.025) 0 1px, transparent 1px 3px)',
         ].join(', '),
         border: '0.5px solid rgba(166,133,199,0.35)',
         boxShadow: '0 3px 14px rgba(86,52,140,0.1), inset 0 0.5px 0 rgba(255,255,255,0.5)',

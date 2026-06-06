@@ -1,6 +1,15 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
+import { config as loadDotenv } from 'dotenv'
+import path from 'path'
 
-const prisma = new PrismaClient()
+loadDotenv({ path: path.resolve(process.cwd(), '.env.local') })
+
+const connectionString = (process.env.DIRECT_URL || process.env.DATABASE_URL)!
+const pool = new Pool({ connectionString })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 // ── 주차별 안내문 (7개) ────────────────────────────────────────────────────
 const WEEK_GUIDES = [
@@ -56,8 +65,8 @@ const QUESTIONS = [
     content: '아이를 처음 내 품에 안았던 날, 아이가 나에게 주었던 첫인상은 어땠나요?' },
   { week: 1, day: 6, orderIndex: 6,  category: '우리가 처음 자석처럼 끌린 날', isRest: false, restGuide: null,
     content: '아이가 간식을 기다릴 때 지었던 가장 엉뚱하고 웃긴 표정은 무엇이었나요?' },
-  { week: 1, day: 7, orderIndex: 7,  category: '쉼표 — 온기 속에 가만히 눕기', isRest: true,
-    content: '아이에게 하고 싶은 말이 있다면 자유롭게 적어도 좋아요.',
+  { week: 1, day: 7, orderIndex: 7,  category: '온기 속에 가만히 눕기', isRest: true,
+    content: '오늘은 질문이 없습니다. 글을 쓰지 않아도 괜찮습니다. 아이가 가장 좋아하던 자리에 가만히 앉아보거나, 함께 듣던 조용한 음악을 한 곡 들어보세요. 어떤 생각이나 감정이 흘러가든 그저 가만히 머물러봅니다.',
     restGuide: '오늘은 질문이 없습니다. 글을 쓰지 않아도 괜찮습니다. 아이가 가장 좋아하던 자리에 가만히 앉아보거나, 함께 듣던 조용한 음악을 한 곡 들어보세요. 어떤 생각이나 감정이 흘러가든 그저 가만히 머물러봅니다.' },
 
   // 2주차: 쏟아냄
@@ -73,8 +82,8 @@ const QUESTIONS = [
     content: '아이만 가졌던 독특하고 귀여운 습관이나, 내 관심을 끌기 위해 했던 엉뚱한 행동은 무엇인가요?' },
   { week: 2, day: 6, orderIndex: 13, category: '소란스러웠던 우리의 행복', isRest: false, restGuide: null,
     content: '아이가 사고뭉치처럼 굴어서 당황시키거나, 크게 웃게 만들었던 가장 기억에 남는 사건은 무엇인가요?' },
-  { week: 2, day: 7, orderIndex: 14, category: '쉼표 — 눈물의 방 청소',   isRest: true,
-    content: '여전히 쏟아내고 싶은 말이 남아있다면, 이곳에 자유롭게 낙서하듯 적어주셔도 괜찮습니다.',
+  { week: 2, day: 7, orderIndex: 14, category: '눈물의 방 청소',   isRest: true,
+    content: '이번 한 주 동안 세상의 가면을 벗고 슬픔을 쏟아내느라 참 고생 많으셨습니다. 오늘은 글을 쓰는 창을 잠시 닫아두셔도 좋습니다. 따뜻한 물로 샤워를 하거나 맑은 공기를 마시며, 눈물로 가득했던 마음을 다정하게 토닥여주세요.',
     restGuide: '이번 한 주 동안 세상의 가면을 벗고 슬픔을 쏟아내느라 참 고생 많으셨습니다. 오늘은 글을 쓰는 창을 잠시 닫아두셔도 좋습니다. 따뜻한 물로 샤워를 하거나 맑은 공기를 마시며, 눈물로 가득했던 마음을 다정하게 토닥여주세요.' },
 
   // 3주차: 마주함
@@ -90,8 +99,8 @@ const QUESTIONS = [
     content: '아이가 집에 큰 사고를 쳤거나, 고집을 부릴 때 피우던 가장 귀엽고 엉뚱한 심술은 무엇이었나요?' },
   { week: 3, day: 6, orderIndex: 20, category: '귀여운 심술의 기억',        isRest: false, restGuide: null,
     content: '아이의 얼굴이나 몸 중에서 유난히 좋아해서 자꾸만 만지고 냄새 맡았던 \'최애 부위(킬링 포인트)\'는 어디였나요?' },
-  { week: 3, day: 7, orderIndex: 21, category: '쉼표 — 무거운 짐을 잠시 내려놓는 밤', isRest: true,
-    content: null,
+  { week: 3, day: 7, orderIndex: 21, category: '무거운 짐을 잠시 내려놓는 밤', isRest: true,
+    content: '마음속 가장 아픈 고백들을 꺼내어놓느라 온몸에 힘이 다 빠지셨을 것입니다. 오늘은 글을 쓰지 않아도 괜찮습니다. 손을 가슴 위에 얹고 천천히 깊은숨을 세 번 쉬어보세요. 그리고 스스로에게 말해주세요. "너는 그때 할 수 있는 최선을 다했어."',
     restGuide: '마음속 가장 아픈 고백들을 꺼내어놓느라 온몸에 힘이 다 빠지셨을 것입니다. 오늘은 글을 쓰지 않아도 괜찮습니다. 손을 가슴 위에 얹고 천천히 깊은숨을 세 번 쉬어보세요. 그리고 스스로에게 말해주세요. "너는 그때 할 수 있는 최선을 다했어."' },
 
   // 4주차: 기억함
@@ -107,8 +116,8 @@ const QUESTIONS = [
     content: '아이가 사람 말을 다 알아듣는 것처럼 행동했거나, 사람처럼 굴어서 깜짝 놀라게 했던 영리한 순간은 언제였나요?' },
   { week: 4, day: 6, orderIndex: 27, category: '사람보다 더 사람 같던 날',   isRest: false, restGuide: null,
     content: '만약 아이가 사람으로 태어났다면, 그 성격과 성향상 어떤 직업이 가장 잘 어울렸을 것 같나요?' },
-  { week: 4, day: 7, orderIndex: 28, category: '쉼표 — 미안함의 수레바퀴 멈추기', isRest: true,
-    content: null,
+  { week: 4, day: 7, orderIndex: 28, category: '미안함의 수레바퀴 멈추기', isRest: true,
+    content: '"미안해"를 "고마워"로 바꾸어 보는 위대한 용기를 내어주셨습니다. 오늘은 글을 쓰는 대신, 사진첩에서 아이가 가장 편안하게 쉬고 있는 사진 한 장을 가만히 응시해 보세요. 그리고 마음속으로 나지막이 읊조려봅니다. "나에게 와줘서 고마웠어, 내 천사."',
     restGuide: '"미안해"를 "고마워"로 바꾸어 보는 위대한 용기를 내어주셨습니다. 오늘은 글을 쓰는 대신, 사진첩에서 아이가 가장 편안하게 쉬고 있는 사진 한 장을 가만히 응시해 보세요. 그리고 마음속으로 나지막이 읊조려봅니다. "나에게 와줘서 고마웠어, 내 천사."' },
 
   // 5주차: 연결됨
@@ -124,8 +133,8 @@ const QUESTIONS = [
     content: '우리 아이가 살아생전 가지고 있었던, 다른 동물들은 절대 흉내 낼 수 없는 나만 아는 \'천재적인 능력\'이나 독특한 장기는 무엇이었나요?' },
   { week: 5, day: 6, orderIndex: 34, category: '아이가 남긴 흔적들',         isRest: false, restGuide: null,
     content: '길을 걷다 우연히 아이와 유난히 닮은 인형, 캐릭터, 혹은 다른 동물을 발견하고 나도 모르게 미소 지었던 순간이 있었나요?' },
-  { week: 5, day: 7, orderIndex: 35, category: '쉼표 — 향기 속에서 숨 고르기', isRest: true,
-    content: null,
+  { week: 5, day: 7, orderIndex: 35, category: '향기 속에서 숨 고르기', isRest: true,
+    content: '이번 주는 물건을 정리하고 공간을 만지며 마음의 에너지를 많이 쓰셨을 것입니다. 오늘은 글을 쓰는 창을 잠시 닫아두셔도 좋습니다. 아이의 추모 공간 앞에 가만히 앉아 따뜻한 향초나 인센스를 피워보세요. 연기가 피어오르듯, 내 마음에 가득했던 무거운 그리움도 머물다 흘러가도록 내버려 둡니다.',
     restGuide: '이번 주는 물건을 정리하고 공간을 만지며 마음의 에너지를 많이 쓰셨을 것입니다. 오늘은 글을 쓰는 창을 잠시 닫아두셔도 좋습니다. 아이의 추모 공간 앞에 가만히 앉아 따뜻한 향초나 인센스를 피워보세요. 연기가 피어오르듯, 내 마음에 가득했던 무거운 그리움도 머물다 흘러가도록 내버려 둡니다.' },
 
   // 6주차: 다독임
@@ -141,8 +150,8 @@ const QUESTIONS = [
     content: '명절, 생일, 혹은 유난히 추웠던 겨울날 아이에게 옷을 입혔거나 귀여운 액세서리를 해주었을 때, 아이가 보여준 반응이나 가장 웃긴 사진의 비하인드 스토리는 무엇인가요?' },
   { week: 6, day: 6, orderIndex: 41, category: '패셔니스타의 추억',       isRest: false, restGuide: null,
     content: '아이가 자면서 냈던 방구 소리, 웅얼거리던 잠꼬대, 혹은 드르렁 골던 코 고는 소리 중 가장 그리운 \'귀여운 소음\'은 무엇인가요?' },
-  { week: 6, day: 7, orderIndex: 42, category: '쉼표 — 나에게 주는 위로의 한 끼', isRest: true,
-    content: null,
+  { week: 6, day: 7, orderIndex: 42, category: '나에게 주는 위로의 한 끼', isRest: true,
+    content: '나를 돌보는 일은 아이를 잊어가는 과정이 아니라, 아이가 남긴 사랑을 책임감 있게 지켜내는 일입니다. 오늘은 오직 나만을 위한 다정한 하루를 보내세요. 나를 진심으로 이해해 주는 소중한 사람과 짧은 통화를 나누거나, 좋아하는 책을 읽고, 좋아하는 음식을 천천히 음미해 봅니다.',
     restGuide: '나를 돌보는 일은 아이를 잊어가는 과정이 아니라, 아이가 남긴 사랑을 책임감 있게 지켜내는 일입니다. 오늘은 오직 나만을 위한 다정한 하루를 보내세요. 나를 진심으로 이해해 주는 소중한 사람과 짧은 통화를 나누거나, 좋아하는 책을 읽고, 좋아하는 음식을 천천히 음미해 봅니다.' },
 
   // 7주차: 간직함
@@ -158,8 +167,8 @@ const QUESTIONS = [
     content: '이제 나의 마음속 방에 영원히 입주한 우리 아이에게, 앞으로 부를 \'새로운 비밀 별명\'을 지어준다면 무엇인가요? (예: 나의 수호천사, 든든한 빽, 마음속 귀요미)' },
   { week: 7, day: 6, orderIndex: 48, category: '영원한 수호천사와의 약속',   isRest: false, restGuide: null,
     content: '앞으로 일상을 살아가다 문득 아이가 보고 싶을 때, 슬퍼하는 대신 아이를 기리기 위해 하늘을 보며 지어줄 \'나만의 시그니처 미소나 제스처\'를 정해볼까요?' },
-  { week: 7, day: 7, orderIndex: 49, category: '쉼표 — 우리의 추억북 발행',  isRest: true,
-    content: null,
+  { week: 7, day: 7, orderIndex: 49, category: '우리의 추억북 발행',  isRest: true,
+    content: '직접 적어 내려간 눈물과 미소의 기록들, 그리고 아이의 사진들이 한 권의 추억북으로 발간되었습니다. 마음이 흔들릴 때 언제든 이 책을 열어보세요. 슬픔을 정면으로 마주했던 그 위대한 용기의 기록이, 앞으로의 삶을 지탱해 줄 단단한 힘이 되어줄 것입니다. "우리는 깊이 사랑했어. 그리고 앞으로도 계속 함께할 거야."',
     restGuide: '직접 적어 내려간 눈물과 미소의 기록들, 그리고 아이의 사진들이 한 권의 추억북으로 발간되었습니다. 마음이 흔들릴 때 언제든 이 책을 열어보세요. 슬픔을 정면으로 마주했던 그 위대한 용기의 기록이, 앞으로의 삶을 지탱해 줄 단단한 힘이 되어줄 것입니다. "우리는 깊이 사랑했어. 그리고 앞으로도 계속 함께할 거야."' },
 ] as const
 

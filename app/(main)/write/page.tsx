@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // ── 감정 데이터 ──────────────────────────────────────────────────────
 interface Emotion {
@@ -29,6 +29,8 @@ const EMOTIONS: Emotion[] = [
 
 export default function EmotionSelectPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isFree = searchParams.get('free') === '1'
   const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -44,7 +46,7 @@ export default function EmotionSelectPage() {
         })
       }
     } catch { /* 저장 실패해도 진행 */ }
-    router.push(`/write/letter?emotion=${selected}`)
+    router.push(`/write/letter?emotion=${selected}${isFree ? '&free=1' : ''}`)
   }
 
   return (
@@ -201,6 +203,7 @@ export default function EmotionSelectPage() {
           {loading ? '잠시만요...' : '편지 쓰러 가기'}
         </button>
       </div>
+
     </div>
   )
 }

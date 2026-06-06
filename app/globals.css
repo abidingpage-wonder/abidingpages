@@ -158,6 +158,7 @@ body {
 @keyframes replyDimOut { from { opacity: 1; } to { opacity: 0; } }
 
 .reply-scroll::-webkit-scrollbar { display: none; }
+.letter-text-scroll::-webkit-scrollbar { display: none; }
 .reply-letter-text {
   font-family: 'YoonChildfundManSeh', 'Nanum Pen Script', cursive !important;
 }
