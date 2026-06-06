@@ -13,40 +13,62 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'content_too_long' }, { status: 400 })
     }
 
-    let userId: string
-
+    // ── DEV 모드 ──────────────────────────────────────────────────
     if (process.env.DEV_BYPASS_AUTH === 'true') {
-      const devUser = await prisma.user.findFirst()
-      if (!devUser) return NextResponse.json({ error: 'No dev user' }, { status: 400 })
-      userId = devUser.id
-    } else {
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const devUser = await prisma.user.findFirst({ select: { id: true } })
+      if (!devUser) {
+        // DB에 유저 없으면 mock 응답 반환 (실제 저장 없음)
+        return NextResponse.json({
+          id:   `mock-${Date.now()}`,
+          content: content.trim(),
+          createdAt: new Date().toISOString(),
+          remainingToday: 2,
+        })
+      }
 
-      const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
-      if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-      userId = dbUser.id
+      // 오늘 3회 제한
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+      const todayCount = await prisma.gardenMessage.count({
+        where: { userId: devUser.id, createdAt: { gte: todayStart } },
+      })
+      if (todayCount >= 3) {
+        return NextResponse.json({ error: 'daily_limit' }, { status: 429 })
+      }
+
+      const msg = await prisma.gardenMessage.create({
+        data: { userId: devUser.id, content: content.trim(), isHidden: false },
+        select: { id: true, content: true, createdAt: true },
+      })
+      return NextResponse.json({
+        id: msg.id, content: msg.content,
+        createdAt: msg.createdAt.toISOString(),
+        remainingToday: 2 - todayCount,
+      })
     }
 
+    // ── 인증 ──────────────────────────────────────────────────────
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
+    if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
     // 오늘 3회 제한
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
     const todayCount = await prisma.gardenMessage.count({
-      where: { userId, createdAt: { gte: todayStart } },
+      where: { userId: dbUser.id, createdAt: { gte: todayStart } },
     })
     if (todayCount >= 3) {
       return NextResponse.json({ error: 'daily_limit' }, { status: 429 })
     }
 
     const msg = await prisma.gardenMessage.create({
-      data: { userId, content: content.trim(), isHidden: false },
+      data: { userId: dbUser.id, content: content.trim(), isHidden: false },
       select: { id: true, content: true, createdAt: true },
     })
-
     return NextResponse.json({
-      id: msg.id,
-      content: msg.content,
+      id: msg.id, content: msg.content,
       createdAt: msg.createdAt.toISOString(),
       remainingToday: 2 - todayCount,
     })

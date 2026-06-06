@@ -28,16 +28,27 @@ interface PetCard {
   myStickers: string[]
 }
 
-// ── 방사형 위치 계산 ───────────────────────────────────────────────
+// ── 방사형 위치 계산 (겹침 최소화) ───────────────────────────────
+// 황금각 나선 + 반지름 스텝 확대 + 경계 클램핑
 function getRadialPosition(index: number, heroH: number, heroW: number) {
-  if (index === 0) return { x: heroW / 2, y: heroH * 0.42 }
-  const angleRad = (index * GOLDEN_ANGLE * Math.PI) / 180
-  const radius = Math.min(index * 30, heroW * 0.44)
   const cx = heroW / 2
-  const cy = heroH * 0.42
-  return {
+  const cy = heroH * 0.40   // 중심을 약간 위로
+  if (index === 0) return { x: cx, y: cy }
+
+  const angleRad = (index * GOLDEN_ANGLE * Math.PI) / 180
+  // 반지름: 최소 45px에서 시작해 index당 38px씩 증가, 최대 heroW*0.46
+  const radius = Math.min(45 + (index - 1) * 38, heroW * 0.46)
+
+  const raw = {
     x: cx + Math.cos(angleRad) * radius,
-    y: cy + Math.sin(angleRad) * radius * 0.7, // 세로 압축
+    y: cy + Math.sin(angleRad) * radius * 0.68,  // 세로 압축 (화면 비율)
+  }
+
+  // 경계 안으로 클램핑 (텍스트 잘림 방지)
+  const pad = 28
+  return {
+    x: Math.max(pad, Math.min(heroW - pad, raw.x)),
+    y: Math.max(pad + 10, Math.min(heroH - 80, raw.y)),  // 하단 배너 피하기
   }
 }
 
@@ -427,7 +438,7 @@ export default function GardenPage() {
               textAlign: 'center', padding: '40px 20px',
               fontFamily: 'var(--font-sans)', fontSize: 13, color: '#9b8bb0',
             }}>
-              아직 공개된 추모관이 없어요
+              아직 공개된 아이가 없어요
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -446,11 +457,11 @@ export default function GardenPage() {
           )}
         </div>
 
-        <div style={{ height: 150 }} />
+        <div style={{ height: 170 }} />
 
-      {/* BOTTOM INPUT */}
+      {/* BOTTOM INPUT — BottomNav(bottom:12 + height≈62) 위에 배치 */}
       <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 74,
+        position: 'fixed', left: 0, right: 0, bottom: 86,
         padding: '10px 12px 8px', zIndex: 5,
         background: 'linear-gradient(180deg, rgba(240,235,244,0) 0%, #F0EBF4 45%)',
       }}>
@@ -490,14 +501,14 @@ export default function GardenPage() {
               whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(143,68,208,0.4)',
               opacity: posting || !inputText.trim() ? 0.55 : 1,
             }}
-          >전광판에 올리기</button>
+          >보내기</button>
         </div>
       </div>
 
       {/* TOAST */}
       {toast && (
         <div style={{
-          position: 'fixed', bottom: 130, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 148, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(28,15,46,0.88)', color: '#fff', borderRadius: 20,
           padding: '9px 18px', fontSize: 12.5, fontFamily: 'var(--font-sans)',
           whiteSpace: 'nowrap', zIndex: 20,
