@@ -218,7 +218,7 @@ function MemorialCard({
           fontFamily: 'var(--font-sans)', fontSize: 11.5,
           color: '#9b8bb0', whiteSpace: 'nowrap',
         }}>
-          · {stickerSenders}명이 마음을 전했어요
+          · {candle + flower + heart}개의 마음이 전해졌어요
         </span>
       </div>
     </div>
@@ -339,16 +339,10 @@ export default function GardenPage() {
       })
       const data = await res.json()
       if (res.ok && data.stickers) {
-        // 서버 응답으로 정확한 값 동기화
+        // 해당 type만 서버 값으로 교정 (다른 스티커 카운트 덮어쓰기 방지)
         setPets(prev => prev.map(p => {
           if (p.id !== petId) return p
-          return {
-            ...p,
-            candle: data.stickers.candle,
-            flower: data.stickers.flower,
-            heart: data.stickers.heart,
-            stickerSenders: data.stickerSenders,
-          }
+          return { ...p, [type]: data.stickers[type] }
         }))
       }
     } catch {}

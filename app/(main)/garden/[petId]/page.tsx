@@ -94,7 +94,11 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
       })
       const d = await res.json()
       if (res.ok && d.stickers) {
-        setData(prev => prev ? { ...prev, stickers: d.stickers, stickerSenders: d.stickerSenders } : prev)
+        // 해당 type만 서버 값으로 교정 (다른 스티커 카운트 덮어쓰기 방지)
+        setData(prev => prev ? {
+          ...prev,
+          stickers: { ...prev.stickers, [type]: d.stickers[type] },
+        } : prev)
       }
     } catch {}
   }
@@ -317,11 +321,11 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
               )
             })}
           </div>
-          {/* 마음 전한 사람 수 — 스티커 아래 별도 줄 */}
+          {/* 마음 총합 — 스티커 아래 별도 줄 */}
           <div style={{
             marginTop: 8, fontFamily: 'var(--font-sans)', fontSize: 11.5,
             color: 'rgba(200,180,230,0.85)',
-          }}>· {stickerSenders}명이 마음을 전했어요</div>
+          }}>· {stickers.candle + stickers.flower + stickers.heart}개의 마음이 전해졌어요</div>
         </div>
       </div>
 
