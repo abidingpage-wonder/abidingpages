@@ -320,10 +320,7 @@ export default function GardenPage() {
     : PLACEHOLDERS.map((t, i) => ({ id: `ph${i}`, content: t, createdAt: '' }))
 
   return (
-    <div style={{
-      width: '100%', height: '100%', position: 'relative', overflow: 'hidden',
-      background: '#F0EBF4', fontFamily: 'var(--font-sans)', color: '#fff',
-    }}>
+    <div style={{ minHeight: '100%', background: '#F0EBF4', fontFamily: 'var(--font-sans)' }}>
       <style>{`
         @keyframes gardenTwinkle {
           0%,100% { opacity:1; filter:brightness(1); }
@@ -335,42 +332,8 @@ export default function GardenPage() {
         }
       `}</style>
 
-      <div className="no-scrollbar" style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
-
-        {/* TOP BAR */}
-        <div style={{
-          padding: '14px 18px 8px', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', position: 'relative', zIndex: 3,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-8.5z"
-                    stroke="#f3e8de" strokeWidth="1.4" strokeLinejoin="round"/>
-            </svg>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{
-                fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 800,
-                color: '#f3e8de', letterSpacing: '-0.02em', whiteSpace: 'nowrap',
-              }}>추모 정원</span>
-              <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.04em' }}>커뮤니티</span>
-            </div>
-          </div>
-          <div style={{
-            padding: '5px 11px 5px 9px', borderRadius: 999,
-            border: '0.8px solid rgba(243,232,222,0.35)',
-            display: 'flex', alignItems: 'center', gap: 5,
-            fontSize: 10.5, color: '#f3e8de', fontWeight: 500,
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <rect x="3.5" y="6" width="17" height="13" rx="2" stroke="#FEBE98" strokeWidth="1.4"/>
-              <path d="M12 16s-3.5-2.2-3.5-5A2 2 0 0 1 12 9a2 2 0 0 1 3.5 2c0 2.8-3.5 5-3.5 5z" fill="#FEBE98"/>
-            </svg>
-            마음 보관함
-          </div>
-        </div>
-
-        {/* HERO — 방사형 전광판 */}
-        <div ref={heroRef} style={{ position: 'relative', height: 440, overflow: 'hidden' }}>
+        {/* HERO — 방사형 전광판 (TopBar 높이만큼 위로 올려 full-bleed) */}
+        <div ref={heroRef} style={{ position: 'relative', height: 440, overflow: 'hidden', marginTop: -72 }}>
           <img src="/garden-night.png" alt="" style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
             objectFit: 'cover', objectPosition: 'top center',
@@ -484,11 +447,10 @@ export default function GardenPage() {
         </div>
 
         <div style={{ height: 150 }} />
-      </div>
 
       {/* BOTTOM INPUT */}
       <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 74,
+        position: 'fixed', left: 0, right: 0, bottom: 74,
         padding: '10px 12px 8px', zIndex: 5,
         background: 'linear-gradient(180deg, rgba(240,235,244,0) 0%, #F0EBF4 45%)',
       }}>
@@ -535,7 +497,7 @@ export default function GardenPage() {
       {/* TOAST */}
       {toast && (
         <div style={{
-          position: 'absolute', bottom: 130, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 130, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(28,15,46,0.88)', color: '#fff', borderRadius: 20,
           padding: '9px 18px', fontSize: 12.5, fontFamily: 'var(--font-sans)',
           whiteSpace: 'nowrap', zIndex: 20,

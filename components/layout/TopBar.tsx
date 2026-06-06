@@ -1,11 +1,17 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
+
 interface TopBarProps {
   petName: string
   dayCount: number
 }
 
 export default function TopBar({ petName, dayCount }: TopBarProps) {
+  const pathname = usePathname()
+  // 정원 페이지: hero 위에 투명하게 오버레이
+  const isGarden = pathname === '/garden'
+
   return (
     <header
       style={{
@@ -19,9 +25,10 @@ export default function TopBar({ petName, dayCount }: TopBarProps) {
         justifyContent: 'space-between',
         padding: '14px 20px 10px',
         minHeight: 64,
-        background: 'rgba(243,238,246,0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: isGarden ? 'transparent' : 'rgba(243,238,246,0.92)',
+        backdropFilter: isGarden ? 'none' : 'blur(16px)',
+        WebkitBackdropFilter: isGarden ? 'none' : 'blur(16px)',
+        transition: 'background 0.3s ease',
       }}
     >
       {/* 브랜드 로고 */}
@@ -29,28 +36,16 @@ export default function TopBar({ petName, dayCount }: TopBarProps) {
         style={{
           fontFamily: 'var(--font-brand)',
           fontSize: 22,
-          color: 'var(--lav-700)',
+          color: isGarden ? 'rgba(243,232,222,0.9)' : 'var(--lav-700)',
           letterSpacing: '0.02em',
           lineHeight: 1,
+          transition: 'color 0.3s ease',
         }}
       >
         Abiding
       </div>
 
-      {/* 날짜 카운터 */}
-      <div
-        style={{
-          flex: 1,
-          textAlign: 'center',
-          fontFamily: 'var(--font-sans)',
-          fontSize: 12.5,
-          color: 'var(--lav-600)',
-          fontWeight: 500,
-          letterSpacing: '-0.01em',
-        }}
-      >
-        {petName}{(() => { const c = petName[petName.length-1]?.charCodeAt(0) ?? 0; return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0) ? '과' : '와' })()}  함께한 {dayCount}번째 날
-      </div>
+      <div style={{ flex: 1 }} />
 
       {/* 공유 버튼 */}
       <button
@@ -58,23 +53,24 @@ export default function TopBar({ petName, dayCount }: TopBarProps) {
           width: 36,
           height: 36,
           borderRadius: '50%',
-          background: 'rgba(255,255,255,0.82)',
+          background: isGarden ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.82)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: '0.5px solid rgba(86,52,140,0.12)',
+          border: isGarden ? '0.5px solid rgba(255,255,255,0.15)' : '0.5px solid rgba(86,52,140,0.12)',
           boxShadow: '0 2px 8px rgba(86,52,140,0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
+          transition: 'background 0.3s ease',
         }}
         aria-label="공유"
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-          <circle cx="18" cy="5" r="3" stroke="var(--lav-600)" strokeWidth="1.7"/>
-          <circle cx="6" cy="12" r="3" stroke="var(--lav-600)" strokeWidth="1.7"/>
-          <circle cx="18" cy="19" r="3" stroke="var(--lav-600)" strokeWidth="1.7"/>
-          <path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" stroke="var(--lav-600)" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="18" cy="5" r="3" stroke={isGarden ? 'rgba(243,232,222,0.85)' : 'var(--lav-600)'} strokeWidth="1.7"/>
+          <circle cx="6" cy="12" r="3" stroke={isGarden ? 'rgba(243,232,222,0.85)' : 'var(--lav-600)'} strokeWidth="1.7"/>
+          <circle cx="18" cy="19" r="3" stroke={isGarden ? 'rgba(243,232,222,0.85)' : 'var(--lav-600)'} strokeWidth="1.7"/>
+          <path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" stroke={isGarden ? 'rgba(243,232,222,0.85)' : 'var(--lav-600)'} strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </button>
     </header>
