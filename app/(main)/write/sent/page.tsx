@@ -60,10 +60,8 @@ function SentContent() {
     }).catch(() => {})
   }, [letterId])
 
-  async function handleRequestNotif() {
-    if (typeof Notification === 'undefined') return
-    const result = await Notification.requestPermission()
-    setNotifGranted(result === 'granted')
+  function handleRequestNotif() {
+    router.push('/settings/notifications')
   }
 
   return (

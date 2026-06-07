@@ -132,7 +132,7 @@ export default function ProfilePage() {
         <div style={{ marginTop: 16, fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'var(--ink-400)', letterSpacing: '0.08em', marginBottom: 8, paddingLeft: 4 }}>
           앱 설정
         </div>
-        <MenuItem icon="🔔" label="알림 설정" sub="준비 중"/>
+        <MenuItem icon="🔔" label="알림 설정" onClick={() => router.push('/settings/notifications')}/>
         <MenuItem icon="🐾" label="아이 정보 수정" sub="준비 중"/>
         <MenuItem icon="📞" label="문의하기" sub="준비 중"/>
         <MenuItem icon="🚪" label="탈퇴하기" sub="준비 중"/>
