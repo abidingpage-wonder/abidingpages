@@ -34,7 +34,12 @@ export function usePushSubscription() {
   }, [])
 
   // SW 등록 + 구독 요청
-  async function subscribe(): Promise<boolean> {
+  async function subscribe(settings?: {
+    notifHour?: number
+    notifMinute?: number
+    notifAmpm?: string
+    notifDays?: string
+  }): Promise<boolean> {
     if (!VAPID_PUBLIC_KEY) {
       console.warn('[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY not set')
       return false
@@ -53,7 +58,7 @@ export function usePushSubscription() {
         return false
       }
 
-      // 3. Push 구독
+      // 3. Push 구독 (이미 구독 중이면 기존 구독 반환)
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
@@ -63,7 +68,7 @@ export function usePushSubscription() {
       const authKey = sub.getKey('auth')
       if (!key || !authKey) throw new Error('Invalid subscription keys')
 
-      // 4. 서버에 저장
+      // 4. 서버에 저장 (시간 설정 포함)
       await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,6 +76,7 @@ export function usePushSubscription() {
           endpoint: sub.endpoint,
           p256dh: btoa(String.fromCharCode(...new Uint8Array(key))),
           auth: btoa(String.fromCharCode(...new Uint8Array(authKey))),
+          ...settings,
         }),
       })
 

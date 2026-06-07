@@ -235,12 +235,16 @@ model GardenComment {
 }
 
 model PushSubscription {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  notifHour   Int      @default(9)    @map("notif_hour")
+  notifMinute Int      @default(0)    @map("notif_minute")
+  notifAmpm   String   @default("오전") @map("notif_ampm")
+  notifDays   String   @default("1111111") @map("notif_days") // Mon~Sun, '1'=on
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id])
 

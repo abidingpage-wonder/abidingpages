@@ -2,33 +2,54 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
-// POST /api/push/subscribe — 구독 등록
+async function resolveUserId(): Promise<string | null> {
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    const u = await prisma.user.findFirst({ select: { id: true } })
+    return u?.id ?? null
+  }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id ?? null
+}
+
+// GET /api/push/subscribe — 현재 구독 설정 조회
+export async function GET() {
+  try {
+    const userId = await resolveUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const sub = await prisma.pushSubscription.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { notifHour: true, notifMinute: true, notifAmpm: true, notifDays: true },
+    })
+
+    return NextResponse.json({ subscription: sub ?? null })
+  } catch (err) {
+    console.error('[GET /api/push/subscribe]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// POST /api/push/subscribe — 구독 등록 (시간 설정 포함)
 export async function POST(req: NextRequest) {
   try {
-    const { endpoint, p256dh, auth } = await req.json()
+    const {
+      endpoint, p256dh, auth,
+      notifHour = 9, notifMinute = 0, notifAmpm = '오전', notifDays = '1111111',
+    } = await req.json()
 
     if (!endpoint || !p256dh || !auth) {
       return NextResponse.json({ error: 'subscription_required' }, { status: 400 })
     }
 
-    let userId: string
+    const userId = await resolveUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (process.env.DEV_BYPASS_AUTH === 'true') {
-      const devUser = await prisma.user.findFirst({ select: { id: true } })
-      if (!devUser) return NextResponse.json({ error: 'No dev user' }, { status: 400 })
-      userId = devUser.id
-    } else {
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      userId = user.id
-    }
-
-    // endpoint 기준 upsert (같은 기기 재구독 허용)
     await prisma.pushSubscription.upsert({
       where: { endpoint },
-      create: { userId, endpoint, p256dh, auth },
-      update: { userId, p256dh, auth },
+      create: { userId, endpoint, p256dh, auth, notifHour, notifMinute, notifAmpm, notifDays },
+      update: { userId, p256dh, auth, notifHour, notifMinute, notifAmpm, notifDays },
     })
 
     return NextResponse.json({ ok: true })

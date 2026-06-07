@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sunrise, Sun, Moon } from 'lucide-react'
 import { usePushSubscription } from '@/hooks/usePushSubscription'
@@ -142,6 +142,34 @@ export default function NotificationsPage() {
   const [sheet, setSheet]             = useState(false)
   const [done, setDone]               = useState(false)
 
+  // 마운트 시 기존 알림 설정 불러와 UI 복원
+  useEffect(() => {
+    fetch('/api/push/subscribe')
+      .then(r => r.json())
+      .then(({ subscription }) => {
+        if (!subscription) return
+        const { notifHour, notifMinute, notifAmpm, notifDays } = subscription
+
+        // 빠른 설정 3개와 매칭되는지 확인
+        const matched = QUICK_PRESETS.find(
+          p => p.h === notifHour && p.m === notifMinute && p.ampm === notifAmpm
+        )
+        if (matched) {
+          setSelectedKey(matched.k)
+        } else {
+          setSelectedKey('custom')
+          setCustomTime({ h: notifHour, m: notifMinute, ampm: notifAmpm })
+          setCustomSet(true)
+        }
+
+        // 요일 복원
+        if (notifDays && notifDays.length === 7) {
+          setDays(notifDays.split('').map((c: string) => c === '1'))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   function toggleDay(i: number) {
     setDays((d) => d.map((v, idx) => (idx === i ? !v : v)))
   }
@@ -165,8 +193,24 @@ export default function NotificationsPage() {
   }
 
   async function handleSetNotif() {
-    if (!selectedKey) return
-    const ok = await subscribe()
+    if (!picked) return
+
+    // 현재 선택된 시간 결정
+    const preset = QUICK_PRESETS.find(p => p.k === selectedKey)
+    const activeTime = preset
+      ? { h: preset.h, m: preset.m, ampm: preset.ampm }
+      : customTime
+
+    const notifDays = days.map(v => v ? '1' : '0').join('')
+
+    const settings = {
+      notifHour:   activeTime.h,
+      notifMinute: activeTime.m,
+      notifAmpm:   activeTime.ampm,
+      notifDays,
+    }
+
+    const ok = await subscribe(settings)
     if (ok || subscribed) setDone(true)
   }
 
@@ -182,9 +226,10 @@ export default function NotificationsPage() {
 
   // ── 완료 화면 ──────────────────────────────────────────────────────────
   if (done) {
-    const label = selectedKey === 'custom'
-      ? fmtTime(customTime.h, customTime.m, customTime.ampm)
-      : QUICK_PRESETS.find(p => p.k === selectedKey)?.timeLabel ?? ''
+    const preset = QUICK_PRESETS.find(p => p.k === selectedKey)
+    const label = preset
+      ? preset.timeLabel
+      : fmtTime(customTime.h, customTime.m, customTime.ampm)
 
     return (
       <div style={{
