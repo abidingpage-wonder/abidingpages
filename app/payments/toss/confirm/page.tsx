@@ -95,8 +95,14 @@ function ConfirmInner() {
       background: 'linear-gradient(180deg, #f7f3fb 0%, #ece4f3 100%)',
       padding: '0 24px', gap: 10, textAlign: 'center',
     }}>
-      {/* 파티클 효과 — 간단한 이모지 버전 */}
-      <div style={{ fontSize: 52, marginBottom: 8 }}>🌸</div>
+      {/* 어바이딩 로고 아이콘 */}
+      <div style={{
+        width: 80, height: 80, borderRadius: 22,
+        overflow: 'hidden', marginBottom: 8,
+        boxShadow: '0 8px 28px rgba(86,52,140,0.18)',
+      }}>
+        <img src="/icons/icon-192x192.png" alt="Abiding" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
       <div style={{
         fontFamily: 'var(--font-serif)', fontSize: 24, fontWeight: 500,
         color: 'var(--lav-800)', lineHeight: 1.5, letterSpacing: '-0.02em',

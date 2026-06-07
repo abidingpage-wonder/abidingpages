@@ -79,10 +79,10 @@ export default function PlanPage() {
         {/* 인트로 */}
         <div style={{ padding: '24px 28px 0', textAlign: 'center' }}>
           <div style={{
-            fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 500,
+            fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 500,
             color: 'var(--lav-800)', lineHeight: 1.55, letterSpacing: '-0.02em',
           }}>
-            아이와 끝까지<br/>함께하는 여정
+            아이와 함께하는 여정
           </div>
           <div style={{
             marginTop: 10, fontFamily: 'var(--font-sans)', fontSize: 12.5,
@@ -236,11 +236,16 @@ export default function PlanPage() {
         <div style={{
           margin: '20px 20px 0',
           padding: '14px 16px', borderRadius: 14,
-          background: 'rgba(255,255,255,0.55)', border: '0.5px solid rgba(166,133,199,0.15)',
+          background: 'linear-gradient(135deg, rgba(253,222,202,0.45), rgba(245,196,167,0.3))',
+          border: '0.5px solid rgba(249,156,105,0.25)',
         }}>
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--ink-500)', lineHeight: 1.7 }}>
-            ⚠️ Abiding은 AI 기반 감정 동행 서비스로, <strong>전문 심리치료나 의료 서비스를 대체하지 않습니다.</strong><br/>
-            심리적 어려움이 심각하다면 전문가 상담을 권합니다.
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>🌿</span>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11.5, color: '#7a4f30', lineHeight: 1.75 }}>
+              Abiding은 AI 기반 감정 동행 서비스로,{' '}
+              <strong style={{ color: '#c0622a' }}>전문 심리치료나 의료 서비스를 대체하지 않습니다.</strong><br/>
+              심리적 어려움이 심각하다면 전문가 상담을 권합니다.
+            </div>
           </div>
         </div>
 
