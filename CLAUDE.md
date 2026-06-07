@@ -153,14 +153,38 @@
 - profile/page.tsx → 알림 설정 메뉴 연결
 - write/sent/page.tsx → 도착 알림 받기 버튼 → 알림 설정 페이지 이동
 
-**미완료 (설정 필요)**:
-- Supabase Edge Function Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`
-- `supabase functions deploy generate-reply`
-- Supabase SQL: `ALTER TABLE push_subscriptions ADD COLUMN notif_hour/minute/ampm/days`
+**배포 완료**:
+- Supabase Edge Function Secrets 등록 (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`)
+- `supabase functions deploy generate-reply` 완료
+- Supabase SQL: `push_subscriptions` 알림 시간 컬럼 추가 완료
 
 ---
 
-## 현재 Sprint — Sprint 11: 설정 / 내정보 고도화
+### Sprint 11 — 설정 / 내정보 고도화 (기완료)
+
+**파일**:
+- `app/(main)/profile/page.tsx` — 메뉴 구조 전면 재편 (4섹션)
+- `app/(main)/settings/pet/page.tsx` — 아이 정보 수정 (추모정원 공개 설정 포함)
+- `app/(main)/settings/payments/page.tsx` — 결제 내역 + 플랜 카드
+- `app/(main)/settings/install/page.tsx` — PWA 홈화면 추가 안내 (iOS/Android)
+- `app/(main)/settings/withdraw/page.tsx` — 회원탈퇴 (soft delete 플로우)
+- `app/api/pets/me/route.ts` — 현재 유저 activePet 반환
+- `app/api/pets/[id]/route.ts` — 펫 GET/PATCH
+- `app/api/payments/history/route.ts` — 결제 내역 + 플랜 상태
+- `app/api/users/withdraw/route.ts` — soft delete POST
+
+**구현 내용**:
+- 내정보 4섹션: 아이의 정보 / 알림 & 앱 / 결제 & 플랜 / 계정
+- 로그아웃: `supabase.auth.signOut()` → `/login`
+- 문의하기: `mailto:abiding.pages26@gmail.com`
+- 회원탈퇴: 이유 선택 + 체크박스 동의 + 최종 확인 모달 → soft delete → signOut
+- `users.deleted_at TIMESTAMPTZ` 컬럼 추가 (Supabase SQL 완료)
+
+---
+
+## 다음 Sprint — Sprint 12: 테스트 & 최종 배포
+
+테스트 완료 후 진행 예정.
 
 ---
 
