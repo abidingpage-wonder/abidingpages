@@ -123,27 +123,30 @@ export default async function HomePage() {
     <div style={{ paddingBottom: 8 }}>
       {/* 무료 3일 체험 배너 */}
       <div style={{ padding: '12px 18px 0' }}>
-        <div style={{
-          padding: '10px 14px', borderRadius: 14,
-          background: 'linear-gradient(96deg, #faddca, #f5c4a7)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          border: '0.5px solid rgba(249,156,105,0.3)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--peach-500)', fontSize: 13 }}>3</span>
+        <a href="/plan" style={{ textDecoration: 'none' }}>
+          <div style={{
+            padding: '10px 14px', borderRadius: 14,
+            background: 'linear-gradient(96deg, #faddca, #f5c4a7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            border: '0.5px solid rgba(249,156,105,0.3)',
+            cursor: 'pointer',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, color: 'var(--peach-500)', fontSize: 13 }}>3</span>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#5a3722' }}>무료 3일 체험 중</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10.5, color: '#7a4f30', marginTop: 1 }}>&apos;49일의 여정&apos; 시작하기 ›</div>
+              </div>
             </div>
-            <div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#5a3722' }}>무료 3일 체험 중</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10.5, color: '#7a4f30', marginTop: 1 }}>&apos;49일의 여정&apos; 시작하기 ›</div>
-            </div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#5a3722', fontWeight: 600, whiteSpace: 'nowrap' }}>플랜 안내 </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#5a3722', fontWeight: 600, whiteSpace: 'nowrap' }}>플랜 안내 </div>
-        </div>
+        </a>
       </div>
 
       {/* ── 상태 메인 카드 ── */}
