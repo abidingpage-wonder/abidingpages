@@ -16,6 +16,7 @@ model User {
   activePetId    String?   @map("active_pet_id") @db.Uuid
   onboardingDone Boolean   @default(false) @map("onboarding_done")
   nickname       String?
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   pets              Pet[]

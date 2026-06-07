@@ -2,17 +2,30 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 interface PlanInfo {
   plan: string
   planExpires: string | null
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
+      color: 'var(--ink-400)', letterSpacing: '0.08em',
+      marginTop: 20, marginBottom: 8, paddingLeft: 4,
+    }}>
+      {children}
+    </div>
+  )
+}
+
 function MenuItem({
-  icon, label, sub, onClick, accent,
+  icon, label, sub, onClick, accent, danger,
 }: {
   icon: string; label: string; sub?: string
-  onClick?: () => void; accent?: boolean
+  onClick?: () => void; accent?: boolean; danger?: boolean
 }) {
   return (
     <div
@@ -27,15 +40,24 @@ function MenuItem({
     >
       <div style={{
         width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-        background: accent ? 'linear-gradient(135deg, #faddca, #f5c4a7)' : 'var(--lav-100)',
+        background: accent
+          ? 'linear-gradient(135deg, #faddca, #f5c4a7)'
+          : danger ? 'rgba(220,50,50,0.08)' : 'var(--lav-100)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
-      }}>{icon}</div>
+      }}>
+        {icon}
+      </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13.5, fontWeight: 600, color: accent ? 'var(--peach-600)' : 'var(--lav-800)' }}>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 13.5, fontWeight: 600,
+          color: accent ? 'var(--peach-600)' : danger ? '#c0392b' : 'var(--lav-800)',
+        }}>
           {label}
         </div>
         {sub && (
-          <div style={{ marginTop: 1, fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--ink-400)' }}>{sub}</div>
+          <div style={{ marginTop: 1, fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--ink-400)' }}>
+            {sub}
+          </div>
         )}
       </div>
       {onClick && (
@@ -63,6 +85,12 @@ export default function ProfilePage() {
     ? `${new Date(planInfo.planExpires).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}까지`
     : null
 
+  async function handleLogout() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.replace('/login')
+  }
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-app)', position: 'relative' }}>
 
@@ -72,7 +100,7 @@ export default function ProfilePage() {
         background: 'linear-gradient(180deg, #ece4f3 0%, transparent 100%)',
       }}/>
 
-      <div style={{ position: 'relative', zIndex: 1, padding: '8px 20px 32px' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '8px 20px 48px' }}>
 
         {/* 타이틀 */}
         <div style={{ marginBottom: 20 }}>
@@ -83,7 +111,7 @@ export default function ProfilePage() {
 
         {/* 현재 플랜 카드 */}
         <div style={{
-          padding: '16px 18px', borderRadius: 18, marginBottom: 20,
+          padding: '16px 18px', borderRadius: 18, marginBottom: 4,
           background: isPro
             ? 'linear-gradient(160deg, #2a223f 0%, #524080 100%)'
             : 'rgba(255,255,255,0.78)',
@@ -121,21 +149,52 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 결제 & 플랜 섹션 */}
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'var(--ink-400)', letterSpacing: '0.08em', marginBottom: 8, paddingLeft: 4 }}>
-          결제 & 플랜
-        </div>
-        <MenuItem icon="⭐" label="플랜 안내" sub="Free · Pro 비교하기" accent onClick={() => router.push('/plan')}/>
-        <MenuItem icon="💳" label="결제 내역" sub="준비 중"/>
+        {/* 아이의 정보 */}
+        <SectionLabel>아이의 정보</SectionLabel>
+        <MenuItem
+          icon="🐾" label="아이 정보 수정"
+          onClick={() => router.push('/settings/pet')}
+        />
 
-        {/* 앱 설정 섹션 */}
-        <div style={{ marginTop: 16, fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: 'var(--ink-400)', letterSpacing: '0.08em', marginBottom: 8, paddingLeft: 4 }}>
-          앱 설정
-        </div>
-        <MenuItem icon="🔔" label="알림 설정" onClick={() => router.push('/settings/notifications')}/>
-        <MenuItem icon="🐾" label="아이 정보 수정" sub="준비 중"/>
-        <MenuItem icon="📞" label="문의하기" sub="준비 중"/>
-        <MenuItem icon="🚪" label="탈퇴하기" sub="준비 중"/>
+        {/* 알림 & 앱 */}
+        <SectionLabel>알림 & 앱</SectionLabel>
+        <MenuItem
+          icon="🔔" label="알림 설정"
+          onClick={() => router.push('/settings/notifications')}
+        />
+        <MenuItem
+          icon="📱" label="홈화면에 추가"
+          sub="앱처럼 설치하기"
+          onClick={() => router.push('/settings/install')}
+        />
+
+        {/* 결제 & 플랜 */}
+        <SectionLabel>결제 & 플랜</SectionLabel>
+        <MenuItem
+          icon="💳" label="결제 내역"
+          onClick={() => router.push('/settings/payments')}
+        />
+
+        {/* 계정 */}
+        <SectionLabel>계정</SectionLabel>
+        <MenuItem
+          icon="🚪" label="로그아웃"
+          onClick={handleLogout}
+        />
+        <MenuItem
+          icon="📄" label="이용약관 · 개인정보"
+          onClick={() => window.open('#', '_blank')}
+        />
+        <MenuItem
+          icon="💬" label="문의하기"
+          sub="abiding.pages26@gmail.com"
+          onClick={() => { window.location.href = 'mailto:abiding.pages26@gmail.com' }}
+        />
+        <MenuItem
+          icon="⚠️" label="회원 탈퇴"
+          danger
+          onClick={() => router.push('/settings/withdraw')}
+        />
 
       </div>
     </div>
