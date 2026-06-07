@@ -2,6 +2,7 @@
 // Deno runtime (no Node.js APIs)
 import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic          from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
+import webpush            from 'npm:web-push'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -396,6 +397,43 @@ Deno.serve(async (req) => {
       .single()
 
     if (insertError) throw insertError
+
+    // ── 푸시 알림 발송 (실패해도 응답은 정상 반환) ──────────────────────
+    try {
+      const vapidPublic  = Deno.env.get('VAPID_PUBLIC_KEY')
+      const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
+      const vapidEmail   = Deno.env.get('VAPID_EMAIL') ?? 'mailto:hello@abiding.pages'
+
+      if (vapidPublic && vapidPrivate) {
+        webpush.setVapidDetails(vapidEmail, vapidPublic, vapidPrivate)
+
+        // 해당 유저의 모든 구독 조회
+        const { data: subscriptions } = await adminClient
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth')
+          .eq('user_id', user.id)
+
+        if (subscriptions && subscriptions.length > 0) {
+          const payload = JSON.stringify({
+            title: `${pet.name}의 편지가 도착했어요 🌿`,
+            body:  '지금 확인해보세요',
+            url:   `/reply/${reply.id}`,
+          })
+
+          await Promise.allSettled(
+            subscriptions.map((sub) =>
+              webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                payload,
+              )
+            )
+          )
+        }
+      }
+    } catch (pushErr) {
+      // 푸시 실패는 로그만 남기고 응답에 영향 없음
+      console.error('[generate-reply] push error:', pushErr)
+    }
 
     return new Response(JSON.stringify({ id: reply.id, content: reply.content, letterId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
