@@ -60,7 +60,7 @@ export default function PlanPage() {
         {/* 상단 바 */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '56px 20px 0',
+          padding: '16px 20px 0',
         }}>
           <button
             onClick={() => router.back()}
@@ -70,7 +70,7 @@ export default function PlanPage() {
               <path d="M6 6l12 12M6 18L18 6" stroke="var(--lav-700)" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
           </button>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, color: 'var(--lav-800)' }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, color: '#6b6080' }}>
             플랜 안내
           </span>
           <div style={{ width: 38 }}/>

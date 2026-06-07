@@ -84,7 +84,7 @@ export default function JourneyGuidePage() {
         <div style={{
           flex: 1, textAlign: 'center',
           fontFamily: 'var(--font-sans)', fontSize: 13.5, fontWeight: 600,
-          color: 'var(--lav-800)',
+          color: '#6b6080',
         }}>
           여정 가이드
         </div>

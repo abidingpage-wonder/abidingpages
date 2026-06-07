@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 interface TopBarProps {
   petName: string
@@ -9,6 +9,7 @@ interface TopBarProps {
 
 export default function TopBar({ petName, dayCount }: TopBarProps) {
   const pathname = usePathname()
+  const router   = useRouter()
   // 정원 페이지: hero 위에 투명하게 오버레이
   const isGarden = pathname.startsWith('/garden')
 
@@ -65,6 +66,7 @@ export default function TopBar({ petName, dayCount }: TopBarProps) {
           transition: 'background 0.3s ease',
         }}
         aria-label="공유"
+        onClick={() => router.push('/share')}
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
           <circle cx="18" cy="5" r="3" stroke={isGarden ? 'rgba(243,232,222,0.85)' : 'var(--lav-600)'} strokeWidth="1.7"/>

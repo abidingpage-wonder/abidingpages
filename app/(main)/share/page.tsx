@@ -9,23 +9,45 @@ const SHARE_TEXT = '반려동물을 떠나보낸 마음을 천천히 돌보는 �
 export default function SharePage() {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
 
   async function handleCopy() {
+    // 1순위: Clipboard API
     try {
       await navigator.clipboard.writeText(SHARE_URL)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // fallback — execCommand
-      const el = document.createElement('input')
+      return
+    } catch { /* fallback으로 이동 */ }
+
+    // 2순위: execCommand (구형 브라우저 / iOS fallback)
+    try {
+      const el = document.createElement('textarea')
       el.value = SHARE_URL
+      el.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
       document.body.appendChild(el)
+      el.focus()
       el.select()
-      document.execCommand('copy')
+      const ok = document.execCommand('copy')
       document.body.removeChild(el)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
+      if (ok) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        return
+      }
+    } catch { /* fallback으로 이동 */ }
+
+    // 3순위: Web Share API
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Abiding', url: SHARE_URL })
+        return
+      }
+    } catch { /* 취소해도 무시 */ }
+
+    // 모두 실패 시 URL 노출 안내
+    setCopyFailed(true)
+    setTimeout(() => setCopyFailed(false), 3000)
   }
 
   function handleKakao() {
@@ -78,7 +100,7 @@ export default function SharePage() {
         {/* 상단 바 */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '56px 20px 0', flexShrink: 0,
+          padding: '16px 20px 0', flexShrink: 0,
         }}>
           <button
             onClick={() => router.back()}
@@ -88,72 +110,76 @@ export default function SharePage() {
               <path d="M15 18l-6-6 6-6" stroke="var(--lav-700)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, color: 'var(--lav-800)' }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, color: '#6b6080' }}>
             서비스 공유
           </span>
           <div style={{ width: 38 }}/>
         </div>
 
-        {/* 어바이딩 로고 아이콘 */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0 0' }}>
-          <div style={{ position: 'relative' }}>
+        {/* 편지봉투 일러스트 */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 0' }}>
+          <div style={{ position: 'relative', width: 180, height: 150 }}>
             {/* 뒤 glow */}
             <div style={{
-              position: 'absolute', inset: -20,
-              background: 'radial-gradient(circle, rgba(255,229,180,0.6), transparent 65%)',
-              filter: 'blur(14px)', borderRadius: '50%',
+              position: 'absolute', inset: 0,
+              background: 'radial-gradient(circle, rgba(255,229,180,0.5), transparent 65%)',
+              filter: 'blur(14px)',
             }}/>
-            {/* 반짝이 별들 */}
-            {[
-              { top: -8,  left: 10,  size: 6 },
-              { top: -4,  right: 8,  size: 5 },
-              { top: 16,  left: -14, size: 4 },
-              { top: 16,  right: -14,size: 5 },
-              { bottom: 0,left: 4,   size: 4 },
-              { bottom: 4,right: 4,  size: 5 },
-            ].map((pos, i) => (
-              <div key={i} style={{ position: 'absolute', ...pos }}>
-                <svg width={pos.size * 2} height={pos.size * 2} viewBox="0 0 10 10">
-                  <path d="M5 0 L5.7 3.5 L9.5 5 L5.7 6.5 L5 10 L4.3 6.5 L0.5 5 L4.3 3.5 Z" fill="#fbb489" opacity="0.8"/>
-                </svg>
-              </div>
-            ))}
-            {/* 아이콘 */}
-            <div style={{
-              width: 100, height: 100, borderRadius: 26, overflow: 'hidden', position: 'relative',
-              boxShadow: '0 10px 32px rgba(86,52,140,0.18)',
-            }}>
-              <img
-                src="/icons/icon-192x192.png"
-                alt="Abiding"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
+            <svg viewBox="0 0 180 150" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+              <defs>
+                <radialGradient id="sealGrad" cx="35%" cy="30%">
+                  <stop offset="0%" stopColor="#c0a3dc"/>
+                  <stop offset="100%" stopColor="#7a4b8f"/>
+                </radialGradient>
+              </defs>
+              {/* 봉투 몸통 */}
+              <g transform="translate(50,38)">
+                <rect x="0" y="6" width="80" height="56" rx="6" fill="#f5ecdc" stroke="rgba(74,46,28,0.12)" strokeWidth="0.6"/>
+                {/* 봉투 접힘선 (V자) */}
+                <path d="M0 8 L40 40 L80 8" stroke="rgba(74,46,28,0.18)" strokeWidth="0.7" fill="none"/>
+                {/* 하트 씰 */}
+                <g transform="translate(40,36)">
+                  <circle r="13" fill="url(#sealGrad)"/>
+                  <path d="M0 5s-6-3.6-6-8a3.4 3.4 0 0 1 6-2 3.4 3.4 0 0 1 6 2c0 4.4-6 8-6 8z" fill="#fff" opacity="0.85"/>
+                </g>
+              </g>
+              {/* 반짝이 별들 */}
+              {([[20,30,3],[160,28,2.6],[150,110,2.8],[26,114,2.6],[14,70,2.2],[168,70,2.4],[90,12,2.6]] as [number,number,number][]).map(([x,y,r],i) => (
+                <g key={i} transform={`translate(${x},${y})`} fill="#fbb489" opacity={0.75}>
+                  <path d={`M0 ${-r} L${r*0.35} ${-r*0.35} L${r} 0 L${r*0.35} ${r*0.35} L0 ${r} L${-r*0.35} ${r*0.35} L${-r} 0 L${-r*0.35} ${-r*0.35} Z`}/>
+                </g>
+              ))}
+            </svg>
           </div>
         </div>
 
         {/* 메인 카피 */}
-        <div style={{ padding: '24px 30px 0', textAlign: 'center' }}>
+        <div style={{ padding: '20px 30px 0', textAlign: 'center' }}>
+          <div style={{
+            fontFamily: 'var(--font-sans)', fontSize: 11.5, fontWeight: 600,
+            color: 'var(--peach-500)', letterSpacing: '0.1em', marginBottom: 10,
+          }}>
+            SHARE ABIDING
+          </div>
           <div style={{
             fontFamily: 'var(--font-serif)', fontSize: 21, fontWeight: 500,
             color: 'var(--lav-800)', lineHeight: 1.55, letterSpacing: '-0.02em',
           }}>
-            Abiding을<br/>소개해 주세요
+            반려동물을 떠나보낸<br/>
+            <span style={{ color: 'var(--lav-600)' }}>소중한 사람</span>에게
           </div>
           <div style={{
-            marginTop: 12, fontFamily: 'var(--font-sans)', fontSize: 13,
-            color: 'var(--ink-700)', lineHeight: 1.75, letterSpacing: '-0.01em',
+            marginTop: 8, fontFamily: 'var(--font-sans)', fontSize: 12.5,
+            color: 'var(--ink-500)', lineHeight: 1.7,
           }}>
-            반려동물을 떠나보낸<br/>
-            <span style={{ color: 'var(--lav-700)', fontWeight: 600 }}>소중한 사람</span>에게
-            <br/>Abiding을 소개해주세요.
+            Abiding을 소개해주세요.
           </div>
         </div>
 
         {/* 링크 미리보기 카드 */}
-        <div style={{ padding: '22px 24px 0' }}>
+        <div style={{ padding: '16px 24px 0' }}>
           <div style={{
-            padding: '14px 16px', borderRadius: 16,
+            padding: '14px 16px', borderRadius: 999,
             background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(12px)',
             border: '0.5px solid rgba(166,133,199,0.2)',
             boxShadow: '0 4px 18px rgba(86,52,140,0.1)',
@@ -185,18 +211,18 @@ export default function SharePage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, minHeight: 20 }}/>
+        <div style={{ flex: 1, minHeight: 8 }}/>
 
         {/* CTA 버튼 */}
-        <div style={{ padding: '20px 24px 40px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+        <div style={{ padding: '12px 24px 36px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
           {/* 링크 복사 */}
           <button
             onClick={handleCopy}
             style={{
-              width: '100%', padding: '15px', borderRadius: 16,
-              background: copied ? 'rgba(220,255,220,0.9)' : 'rgba(255,255,255,0.85)',
-              border: copied ? '1px solid rgba(100,180,100,0.4)' : '1px solid rgba(166,133,199,0.35)',
-              color: copied ? '#2a6a2a' : 'var(--lav-700)',
+              width: '100%', padding: '15px', borderRadius: 999,
+              background: copied ? 'rgba(220,255,220,0.9)' : copyFailed ? 'rgba(255,235,220,0.9)' : 'rgba(255,255,255,0.85)',
+              border: copied ? '1px solid rgba(100,180,100,0.4)' : copyFailed ? '1px solid rgba(249,156,105,0.4)' : '1px solid rgba(166,133,199,0.35)',
+              color: copied ? '#2a6a2a' : copyFailed ? '#c0622a' : 'var(--lav-700)',
               fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 600,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               cursor: 'pointer', boxShadow: '0 2px 10px rgba(86,52,140,0.06)',
@@ -210,6 +236,8 @@ export default function SharePage() {
                 </svg>
                 복사 완료!
               </>
+            ) : copyFailed ? (
+              <>⚠️ 직접 복사해주세요 · {SHARE_URL}</>
             ) : (
               <>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
@@ -225,7 +253,7 @@ export default function SharePage() {
           <button
             onClick={handleKakao}
             style={{
-              width: '100%', padding: '15px', borderRadius: 16, border: 'none',
+              width: '100%', padding: '15px', borderRadius: 999, border: 'none',
               background: '#FEE500', color: '#3c1e1e',
               fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
