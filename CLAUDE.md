@@ -131,12 +131,36 @@
 
 ---
 
-## 현재 Sprint — Sprint 10: 푸시알림 + 알림설정
+### Sprint 10 — 푸시알림 + 알림설정 (기완료)
 
-### 다음 작업 후보
-- Web Push 구독 (`/api/push/subscribe`)
-- 답장 생성 완료 시 푸시알림
-- 내정보 페이지 고도화 (온보딩 내용 수정)
+**파일**:
+- `public/sw.js` — 서비스 워커 (push 수신 → 알림 표시, 클릭 → 딥링크)
+- `hooks/usePushSubscription.ts` — SW 등록·구독·해제 훅 (permission 상태 관리)
+- `app/api/push/subscribe/route.ts` — GET(설정 조회) / POST(upsert) / DELETE(해제)
+- `app/(main)/settings/notifications/page.tsx` — 알림 설정 화면
+- `supabase/functions/generate-reply/index.ts` — 답장 저장 직후 Web Push 발송
+
+**구현 내용**:
+- VAPID 키 생성, `web-push` 패키지 설치
+- 알림 설정 화면: 빠른 설정(아침/오후/밤 고정시간) / 직접 설정(시간 피커) 2-섹션 UI
+  - lucide-react Sunrise/Sun/Moon 아이콘 (peach-500 outline)
+  - 반복 요일(월~일) 선택
+  - 마운트 시 기존 설정 복원 (2회 방문 시 pre-populate)
+- PushSubscription에 알림 시간 필드 추가 (notifHour/Minute/Ampm/Days)
+- 답장 생성(generate-reply) 완료 → push_subscriptions 조회 → 즉시 Web Push 발송
+  - `npm:web-push` (Deno 호환), `Promise.allSettled`로 복수 기기 지원
+  - 알림 payload: `{ title: "{petName}의 편지가 도착했어요 🌿", url: /reply/{replyId} }`
+- profile/page.tsx → 알림 설정 메뉴 연결
+- write/sent/page.tsx → 도착 알림 받기 버튼 → 알림 설정 페이지 이동
+
+**미완료 (설정 필요)**:
+- Supabase Edge Function Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`
+- `supabase functions deploy generate-reply`
+- Supabase SQL: `ALTER TABLE push_subscriptions ADD COLUMN notif_hour/minute/ampm/days`
+
+---
+
+## 현재 Sprint — Sprint 11: 설정 / 내정보 고도화
 
 ---
 
