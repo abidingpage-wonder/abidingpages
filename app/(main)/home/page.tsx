@@ -623,9 +623,9 @@ function CardSparkles({ tint = 'lav' }: { tint?: 'lav' | 'peach' }) {
     [8,62,1.6],[86,70,2],[22,78,1.8],[70,82,1.6],[50,12,1.4],
   ]
   return (
-    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
       {stars.map(([x,y,r], i) => (
-        <g key={i} transform={`translate(${x}%,${y}%)`} opacity={0.5}>
+        <g key={i} transform={`translate(${x},${y})`} opacity={0.5}>
           <path d={`M0 ${-r} L${r*0.3} ${-r*0.3} L${r} 0 L${r*0.3} ${r*0.3} L0 ${r} L${-r*0.3} ${r*0.3} L${-r} 0 L${-r*0.3} ${-r*0.3} Z`} fill={fill}/>
         </g>
       ))}
