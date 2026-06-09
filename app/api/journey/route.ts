@@ -50,7 +50,7 @@ export async function GET() {
       totalDays,
       emotionCount,
       nextStageAvailable: progress?.nextStageAvailable ?? false,
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

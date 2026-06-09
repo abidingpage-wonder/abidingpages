@@ -185,7 +185,7 @@ export async function GET() {
         stage: c.stage,
         createdAt: c.createdAt.toISOString(),
       })),
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (err) {
     console.error('[GET /api/archive/timeline]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

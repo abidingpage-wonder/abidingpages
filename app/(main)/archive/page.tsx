@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
@@ -112,12 +112,33 @@ export default function ArchivePage() {
   const [tab, setTab]           = useState<'timeline' | 'photos'>('timeline')
   const [letterCount, setLetterCount] = useState<number | null>(null)
   const [photoCount, setPhotoCount]   = useState<number | null>(null)
+  const [timelineWeeks, setTimelineWeeks]   = useState<TimelineWeek[]>([])
+  const [timelineIsPro, setTimelineIsPro]   = useState(false)
+  const [timelinePhotos, setTimelinePhotos] = useState<{ imageUrl: string; createdAt: string; stage: number }[]>([])
 
   useEffect(() => {
-    fetch('/api/archive')
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
+    // archive + timeline 병렬 fetch (timeline 중복 제거)
+    Promise.all([
+      fetch('/api/archive').then(r => r.json()),
+      fetch('/api/archive/timeline').then(r => r.json()),
+    ]).then(([archiveData, timelineData]) => {
+      setData(archiveData)
+      const weeks: TimelineWeek[] = timelineData.items ?? []
+      setTimelineWeeks(weeks)
+      setTimelineIsPro(timelineData.isPro ?? false)
+      setTimelinePhotos(timelineData.photoCards ?? [])
+      // 탭 카운트 계산
+      let letters = 0, photos = 0
+      for (const week of weeks) {
+        for (const entry of week.entries ?? []) {
+          if (entry.type === 'letter') letters++
+          photos += (entry.imageUrls ?? []).length
+        }
+      }
+      setLetterCount(letters)
+      setPhotoCount(photos)
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   async function handleSticker(type: 'candle' | 'flower' | 'heart') {
@@ -144,22 +165,6 @@ export default function ArchivePage() {
     } catch {}
   }
 
-  useEffect(() => {
-    fetch('/api/archive/timeline')
-      .then(r => r.json())
-      .then(d => {
-        let letters = 0, photos = 0
-        for (const week of d.items ?? []) {
-          for (const entry of week.entries ?? []) {
-            if (entry.type === 'letter') letters++
-            photos += (entry.imageUrls ?? []).length
-          }
-        }
-        setLetterCount(letters)
-        setPhotoCount(photos)
-      })
-      .catch(() => {})
-  }, [])
 
   if (loading) {
     return (
@@ -407,9 +412,9 @@ export default function ArchivePage() {
 
       {/* ── 탭 콘텐츠 ── */}
       {tab === 'timeline' ? (
-        <TimelineTab petName={pet.name}/>
+        <TimelineTab petName={pet.name} weeks={timelineWeeks} isPro={timelineIsPro} />
       ) : (
-        <PhotosTab/>
+        <PhotosTab weeks={timelineWeeks} photoCards={timelinePhotos} />
       )}
     </div>
   )
@@ -595,26 +600,8 @@ function ReplyCardBody({ entry, onClick }: { entry: TimelineEntry; onClick: () =
 }
 
 // ── 타임라인 탭 ──────────────────────────────────────────────────
-function TimelineTab({ petName }: { petName: string }) {
+function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: TimelineWeek[]; isPro: boolean }) {
   const router = useRouter()
-  const [weeks, setWeeks]     = useState<TimelineWeek[]>([])
-  const [isPro, setIsPro]     = useState(true)  // 로딩 전엔 잠금 표시 안 함
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch('/api/archive/timeline')
-      .then(r => r.json())
-      .then(d => { setWeeks(d.items ?? []); setIsPro(d.isPro ?? false); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [])
-
-  if (loading) {
-    return (
-      <div style={{ padding: '32px 0', textAlign: 'center', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink-300)' }}>
-        불러오는 중...
-      </div>
-    )
-  }
 
   if (weeks.length === 0) {
     return (
@@ -745,55 +732,39 @@ interface PhotoItem {
   week?: number
 }
 
-function PhotosTab() {
-  const [photos, setPhotos] = useState<PhotoItem[]>([])
-  const [loading, setLoading] = useState(true)
+function PhotosTab({ weeks, photoCards }: {
+  weeks: TimelineWeek[]
+  photoCards: { imageUrl: string; createdAt: string; stage: number }[]
+}) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
   // 스와이프 트래킹
   const touchStartX = useRef<number | null>(null)
 
-  useEffect(() => {
-    fetch('/api/archive/timeline')
-      .then(r => r.json())
-      .then(d => {
-        const items: PhotoItem[] = []
-        for (const week of d.items ?? []) {
-          for (const entry of week.entries ?? []) {
-            for (const url of entry.imageUrls ?? []) {
-              items.push({ url, date: entry.date, time: entry.time, emotionTag: entry.emotionTag })
-            }
-          }
+  // props로 받은 데이터로 photos 조립 (fetch 불필요)
+  const photos = useMemo<PhotoItem[]>(() => {
+    const items: PhotoItem[] = []
+    for (const week of weeks) {
+      for (const entry of week.entries ?? []) {
+        for (const url of entry.imageUrls ?? []) {
+          items.push({ url, date: entry.date, time: entry.time, emotionTag: entry.emotionTag })
         }
-        items.reverse()
-        // 포토카드 추가
-        for (const card of d.photoCards ?? []) {
-          const dt = new Date(card.createdAt)
-          const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), day = String(dt.getDate()).padStart(2,'0')
-          items.push({
-            url: card.imageUrl,
-            date: `${y}.${m}.${day}`,
-            time: `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`,
-            isPhotoCard: true,
-            week: card.stage,
-          })
-        }
-        setPhotos(items)
-        setLoading(false)
+      }
+    }
+    items.reverse()
+    for (const card of photoCards) {
+      const dt = new Date(card.createdAt)
+      const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), day = String(dt.getDate()).padStart(2,'0')
+      items.push({
+        url: card.imageUrl,
+        date: `${y}.${m}.${day}`,
+        time: `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`,
+        isPhotoCard: true,
+        week: card.stage,
       })
-      .catch(() => setLoading(false))
-  }, [])
-
-  if (loading) {
-    return (
-      <div style={{
-        padding: '40px 0', textAlign: 'center',
-        fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink-300)',
-      }}>
-        불러오는 중...
-      </div>
-    )
-  }
+    }
+    return items
+  }, [weeks, photoCards])
 
   if (photos.length === 0) {
     return (

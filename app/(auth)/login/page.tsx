@@ -134,6 +134,21 @@ export default function LoginPage() {
         }}>
           계속 진행하면 서비스 이용약관 및<br />개인정보 처리방침에 동의하는 것으로 간주합니다.
         </p>
+
+        {/* 개발 모드 전용 우회 로그인 */}
+        {process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true' && (
+          <a
+            href="/auth/dev-login"
+            style={{
+              marginTop: 24, display: 'block', textAlign: 'center',
+              fontFamily: 'var(--font-sans)', fontSize: 11,
+              color: 'var(--lav-400)', textDecoration: 'underline',
+              opacity: 0.6,
+            }}
+          >
+            [개발] 카카오 없이 로그인
+          </a>
+        )}
       </div>
     </div>
   )

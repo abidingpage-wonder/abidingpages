@@ -100,14 +100,14 @@ export async function GET() {
         createdAt: m.createdAt.toISOString(),
       })),
       messageCount: uniquePosters.length,
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=30' } })
   } catch (e) {
     console.error('[GET /api/garden]', e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
 
-// ── 헬퍼: 펫 목록 → 카드 배열 ────────────────────────────────────
+// ── 헬퍼: 펫 목록 → 카드 배열 (배치 3쿼리, N+1 제거) ────────────
 async function buildPetCards(
   pets: Array<{
     id: string; name: string; species: string; breed: string | null
@@ -117,27 +117,53 @@ async function buildPetCards(
   }>,
   userId: string | null
 ) {
-  return Promise.all(pets.map(async (pet) => {
-    const [stickerGroups, stickerSenders, myStickers] = await Promise.all([
-      prisma.gardenSticker.groupBy({
-        by: ['stickerType'],
-        where: { toPetId: pet.id },
-        _count: { stickerType: true },
-      }),
-      prisma.gardenSticker.findMany({
-        where: { toPetId: pet.id },
-        distinct: ['fromUserId'],
-        select: { fromUserId: true },
-      }),
-      userId ? prisma.gardenSticker.findMany({
-        where: { fromUserId: userId, toPetId: pet.id },
-        select: { stickerType: true },
-      }) : Promise.resolve([]),
-    ])
+  if (pets.length === 0) return []
 
-    const stickerMap: Record<string, number> = {}
-    for (const s of stickerGroups) stickerMap[s.stickerType] = s._count.stickerType
+  const petIds = pets.map(p => p.id)
 
+  // 기존: 펫마다 3쿼리 × 30펫 = 90쿼리 → 배치 3쿼리로 통합
+  const [allGroups, allSenders, myStickers] = await Promise.all([
+    // 1) 전체 펫의 stickerType별 count
+    prisma.gardenSticker.groupBy({
+      by: ['toPetId', 'stickerType'],
+      where: { toPetId: { in: petIds } },
+      _count: { stickerType: true },
+    }),
+    // 2) 전체 펫의 unique sender (toPetId별 distinct fromUserId)
+    prisma.gardenSticker.findMany({
+      where: { toPetId: { in: petIds } },
+      select: { toPetId: true, fromUserId: true },
+      distinct: ['toPetId', 'fromUserId'],
+    }),
+    // 3) 현재 유저가 남긴 스티커 일괄 조회
+    userId
+      ? prisma.gardenSticker.findMany({
+          where: { fromUserId: userId, toPetId: { in: petIds } },
+          select: { toPetId: true, stickerType: true },
+        })
+      : Promise.resolve([]),
+  ])
+
+  // petId별 Map으로 집계
+  const countMap = new Map<string, Record<string, number>>()
+  for (const g of allGroups) {
+    if (!countMap.has(g.toPetId)) countMap.set(g.toPetId, {})
+    countMap.get(g.toPetId)![g.stickerType] = g._count.stickerType
+  }
+
+  const senderCountMap = new Map<string, number>()
+  for (const s of allSenders) {
+    senderCountMap.set(s.toPetId, (senderCountMap.get(s.toPetId) ?? 0) + 1)
+  }
+
+  const myMap = new Map<string, string[]>()
+  for (const s of myStickers) {
+    if (!myMap.has(s.toPetId)) myMap.set(s.toPetId, [])
+    myMap.get(s.toPetId)!.push(s.stickerType)
+  }
+
+  return pets.map(pet => {
+    const counts = countMap.get(pet.id) ?? {}
     return {
       id: pet.id,
       name: pet.name,
@@ -150,13 +176,13 @@ async function buildPetCards(
       firstWord: pet.firstWord,
       togetherDays: pet.togetherDays,
       commentAllowed: pet.commentAllowed,
-      candle: stickerMap['candle'] ?? 0,
-      flower: stickerMap['flower'] ?? 0,
-      heart:  stickerMap['heart']  ?? 0,
-      stickerSenders: stickerSenders.length,
-      myStickers: myStickers.map(s => s.stickerType),
+      candle: counts['candle'] ?? 0,
+      flower: counts['flower'] ?? 0,
+      heart:  counts['heart']  ?? 0,
+      stickerSenders: senderCountMap.get(pet.id) ?? 0,
+      myStickers: myMap.get(pet.id) ?? [],
     }
-  }))
+  })
 }
 
 // ── DEV 목업 상수 ──────────────────────────────────────────────────

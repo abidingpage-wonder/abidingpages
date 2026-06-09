@@ -35,7 +35,7 @@ export async function GET() {
     return NextResponse.json({
       plan: dbUser?.plan ?? 'free',
       planExpires: dbUser?.planExpires ?? null,
-    })
+    }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (err) {
     console.error('[GET /api/payments/plan]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -120,6 +120,7 @@ export default function BottomNav() {
           <Link
             key={tab.key}
             href={tab.href}
+            prefetch={false}
             style={{
               flex: 1,
               display: 'flex',

@@ -20,23 +20,23 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
+      // activePet을 JOIN 1쿼리로 처리 (기존 순차 2쿼리 → 1쿼리)
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { activePetId: true },
+        select: {
+          activePetId: true,
+          pets: {
+            select: { id: true, name: true, diedAt: true },
+          },
+        },
       })
 
-      if (dbUser?.activePetId) {
-        const pet = await prisma.pet.findUnique({
-          where: { id: dbUser.activePetId },
-          select: { name: true, diedAt: true },
-        })
-
-        if (pet) {
-          petName = pet.name
-          if (pet.diedAt) {
-            const diffMs = Date.now() - new Date(pet.diedAt).getTime()
-            dayCount = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1)
-          }
+      const pet = dbUser?.pets.find(p => p.id === dbUser.activePetId)
+      if (pet) {
+        petName = pet.name
+        if (pet.diedAt) {
+          const diffMs = Date.now() - new Date(pet.diedAt).getTime()
+          dayCount = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1)
         }
       }
     }
