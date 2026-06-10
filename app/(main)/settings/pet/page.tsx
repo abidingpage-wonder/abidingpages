@@ -112,8 +112,16 @@ export default function PetSettingsPage() {
         }
 
         setBreed(pet.breed ?? '')
-        setBornAt(pet.bornAt ? pet.bornAt.slice(0, 10) : '')
-        setDiedAt(pet.diedAt ? pet.diedAt.slice(0, 10) : '')
+        const bornAtVal = pet.bornAt ? pet.bornAt.slice(0, 10) : ''
+        const diedAtVal = pet.diedAt ? pet.diedAt.slice(0, 10) : ''
+        setBornAt(bornAtVal)
+        setDiedAt(diedAtVal)
+        // 로드 시 날짜 검증 — 기존 데이터가 잘못된 경우 에러 표시
+        if (diedAtVal && diedAtVal > today) {
+          setDateError('별이 된 날은 오늘 이전이어야 해요.')
+        } else if (bornAtVal && diedAtVal && bornAtVal >= diedAtVal) {
+          setDateError('태어난 날은 별이 된 날보다 이전이어야 해요.')
+        }
         setPersonalityTags(pet.personalityTags ?? [])
         setFavoriteThings(pet.favoriteThings ?? [])
         setFirstWord(pet.firstWord ?? '')
