@@ -19,25 +19,40 @@ const FAREWELL_OPTIONS = [
   { value: 'other',      label: '기타' },
 ]
 
+const FAREWELL_MESSAGES: Record<string, string> = {
+  natural: '오랜 시간 아이의 곁을 든든하게 지켜주셨군요. 텅 빈 마음에 조용히, 가만히 곁을 지켜드릴게요.',
+  euthanasia: '그 결정을 내리기까지 얼마나 외로우셨을까요. 그 마음에 담긴 깊은 사랑을 아이에게 온전히 전해줄게요.',
+  accident: '준비하지 못한 이별에 마음이 많이 먹먹하시겠어요. 아이가 전하고 싶었을 다정한 마음에만 집중하도록 도울게요.',
+  other: '어떤 이별이었든, 아이를 향한 그 마음만큼은 변하지 않았을 거예요. 그 마음 그대로 함께 걸어갈게요.',
+}
+
+const NICKNAME_OPTIONS = ['엄마', '아빠', '직접입력']
+
 const PERSONALITY_TAGS = [
   '장난꾸러기', '다정해요', '겁많아요', '용감해요',
   '애교쟁이', '새침해요', '호기심쟁이', '순해요',
   '활발해요', '조용해요', '식탐쟁이', '고집쟁이',
 ]
+
+const FAVORITE_TAGS = ['간식', '산책', '낮잠', '담요', '창가햇살', '사람구경']
+
 const MAX_TAGS = 3
 
 // ─── 스타일 헬퍼 ─────────────────────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '12px 14px', borderRadius: 12,
-  border: '1px solid rgba(166,133,199,0.3)',
-  background: 'rgba(255,255,255,0.8)', fontSize: 14,
+  width: '100%', padding: '13px 16px', borderRadius: 14,
+  border: '1px solid rgba(166,133,199,0.25)',
+  background: '#fff', fontSize: 14,
   fontFamily: 'var(--font-sans)', color: 'var(--lav-800)',
   outline: 'none', boxSizing: 'border-box',
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--ink-500)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+    <div style={{
+      fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--ink-500)',
+      letterSpacing: '0.04em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4,
+    }}>
       {children}
     </div>
   )
@@ -51,7 +66,7 @@ function Optional() {
   return <span style={{ color: 'var(--ink-300)', fontSize: 10, fontWeight: 400 }}>(선택)</span>
 }
 
-function Field({ children, mt = 18 }: { children: React.ReactNode; mt?: number }) {
+function Field({ children, mt = 22 }: { children: React.ReactNode; mt?: number }) {
   return <div style={{ marginTop: mt }}>{children}</div>
 }
 
@@ -59,27 +74,29 @@ function Field({ children, mt = 18 }: { children: React.ReactNode; mt?: number }
 export default function PetSettingsPage() {
   const router = useRouter()
 
-  const [petId, setPetId]                     = useState<string | null>(null)
-  const [loading, setLoading]                 = useState(true)
-  const [saving, setSaving]                   = useState(false)
-  const [toast, setToast]                     = useState('')
+  const [petId, setPetId]                       = useState<string | null>(null)
+  const [loading, setLoading]                   = useState(true)
+  const [saving, setSaving]                     = useState(false)
+  const [toast, setToast]                       = useState('')
 
   // 폼 상태
-  const [name, setName]                       = useState('')
-  const [species, setSpecies]                 = useState('')
-  const [bornAt, setBornAt]                   = useState('')
-  const [diedAt, setDiedAt]                   = useState('')
-  const [farewellType, setFarewellType]       = useState('')
-  const [ownerNickname, setOwnerNickname]     = useState('')
-  const [personalityTags, setPersonalityTags] = useState<string[]>([])
-  const [favoriteThings, setFavoriteThings]   = useState<string[]>([])
-  const [favInput, setFavInput]               = useState('')
-  const [firstWord, setFirstWord]             = useState('')
-  const [gardenPublic, setGardenPublic]       = useState(true)
-  const [commentAllowed, setCommentAllowed]   = useState(true)
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
-  const [photoUploading, setPhotoUploading]   = useState(false)
-  const [dateError, setDateError]             = useState('')
+  const [name, setName]                         = useState('')
+  const [species, setSpecies]                   = useState('')
+  const [bornAt, setBornAt]                     = useState('')
+  const [diedAt, setDiedAt]                     = useState('')
+  const [farewellType, setFarewellType]         = useState('')
+  const [ownerNickname, setOwnerNickname]       = useState('')
+  const [ownerNicknameType, setOwnerNicknameType] = useState('')
+  const [personalityTags, setPersonalityTags]   = useState<string[]>([])
+  const [favoriteThings, setFavoriteThings]     = useState<string[]>([])
+  const [favCustomMode, setFavCustomMode]       = useState(false)
+  const [favCustom, setFavCustom]               = useState('')
+  const [firstWord, setFirstWord]               = useState('')
+  const [gardenPublic, setGardenPublic]         = useState(true)
+  const [commentAllowed, setCommentAllowed]     = useState(true)
+  const [profileImageUrl, setProfileImageUrl]   = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading]     = useState(false)
+  const [dateError, setDateError]               = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const today = new Date().toISOString().split('T')[0]
@@ -98,7 +115,9 @@ export default function PetSettingsPage() {
         setBornAt(pet.bornAt ? pet.bornAt.slice(0, 10) : '')
         setDiedAt(pet.diedAt ? pet.diedAt.slice(0, 10) : '')
         setFarewellType(pet.farewellType ?? '')
-        setOwnerNickname(pet.ownerNickname ?? '')
+        const nick = pet.ownerNickname ?? ''
+        setOwnerNickname(nick)
+        setOwnerNicknameType(NICKNAME_OPTIONS.includes(nick) ? nick : nick ? 'custom' : '')
         setPersonalityTags(pet.personalityTags ?? [])
         setFavoriteThings(pet.favoriteThings ?? [])
         setFirstWord(pet.firstWord ?? '')
@@ -147,15 +166,7 @@ export default function PetSettingsPage() {
     }
   }
 
-  const isValid =
-    name.trim() !== '' &&
-    species !== '' &&
-    bornAt !== '' &&
-    diedAt !== '' &&
-    diedAt <= today &&
-    bornAt < diedAt
-
-  function toggleTag(tag: string) {
+  function togglePersonality(tag: string) {
     setPersonalityTags(prev =>
       prev.includes(tag)
         ? prev.filter(t => t !== tag)
@@ -163,15 +174,33 @@ export default function PetSettingsPage() {
     )
   }
 
-  function addFavorite() {
-    const v = favInput.trim()
-    if (v && !favoriteThings.includes(v)) setFavoriteThings(p => [...p, v])
-    setFavInput('')
+  function toggleFavoritePreset(tag: string) {
+    setFavoriteThings(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : prev.length < MAX_TAGS ? [...prev, tag] : prev
+    )
   }
 
-  function removeFavorite(t: string) {
-    setFavoriteThings(p => p.filter(x => x !== t))
+  function addFavCustom() {
+    const v = favCustom.trim()
+    if (v && !favoriteThings.includes(v) && favoriteThings.length < MAX_TAGS) {
+      setFavoriteThings(p => [...p, v])
+    }
+    setFavCustom('')
   }
+
+  const isValid =
+    name.trim() !== '' &&
+    species !== '' &&
+    bornAt !== '' &&
+    diedAt !== '' &&
+    diedAt <= today &&
+    bornAt < diedAt &&
+    farewellType !== '' &&
+    ownerNickname.trim() !== '' &&
+    personalityTags.length >= 1 &&
+    favoriteThings.length >= 1
 
   async function handleSave() {
     if (!petId || saving || !isValid) return
@@ -255,7 +284,6 @@ export default function PetSettingsPage() {
                 {species === 'dog' ? '🐶' : species === 'cat' ? '🐱' : species === 'hamster' ? '🐹' : species === 'parrot' ? '🦜' : '🐾'}
               </div>
             )}
-            {/* 카메라 오버레이 */}
             <div style={{
               position: 'absolute', bottom: 0, left: 0, right: 0,
               background: 'rgba(0,0,0,0.35)', padding: '5px 0',
@@ -275,24 +303,26 @@ export default function PetSettingsPage() {
 
         {/* 이름 */}
         <Field mt={8}>
-          <Label>이름 <Required /></Label>
-          <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="아이 이름" />
+          <SectionLabel>아이의 이름 <Required /></SectionLabel>
+          <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="아이 이름을 입력해주세요." />
         </Field>
 
         {/* 종 */}
         <Field>
-          <Label>종류 <Required /></Label>
+          <SectionLabel>어떤 아이인가요? <Required /></SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {SPECIES_OPTIONS.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => setSpecies(opt.value)}
                 style={{
-                  padding: '8px 16px', borderRadius: 999, cursor: 'pointer',
-                  fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
-                  background: species === opt.value ? 'var(--lav-500)' : 'rgba(255,255,255,0.8)',
-                  color: species === opt.value ? '#fff' : 'var(--lav-700)',
-                  border: `1px solid ${species === opt.value ? 'transparent' : 'rgba(166,133,199,0.3)'}`,
+                  padding: '9px 16px', borderRadius: 999, cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)', fontSize: 13,
+                  fontWeight: species === opt.value ? 600 : 400,
+                  background: species === opt.value ? 'var(--lav-100)' : '#fff',
+                  color: species === opt.value ? 'var(--lav-700)' : 'var(--ink-500)',
+                  border: `1px solid ${species === opt.value ? 'var(--lav-500)' : 'rgba(166,133,199,0.25)'}`,
+                  transition: 'all .15s',
                 }}
               >
                 {opt.label}
@@ -303,19 +333,19 @@ export default function PetSettingsPage() {
 
         {/* 생일 / 별날 */}
         <Field>
-          <Label>태어난 날 <Required /></Label>
+          <SectionLabel>태어난 날 <Required /></SectionLabel>
           <input
             type="date"
-            style={{ ...inputStyle, border: `1px solid ${dateError && bornAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.3)'}` }}
+            style={{ ...inputStyle, border: `1px solid ${dateError && bornAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}` }}
             value={bornAt}
             onChange={e => handleBornAtChange(e.target.value)}
           />
         </Field>
         <Field>
-          <Label>별이 된 날 <Required /></Label>
+          <SectionLabel>별이 된 날 <Required /></SectionLabel>
           <input
             type="date"
-            style={{ ...inputStyle, border: `1px solid ${dateError && diedAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.3)'}` }}
+            style={{ ...inputStyle, border: `1px solid ${dateError && diedAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}` }}
             value={diedAt}
             max={today}
             onChange={e => handleDiedAtChange(e.target.value)}
@@ -327,37 +357,108 @@ export default function PetSettingsPage() {
           </div>
         )}
 
-        {/* 이별 유형 */}
+        {/* 이별 유형 — 심플 칩 */}
         <Field>
-          <Label>이별 유형 <Optional /></Label>
+          <SectionLabel>어떤 이별이었나요? <Required /></SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {FAREWELL_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setFarewellType(opt.value)}
-                style={{
-                  padding: '8px 16px', borderRadius: 999, cursor: 'pointer',
-                  fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
-                  background: farewellType === opt.value ? 'var(--lav-500)' : 'rgba(255,255,255,0.8)',
-                  color: farewellType === opt.value ? '#fff' : 'var(--lav-700)',
-                  border: `1px solid ${farewellType === opt.value ? 'transparent' : 'rgba(166,133,199,0.3)'}`,
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
+            {FAREWELL_OPTIONS.map(opt => {
+              const active = farewellType === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setFarewellType(opt.value)}
+                  style={{
+                    padding: '9px 20px', borderRadius: 999, cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: active ? 600 : 400,
+                    border: `1px solid ${active ? 'var(--lav-500)' : 'rgba(166,133,199,0.25)'}`,
+                    background: active ? 'var(--lav-100)' : '#fff',
+                    color: active ? 'var(--lav-700)' : 'var(--ink-500)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
+          {farewellType && (
+            <div style={{
+              marginTop: 12, padding: '14px 16px', borderRadius: 14,
+              background: farewellType === 'accident' ? 'rgba(251,180,137,0.08)' : 'rgba(166,133,199,0.07)',
+              border: `1px solid ${farewellType === 'accident' ? 'rgba(251,180,137,0.25)' : 'rgba(166,133,199,0.18)'}`,
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-serif)', fontSize: 13,
+                color: farewellType === 'accident' ? 'var(--peach-500)' : 'var(--lav-600)',
+                lineHeight: 1.75, letterSpacing: '-0.01em',
+              }}>
+                {FAREWELL_MESSAGES[farewellType]}
+              </div>
+            </div>
+          )}
         </Field>
 
-        {/* 호칭 */}
+        {/* 호칭 — 칩 + 직접입력 */}
         <Field>
-          <Label>나를 부르는 호칭 (예: 엄마, 아빠) <Optional /></Label>
-          <input style={inputStyle} value={ownerNickname} onChange={e => setOwnerNickname(e.target.value)} placeholder="엄마" />
+          <SectionLabel>아이가 나를 뭐라고 불렀나요? <Required /></SectionLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {NICKNAME_OPTIONS.map(opt => {
+              const isCustom = opt === '직접입력'
+              const active = isCustom ? ownerNicknameType === 'custom' : ownerNicknameType === opt
+              return (
+                <button
+                  key={opt}
+                  onClick={() => {
+                    if (isCustom) {
+                      setOwnerNicknameType('custom')
+                      setOwnerNickname('')
+                    } else {
+                      setOwnerNicknameType(opt)
+                      setOwnerNickname(opt)
+                    }
+                  }}
+                  style={{
+                    padding: '9px 18px', borderRadius: 999, cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: active ? 600 : 400,
+                    border: `1px solid ${active ? 'var(--lav-500)' : 'rgba(166,133,199,0.25)'}`,
+                    background: active ? 'var(--lav-100)' : '#fff',
+                    color: active ? 'var(--lav-700)' : 'var(--ink-500)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  {opt}
+                </button>
+              )
+            })}
+          </div>
+          {ownerNicknameType === 'custom' && (
+            <input
+              type="text"
+              placeholder="ex. 보호자님, 할머니"
+              value={ownerNickname}
+              onChange={e => setOwnerNickname(e.target.value)}
+              style={{ ...inputStyle, marginTop: 10 }}
+            />
+          )}
+          {ownerNickname && (
+            <div style={{ marginTop: 10, fontFamily: 'var(--font-serif)', fontSize: 13, color: 'var(--lav-600)', fontStyle: 'italic' }}>
+              &ldquo;사랑하는 {ownerNickname}에게...&rdquo;
+            </div>
+          )}
         </Field>
 
         {/* 성격 태그 */}
         <Field>
-          <Label>성격 태그 (최대 3개) <Optional /></Label>
+          <div style={{
+            fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--ink-500)',
+            letterSpacing: '0.04em', marginBottom: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span>아이의 성격 <Required /></span>
+            <span style={{ color: personalityTags.length >= MAX_TAGS ? 'var(--lav-500)' : 'var(--ink-300)', fontSize: 11 }}>
+              {personalityTags.length}/{MAX_TAGS}
+            </span>
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {PERSONALITY_TAGS.map(tag => {
               const active = personalityTags.includes(tag)
@@ -365,15 +466,16 @@ export default function PetSettingsPage() {
               return (
                 <button
                   key={tag}
-                  onClick={() => toggleTag(tag)}
+                  onClick={() => togglePersonality(tag)}
                   disabled={disabled}
                   style={{
-                    padding: '7px 14px', borderRadius: 999, cursor: disabled ? 'default' : 'pointer',
-                    fontFamily: 'var(--font-sans)', fontSize: 12.5, fontWeight: active ? 600 : 400,
-                    background: active ? 'var(--lav-500)' : 'rgba(255,255,255,0.8)',
-                    color: active ? '#fff' : disabled ? 'var(--ink-300)' : 'var(--lav-700)',
-                    border: `1px solid ${active ? 'transparent' : 'rgba(166,133,199,0.3)'}`,
-                    opacity: disabled ? 0.5 : 1,
+                    padding: '9px 16px', borderRadius: 999, cursor: disabled ? 'default' : 'pointer',
+                    fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: active ? 600 : 400,
+                    border: `1px solid ${active ? 'var(--lav-500)' : 'rgba(166,133,199,0.25)'}`,
+                    background: active ? 'var(--lav-100)' : '#fff',
+                    color: active ? 'var(--lav-700)' : disabled ? 'var(--ink-100)' : 'var(--ink-500)',
+                    opacity: disabled ? 0.45 : 1,
+                    transition: 'all .15s',
                   }}
                 >
                   {tag}
@@ -383,55 +485,118 @@ export default function PetSettingsPage() {
           </div>
         </Field>
 
-        {/* 좋아했던 것들 */}
+        {/* 좋아했던 것들 — 프리셋 태그 + 직접입력 */}
         <Field>
-          <Label>좋아했던 것들 <Optional /></Label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-            {favoriteThings.map(t => (
-              <span
-                key={t}
-                onClick={() => removeFavorite(t)}
-                style={{
-                  padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
-                  background: 'var(--lav-100)', color: 'var(--lav-700)',
-                  fontFamily: 'var(--font-sans)', fontSize: 12.5, fontWeight: 500,
-                  display: 'flex', alignItems: 'center', gap: 4,
-                }}
-              >
-                {t} <span style={{ opacity: 0.5, fontSize: 11 }}>×</span>
-              </span>
-            ))}
+          <div style={{
+            fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--ink-500)',
+            letterSpacing: '0.04em', marginBottom: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span>무엇을 좋아했나요? <Required /></span>
+            <span style={{ color: favoriteThings.length >= MAX_TAGS ? 'var(--peach-400)' : 'var(--ink-300)', fontSize: 11 }}>
+              {favoriteThings.length}/{MAX_TAGS}
+            </span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              style={{ ...inputStyle, flex: 1 }}
-              value={favInput}
-              onChange={e => setFavInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addFavorite()}
-              placeholder="간식, 산책 등 직접 입력"
-            />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {FAVORITE_TAGS.map(tag => {
+              const active = favoriteThings.includes(tag)
+              const disabled = !active && favoriteThings.length >= MAX_TAGS
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleFavoritePreset(tag)}
+                  disabled={disabled}
+                  style={{
+                    padding: '9px 16px', borderRadius: 999, cursor: disabled ? 'default' : 'pointer',
+                    fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: active ? 600 : 400,
+                    border: `1px solid ${active ? 'rgba(251,180,137,0.7)' : 'rgba(166,133,199,0.25)'}`,
+                    background: active ? 'rgba(251,180,137,0.12)' : '#fff',
+                    color: active ? 'var(--peach-500)' : disabled ? 'var(--ink-100)' : 'var(--ink-500)',
+                    opacity: disabled ? 0.45 : 1,
+                    transition: 'all .15s',
+                  }}
+                >
+                  {tag}
+                </button>
+              )
+            })}
+            {/* 직접입력 토글 */}
             <button
-              onClick={addFavorite}
+              onClick={() => setFavCustomMode(p => !p)}
               style={{
-                padding: '12px 16px', borderRadius: 12, border: 'none',
-                background: 'var(--lav-500)', color: '#fff',
-                fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                padding: '9px 16px', borderRadius: 999, cursor: 'pointer',
+                fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: favCustomMode ? 600 : 400,
+                border: `1px solid ${favCustomMode ? 'rgba(251,180,137,0.7)' : 'rgba(166,133,199,0.25)'}`,
+                background: favCustomMode ? 'rgba(251,180,137,0.12)' : '#fff',
+                color: favCustomMode ? 'var(--peach-500)' : 'var(--ink-500)',
+                transition: 'all .15s',
               }}
             >
-              추가
+              직접입력
             </button>
           </div>
+          {/* 프리셋에 없는 기존 항목 표시 */}
+          {favoriteThings.filter(t => !FAVORITE_TAGS.includes(t)).length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {favoriteThings.filter(t => !FAVORITE_TAGS.includes(t)).map(t => (
+                <span
+                  key={t}
+                  onClick={() => setFavoriteThings(p => p.filter(x => x !== t))}
+                  style={{
+                    padding: '8px 12px', borderRadius: 999, cursor: 'pointer',
+                    border: '1px solid rgba(251,180,137,0.7)',
+                    background: 'rgba(251,180,137,0.12)', color: 'var(--peach-500)',
+                    fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  {t} <span style={{ opacity: 0.6, fontSize: 11 }}>×</span>
+                </span>
+              ))}
+            </div>
+          )}
+          {favCustomMode && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <input
+                style={{ ...inputStyle, flex: 1 }}
+                value={favCustom}
+                onChange={e => setFavCustom(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addFavCustom()}
+                placeholder="ex. 햇살 받기, 유리창 핥기"
+              />
+              <button
+                onClick={addFavCustom}
+                style={{
+                  padding: '13px 16px', borderRadius: 14, border: 'none',
+                  background: 'var(--lav-500)', color: '#fff',
+                  fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                추가
+              </button>
+            </div>
+          )}
         </Field>
 
         {/* 한마디 */}
         <Field>
-          <Label>아이가 자주 했던 행동이나 한마디 <Optional /></Label>
-          <input
-            style={inputStyle}
+          <SectionLabel>아이에게 전하고 싶은 한마디 <Optional /></SectionLabel>
+          <textarea
+            placeholder="늘 사랑한다는 말…"
             value={firstWord}
             onChange={e => setFirstWord(e.target.value)}
-            placeholder="예: 밥 달라고 항상 앞발로 긁었어"
+            maxLength={80}
+            rows={3}
+            style={{
+              width: '100%', padding: '13px 16px', borderRadius: 14,
+              background: '#fff', border: '1px solid rgba(166,133,199,0.25)',
+              fontFamily: 'var(--font-serif)', fontSize: 14, color: 'var(--lav-800)',
+              outline: 'none', resize: 'none', boxSizing: 'border-box', lineHeight: 1.7,
+            }}
           />
+          <div style={{ textAlign: 'right', fontFamily: 'var(--font-sans)', fontSize: 11, color: firstWord.length >= 72 ? 'var(--peach-400)' : 'var(--ink-300)', marginTop: 4 }}>
+            {firstWord.length}/80
+          </div>
         </Field>
 
         {/* 구분선 */}
