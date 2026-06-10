@@ -284,8 +284,8 @@ export default function StepBasicInfo({ data, onChange, onNext }: Props) {
           </div>
 
           {/* 날짜 */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div>
+            <div>
               <div style={{
                 fontFamily: 'var(--font-sans)',
                 fontSize: 11.5,
@@ -299,7 +299,7 @@ export default function StepBasicInfo({ data, onChange, onNext }: Props) {
                 onChange={(e) => handleBornDateChange(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '11px 6px',
+                  padding: '13px 12px',
                   borderRadius: 14,
                   background: '#fff',
                   border: `1px solid ${dateError && data.bornDate ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
@@ -311,7 +311,7 @@ export default function StepBasicInfo({ data, onChange, onNext }: Props) {
                 }}
               />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ marginTop: 10 }}>
               <div style={{
                 fontFamily: 'var(--font-sans)',
                 fontSize: 11.5,
@@ -326,7 +326,7 @@ export default function StepBasicInfo({ data, onChange, onNext }: Props) {
                 max={today}
                 style={{
                   width: '100%',
-                  padding: '11px 6px',
+                  padding: '13px 12px',
                   borderRadius: 14,
                   background: '#fff',
                   border: `1px solid ${dateError && data.passedDate ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
