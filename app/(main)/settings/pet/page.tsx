@@ -365,41 +365,35 @@ export default function PetSettingsPage() {
           />
         </div>
 
-        {/* ── 날짜 (나란히) ── */}
-        <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={labelBase}>
-              태어난 날 <span style={{ color: 'var(--peach-500)', fontSize: 10 }}>필수</span>
-            </div>
-            <input
-              type="date"
-              value={bornAt}
-              onChange={e => handleBornAtChange(e.target.value)}
-              style={{
-                ...inputBase,
-                padding: '11px 6px',
-                fontSize: 13,
-                border: `1px solid ${dateError && bornAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
-              }}
-            />
+        {/* ── 날짜 (세로 배치) ── */}
+        <div style={{ marginTop: 14 }}>
+          <div style={labelBase}>
+            태어난 날 <span style={{ color: 'var(--peach-500)', fontSize: 10 }}>필수</span>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={labelBase}>
-              별이 된 날 <span style={{ color: 'var(--peach-500)', fontSize: 10 }}>필수</span>
-            </div>
-            <input
-              type="date"
-              value={diedAt}
-              max={today}
-              onChange={e => handleDiedAtChange(e.target.value)}
-              style={{
-                ...inputBase,
-                padding: '11px 6px',
-                fontSize: 13,
-                border: `1px solid ${dateError && diedAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
-              }}
-            />
+          <input
+            type="date"
+            value={bornAt}
+            onChange={e => handleBornAtChange(e.target.value)}
+            style={{
+              ...inputBase,
+              border: `1px solid ${dateError && bornAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
+            }}
+          />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <div style={labelBase}>
+            별이 된 날 <span style={{ color: 'var(--peach-500)', fontSize: 10 }}>필수</span>
           </div>
+          <input
+            type="date"
+            value={diedAt}
+            max={today}
+            onChange={e => handleDiedAtChange(e.target.value)}
+            style={{
+              ...inputBase,
+              border: `1px solid ${dateError && diedAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
+            }}
+          />
         </div>
         {dateError && (
           <div style={{ marginTop: 6, fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--peach-500)' }}>
