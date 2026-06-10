@@ -7,7 +7,7 @@ import type { HomeStatusResponse } from '@/app/api/home/status/route'
 // ── 개발용 목업 데이터 ─────────────────────────────────────────────────
 // DEV_BYPASS_AUTH=true 일 때 DB 없이도 화면 확인 가능
 // 'A' | 'B' | 'C' 로 바꾸면 각 상태 UI 확인 가능
-const DEV_STATUS: HomeStatusResponse['status'] = 'A'
+const DEV_STATUS: HomeStatusResponse['status'] = 'B'
 
 const DEV_MOCK: HomeStatusResponse = {
   status: DEV_STATUS,
@@ -19,7 +19,7 @@ const DEV_MOCK: HomeStatusResponse = {
     species: 'dog',
     diedAt: '2026-05-10',
   },
-  journey: { currentStage: 1, currentWeek: 1, currentDay: 3, totalLetters: 5, totalMinutes: 120, emotionCount: 3 },
+  journey: { currentStage: 1, currentWeek: 1, currentDay: 3, totalLetters: 5, letterCount: 5, emotionCount: 3, longestStreak: 3 },
   dayCount: 22,
   // 상태 A/C 데이터 — DEV_STATUS에 맞게 항상 포함 (렌더링은 status 값으로 결정)
   unreadReply: { letterId: 'l1', replyId: 'r1', preview: '오늘도 하늘에서 엄마를 바라보고 있었어요. 바람이 살랑살랑', receivedAt: new Date().toISOString() },
@@ -49,10 +49,21 @@ async function getHomeStatus(): Promise<HomeStatusResponse | null> {
       where: { petId: pet.id },
       select: { currentStage: true, currentWeek: true, currentDay: true, totalLetters: true },
     })
-    const emotionCount = await prisma.emotionLog.count({ where: { petId: pet.id } })
+    const [emotionDays, letters] = await Promise.all([
+      prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId: pet.id } }),
+      prisma.letter.findMany({ where: { petId: pet.id }, select: { createdAt: true } }),
+    ])
+    const emotionCount = emotionDays.length
+    const letterCount = letters.length
+    const toKSTDay = (d: Date) => { const k = new Date(d.getTime() + 9*3600000); return `${k.getUTCFullYear()}-${String(k.getUTCMonth()+1).padStart(2,'0')}-${String(k.getUTCDate()).padStart(2,'0')}` }
+    const days = [...new Set(letters.map(l => toKSTDay(l.createdAt)))].sort()
+    let longestStreak = days.length > 0 ? 1 : 0, cur = longestStreak
+    for (let i = 1; i < days.length; i++) {
+      if (new Date(days[i]).getTime() - new Date(days[i-1]).getTime() === 86400000) { cur++; longestStreak = Math.max(longestStreak, cur) } else cur = 1
+    }
     const journeyData = journey
-      ? { ...journey, totalMinutes: 0, emotionCount }
-      : { currentStage: 1, currentWeek: 1, currentDay: 1, totalLetters: 0, totalMinutes: 0, emotionCount: 0 }
+      ? { ...journey, letterCount, emotionCount, longestStreak }
+      : { currentStage: 1, currentWeek: 1, currentDay: 1, totalLetters: 0, letterCount: 0, emotionCount: 0, longestStreak: 0 }
 
     const died = new Date(pet.diedAt); died.setHours(0,0,0,0)
     const today = new Date(); today.setHours(0,0,0,0)
@@ -117,7 +128,7 @@ export default async function HomePage() {
 
   const { status, pet, journey, dayCount } = homeData
   const weekTheme = WEEK_THEMES[journey.currentWeek] ?? WEEK_THEMES[1]
-  const journeyProgress = Math.min(((journey.currentWeek - 1) * 6 + journey.currentDay) / 49, 1)
+  const journeyProgress = Math.min((journey.totalLetters ?? 0) / 49, 1)
 
   return (
     <div style={{ paddingBottom: 8 }}>
@@ -190,7 +201,7 @@ export default async function HomePage() {
             }}>여정 진행률</div>
             <div style={{
               fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--lav-500)',
-            }}>{dayCount}/49일</div>
+            }}>{journey.totalLetters ?? 0}/49일</div>
           </div>
           {/* 진행 바 */}
           <div style={{
@@ -208,11 +219,11 @@ export default async function HomePage() {
             marginTop: 14, display: 'flex',
             borderTop: '1px solid rgba(166,133,199,0.1)', paddingTop: 14,
           }}>
-            <StatBadge n={String(journey.totalLetters)} label="편지" />
-            <StatDivider />
             <StatBadge n={String(journey.emotionCount)} label="감정기록" />
             <StatDivider />
-            <StatBadge n={`${journey.totalMinutes}분`} label="함께한 시간" />
+            <StatBadge n={String(journey.letterCount)} label="보낸 편지" />
+            <StatDivider />
+            <StatBadge n={`${journey.longestStreak}일`} label="최장 연속" />
           </div>
         </div>
       </div>

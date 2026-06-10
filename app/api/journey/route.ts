@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
+// ── 헬퍼: 편지 날짜(KST) 기준 최장 연속 일수 ──────────────────────
+function calcLongestStreak(letterDates: Date[]): number {
+  if (letterDates.length === 0) return 0
+  const toKSTDay = (d: Date) => {
+    const k = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+    return `${k.getUTCFullYear()}-${String(k.getUTCMonth()+1).padStart(2,'0')}-${String(k.getUTCDate()).padStart(2,'0')}`
+  }
+  const days = [...new Set(letterDates.map(toKSTDay))].sort()
+  let longest = 1, current = 1
+  for (let i = 1; i < days.length; i++) {
+    const prev = new Date(days[i - 1]).getTime()
+    const curr = new Date(days[i]).getTime()
+    if (curr - prev === 86400000) { current++; longest = Math.max(longest, current) }
+    else current = 1
+  }
+  return longest
+}
+
 // GET /api/journey — 여정 진행 현황
 export async function GET() {
   // DEV 우회
@@ -9,11 +27,11 @@ export async function GET() {
     return NextResponse.json({
       currentStage: 1,
       currentWeek: 1,
-      currentDay: 2,         // 이번 주 완료 문항 수
-      totalLetters: 3,
-      totalMinutes: 50,
-      totalDays: 3,          // 전체 진행일 (progress bar용)
-      emotionCount: 3,       // 감정 기록 수
+      currentDay: 2,
+      letterCount: 3,        // 보낸 편지 전체
+      totalDays: 3,          // progress bar용 (질문 편지)
+      emotionCount: 3,       // 날짜 중복 제거
+      longestStreak: 3,      // 최장 연속 일수
       nextStageAvailable: false,
     })
   }
@@ -29,26 +47,29 @@ export async function GET() {
     })
     if (!dbUser?.activePetId) return NextResponse.json({ error: 'No active pet' }, { status: 404 })
 
-    const progress = await prisma.journeyProgress.findUnique({
-      where: { petId: dbUser.activePetId },
-    })
+    const petId = dbUser.activePetId
 
-    // 감정 기록 수
-    const emotionCount = await prisma.letter.count({
-      where: { petId: dbUser.activePetId, emotionTag: { not: null } },
-    })
+    const [progress, emotionDays, letters] = await Promise.all([
+      prisma.journeyProgress.findUnique({ where: { petId } }),
+      // 감정기록: 날짜 중복 제거 (loggedAt이 Date 타입이므로 groupBy로 distinct)
+      prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId } }),
+      // 편지 날짜 목록 (최장 연속 계산용)
+      prisma.letter.findMany({ where: { petId, userId: user.id }, select: { createdAt: true } }),
+    ])
 
-    // 전체 진행일 = 총 편지 수 (1편지 = 1일)
+    const emotionCount = emotionDays.length
+    const letterCount = letters.length
+    const longestStreak = calcLongestStreak(letters.map(l => l.createdAt))
     const totalDays = Math.min(progress?.totalLetters ?? 0, 49)
 
     return NextResponse.json({
       currentStage: progress?.currentStage ?? 1,
       currentWeek: progress?.currentWeek ?? 1,
       currentDay: progress?.currentDay ?? 0,
-      totalLetters: progress?.totalLetters ?? 0,
-      totalMinutes: progress?.totalMinutes ?? 0,
+      letterCount,
       totalDays,
       emotionCount,
+      longestStreak,
       nextStageAvailable: progress?.nextStageAvailable ?? false,
     }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (e) {

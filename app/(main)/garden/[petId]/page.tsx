@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 
 // ── 타입 ──────────────────────────────────────────────────────────
 interface PetDetail {
@@ -152,6 +153,9 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
     }
     setPosting(false)
   }
+
+  const commentCount = data?.comments.length ?? 0
+  const { visible: visibleComments, loading: commentsLoading, hasMore: commentsHasMore, sentinelRef: commentsSentinel } = useInfiniteScroll(commentCount, 15, 10)
 
   if (loading) {
     return (
@@ -363,7 +367,7 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {comments.map(c => (
+            {comments.slice(0, visibleComments).map(c => (
               <div key={c.id} style={{
                 padding: '12px 14px', borderRadius: 14,
                 background: 'rgba(255,255,255,0.45)',
@@ -464,6 +468,23 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
                 )}
               </div>
             ))}
+            <div ref={commentsSentinel} style={{ height: 1 }} />
+            {commentsLoading && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                <div style={{
+                  width: 18, height: 18, borderRadius: '50%',
+                  border: '2px solid rgba(166,133,199,0.2)',
+                  borderTopColor: 'var(--lav-500)',
+                  animation: 'spin 0.7s linear infinite',
+                }}/>
+              </div>
+            )}
+            {!commentsHasMore && comments.length > 0 && (
+              <div style={{
+                textAlign: 'center', padding: '12px 0 4px',
+                fontFamily: 'var(--font-sans)', fontSize: 12, color: '#b0a0c0',
+              }}>모든 마음을 다 불러왔어요 ✦</div>
+            )}
           </div>
         )}
       </div>

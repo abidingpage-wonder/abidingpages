@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 
 // ── 상수 ──────────────────────────────────────────────────────────
 const MAX_MESSAGES = 15
@@ -220,6 +221,61 @@ function MemorialCard({
         </span>
       </div>
     </div>
+  )
+}
+
+// ── 정원 카드 무한 스크롤 리스트 ─────────────────────────────────
+function GardenCardList({
+  pets, router, handleSticker,
+}: {
+  pets: PetCard[]
+  router: ReturnType<typeof useRouter>
+  handleSticker: (id: string, type: 'candle' | 'flower' | 'heart') => void
+}) {
+  const { visible, loading, hasMore, sentinelRef } = useInfiniteScroll(pets.length, 12, 12)
+  const shown = pets.slice(0, visible)
+
+  if (pets.length === 0) {
+    return (
+      <div style={{
+        textAlign: 'center', padding: '40px 20px',
+        fontFamily: 'var(--font-sans)', fontSize: 13, color: '#9b8bb0',
+      }}>
+        아직 공개된 아이가 없어요
+      </div>
+    )
+  }
+  return (
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {shown.map(p => (
+          <MemorialCard
+            key={p.id} pet={p}
+            candle={p.candle} flower={p.flower} heart={p.heart}
+            stickerSenders={p.stickerSenders} myStickers={p.myStickers}
+            onClick={() => router.push(`/garden/${p.id}`)}
+            onSticker={type => handleSticker(p.id, type)}
+          />
+        ))}
+      </div>
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {loading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: '50%',
+            border: '2px solid rgba(166,133,199,0.2)',
+            borderTopColor: 'var(--lav-500)',
+            animation: 'spin 0.7s linear infinite',
+          }}/>
+        </div>
+      )}
+      {!hasMore && pets.length > 0 && (
+        <div style={{
+          textAlign: 'center', padding: '16px 0 8px',
+          fontFamily: 'var(--font-sans)', fontSize: 12, color: '#b0a0c0',
+        }}>모든 아이를 다 불러왔어요 ✦</div>
+      )}
+    </>
   )
 }
 
@@ -454,28 +510,7 @@ export default function GardenPage() {
             <LeafSprig />
           </div>
 
-          {pets.length === 0 ? (
-            <div style={{
-              textAlign: 'center', padding: '40px 20px',
-              fontFamily: 'var(--font-sans)', fontSize: 13, color: '#9b8bb0',
-            }}>
-              아직 공개된 아이가 없어요
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {pets.map(p => (
-                <MemorialCard
-                  key={p.id}
-                  pet={p}
-                  candle={p.candle} flower={p.flower} heart={p.heart}
-                  stickerSenders={p.stickerSenders}
-                  myStickers={p.myStickers}
-                  onClick={() => router.push(`/garden/${p.id}`)}
-                  onSticker={type => handleSticker(p.id, type)}
-                />
-              ))}
-            </div>
-          )}
+          <GardenCardList pets={pets} router={router} handleSticker={handleSticker} />
         </div>
 
         <div style={{ height: 170 }} />

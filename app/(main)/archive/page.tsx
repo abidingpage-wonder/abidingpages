@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 
 // ── 타입 ─────────────────────────────────────────────────────────
 interface ArchiveData {
@@ -654,12 +655,15 @@ function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: Timeli
 
   // Free 유저: 편지 3개까지만 공개
   const FREE_LIMIT = 3
-  const visiblePairs = isPro ? allPairs : allPairs.slice(0, FREE_LIMIT)
-  const isLocked     = !isPro && allPairs.length > FREE_LIMIT
+  const cappedPairs = isPro ? allPairs : allPairs.slice(0, FREE_LIMIT)
+  const isLocked    = !isPro && allPairs.length > FREE_LIMIT
+
+  const { visible, loading, hasMore, sentinelRef } = useInfiniteScroll(cappedPairs.length, 10, 10)
+  const shownPairs = cappedPairs.slice(0, visible)
 
   return (
     <div style={{ padding: '0 16px', marginTop: 14, paddingBottom: 64 }}>
-      {visiblePairs.map((pair, pi) => (
+      {shownPairs.map((pair, pi) => (
         <div key={pi} style={{
           display: 'grid',
           gridTemplateColumns: `${ICON_SIZE}px 1fr`,
@@ -671,12 +675,12 @@ function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: Timeli
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <HeartIconLav/>
             {pair.reply && (
-              /* 선: marginBottom으로 rowGap 넘어 연결 */
+              /* rowGap(10) + 아이콘 반지름(14) 만큼 연장해 피치 하트 중심까지 닿게 */
               <div style={{
                 flex: 1, width: 1.5,
                 background: 'rgba(166,133,199,0.3)',
                 minHeight: 8,
-                marginBottom: -8,
+                marginBottom: -14,
               }}/>
             )}
           </div>
@@ -701,6 +705,28 @@ function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: Timeli
           )}
         </div>
       ))}
+
+      {/* 무한 스크롤 센티넬 */}
+      {!isLocked && (
+        <div ref={sentinelRef} style={{ height: 1 }} />
+      )}
+      {loading && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: '50%',
+            border: '2px solid rgba(166,133,199,0.2)',
+            borderTopColor: 'var(--lav-500)',
+            animation: 'spin 0.7s linear infinite',
+          }}/>
+        </div>
+      )}
+      {!hasMore && !isLocked && cappedPairs.length > 0 && (
+        <div style={{
+          textAlign: 'center', padding: '16px 0 8px',
+          fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--ink-300)',
+        }}>모든 편지를 다 불러왔어요 ✦</div>
+      )}
+
       {/* Free 유저 버튼 */}
       {isLocked && (
         <button style={{

@@ -4,6 +4,22 @@ import { prisma } from '@/lib/prisma'
 
 export type HomeStatus = 'A' | 'B' | 'C'
 
+function calcLongestStreak(letterDates: Date[]): number {
+  if (letterDates.length === 0) return 0
+  const toKSTDay = (d: Date) => {
+    const k = new Date(d.getTime() + 9 * 60 * 60 * 1000)
+    return `${k.getUTCFullYear()}-${String(k.getUTCMonth()+1).padStart(2,'0')}-${String(k.getUTCDate()).padStart(2,'0')}`
+  }
+  const days = [...new Set(letterDates.map(toKSTDay))].sort()
+  let longest = 1, current = 1
+  for (let i = 1; i < days.length; i++) {
+    if (new Date(days[i]).getTime() - new Date(days[i-1]).getTime() === 86400000) {
+      current++; longest = Math.max(longest, current)
+    } else current = 1
+  }
+  return longest
+}
+
 export interface HomeStatusResponse {
   status: HomeStatus
   pet: {
@@ -18,9 +34,10 @@ export interface HomeStatusResponse {
     currentStage: number
     currentWeek: number
     currentDay: number
-    totalLetters: number
-    totalMinutes: number
-    emotionCount: number
+    totalLetters: number   // progress bar용 (질문 편지)
+    letterCount: number    // 보낸 편지 전체
+    emotionCount: number   // 날짜 중복 제거
+    longestStreak: number  // 최장 연속 일수
   }
   dayCount: number // 별이 된 날부터 오늘까지 (1-based)
   // 상태 A: 읽지 않은 답장
@@ -91,20 +108,22 @@ export async function GET() {
     }
 
     // 3. 여정 진행 상태
-    const journey = await prisma.journeyProgress.findUnique({
-      where: { petId: pet.id },
-      select: {
-        currentStage: true,
-        currentWeek: true,
-        currentDay: true,
-        totalLetters: true,
-      },
-    })
+    const [journey, emotionDays, letters] = await Promise.all([
+      prisma.journeyProgress.findUnique({
+        where: { petId: pet.id },
+        select: { currentStage: true, currentWeek: true, currentDay: true, totalLetters: true },
+      }),
+      prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId: pet.id } }),
+      prisma.letter.findMany({ where: { petId: pet.id, userId: user.id }, select: { createdAt: true } }),
+    ])
 
-    const emotionCount = await prisma.emotionLog.count({ where: { petId: pet.id } })
+    const emotionCount = emotionDays.length
+    const letterCount = letters.length
+    const longestStreak = calcLongestStreak(letters.map(l => l.createdAt))
+
     const journeyData = journey
-      ? { ...journey, totalMinutes: 0, emotionCount }
-      : { currentStage: 1, currentWeek: 1, currentDay: 1, totalLetters: 0, totalMinutes: 0, emotionCount: 0 }
+      ? { ...journey, letterCount, emotionCount, longestStreak }
+      : { currentStage: 1, currentWeek: 1, currentDay: 1, totalLetters: 0, letterCount: 0, emotionCount: 0, longestStreak: 0 }
 
     const dayCount = calcDayCount(pet.diedAt)
     const { start, end } = todayRange()

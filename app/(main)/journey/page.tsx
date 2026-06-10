@@ -18,10 +18,10 @@ interface JourneyData {
   currentStage: number
   currentWeek: number
   currentDay: number
-  totalLetters: number
-  totalMinutes: number
+  letterCount: number
   totalDays: number
   emotionCount: number
+  longestStreak: number
   nextStageAvailable: boolean
 }
 
@@ -248,9 +248,9 @@ export default function JourneyPage() {
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
             <StatChip value={String(data?.emotionCount ?? 0)} label="감정 기록"/>
             <div style={{ width: 1, height: 28, background: 'rgba(166,133,199,0.2)' }}/>
-            <StatChip value={String(data?.totalLetters ?? 0)} label="여정 편지"/>
+            <StatChip value={String(data?.letterCount ?? 0)} label="보낸 편지"/>
             <div style={{ width: 1, height: 28, background: 'rgba(166,133,199,0.2)' }}/>
-            <StatChip value={`${data?.totalMinutes ?? 0}분`} label="함께한 시간"/>
+            <StatChip value={`${data?.longestStreak ?? 0}일`} label="최장 연속"/>
           </div>
         </div>
 

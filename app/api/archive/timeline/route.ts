@@ -142,12 +142,16 @@ export async function GET() {
       }
       const group = weekMap.get(week)!
 
+      const toKST = (d: Date) => new Date(d.getTime() + 9 * 60 * 60 * 1000)
       const fmtDate = (d: Date) => {
-        const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0')
+        const k = toKST(d)
+        const y = k.getUTCFullYear(), m = String(k.getUTCMonth()+1).padStart(2,'0'), dd = String(k.getUTCDate()).padStart(2,'0')
         return `${y}.${m}.${dd}`
       }
-      const fmtTime = (d: Date) =>
-        `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+      const fmtTime = (d: Date) => {
+        const k = toKST(d)
+        return `${String(k.getUTCHours()).padStart(2,'0')}:${String(k.getUTCMinutes()).padStart(2,'0')}`
+      }
 
       group.entries.push({
         type: 'letter',

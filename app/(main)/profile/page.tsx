@@ -22,10 +22,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function MenuItem({
-  icon, label, sub, onClick, accent, danger,
+  icon, label, sub, onClick, accent, danger, hideArrow,
 }: {
   icon: string; label: string; sub?: string
-  onClick?: () => void; accent?: boolean; danger?: boolean
+  onClick?: () => void; accent?: boolean; danger?: boolean; hideArrow?: boolean
 }) {
   return (
     <div
@@ -60,7 +60,7 @@ function MenuItem({
           </div>
         )}
       </div>
-      {onClick && (
+      {onClick && !hideArrow && (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
           <path d="M9 5l7 7-7 7" stroke="var(--lav-400)" strokeWidth="2" strokeLinecap="round"/>
         </svg>
@@ -178,10 +178,6 @@ export default function ProfilePage() {
         {/* 계정 */}
         <SectionLabel>계정</SectionLabel>
         <MenuItem
-          icon="🚪" label="로그아웃"
-          onClick={handleLogout}
-        />
-        <MenuItem
           icon="📄" label="이용약관 · 개인정보"
           onClick={() => window.open('#', '_blank')}
         />
@@ -191,9 +187,9 @@ export default function ProfilePage() {
           onClick={() => { window.location.href = 'mailto:abiding.pages26@gmail.com' }}
         />
         <MenuItem
-          icon="⚠️" label="회원 탈퇴"
-          danger
-          onClick={() => router.push('/settings/withdraw')}
+          icon="🚪" label="로그아웃"
+          onClick={handleLogout}
+          hideArrow
         />
 
       </div>

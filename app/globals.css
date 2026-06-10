@@ -162,3 +162,5 @@ body {
 .reply-letter-text {
   font-family: 'YoonChildfundManSeh', 'Nanum Pen Script', cursive !important;
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
