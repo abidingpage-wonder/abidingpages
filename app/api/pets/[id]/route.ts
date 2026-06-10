@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const body = await req.json()
     const {
-      name, species, bornAt, diedAt,
+      name, species, breed, bornAt, diedAt,
       personalityTags, favoriteThings,
       farewellType, ownerNickname, firstWord,
       gardenPublic, commentAllowed, profileImageUrl,
@@ -63,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data: {
         ...(name              !== undefined && { name }),
         ...(species           !== undefined && { species }),
+        ...(breed             !== undefined && { breed }),
         ...(bornAt            !== undefined && { bornAt: new Date(bornAt) }),
         ...(diedAt            !== undefined && { diedAt: new Date(diedAt) }),
         ...(personalityTags   !== undefined && { personalityTags }),

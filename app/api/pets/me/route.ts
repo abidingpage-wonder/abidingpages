@@ -27,7 +27,7 @@ export async function GET() {
     const pet = await prisma.pet.findUnique({
       where: { id: dbUser.activePetId },
       select: {
-        id: true, name: true, species: true,
+        id: true, name: true, species: true, breed: true,
         bornAt: true, diedAt: true,
         personalityTags: true, favoriteThings: true,
         farewellType: true, ownerNickname: true,
