@@ -37,10 +37,18 @@ const inputStyle: React.CSSProperties = {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--ink-500)', marginBottom: 8 }}>
+    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--ink-500)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
       {children}
     </div>
   )
+}
+
+function Required() {
+  return <span style={{ color: 'var(--peach-500)', fontSize: 10, fontWeight: 500 }}>필수</span>
+}
+
+function Optional() {
+  return <span style={{ color: 'var(--ink-300)', fontSize: 10, fontWeight: 400 }}>(선택)</span>
 }
 
 function Field({ children, mt = 18 }: { children: React.ReactNode; mt?: number }) {
@@ -71,7 +79,10 @@ export default function PetSettingsPage() {
   const [commentAllowed, setCommentAllowed]   = useState(true)
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
   const [photoUploading, setPhotoUploading]   = useState(false)
+  const [dateError, setDateError]             = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const today = new Date().toISOString().split('T')[0]
 
   // activePet 정보 로드
   useEffect(() => {
@@ -116,6 +127,34 @@ export default function PetSettingsPage() {
     setPhotoUploading(false)
   }
 
+  function handleDiedAtChange(val: string) {
+    setDiedAt(val)
+    if (val > today) {
+      setDateError('별이 된 날은 오늘 이전이어야 해요.')
+    } else if (bornAt && val && bornAt >= val) {
+      setDateError('태어난 날은 별이 된 날보다 이전이어야 해요.')
+    } else {
+      setDateError('')
+    }
+  }
+
+  function handleBornAtChange(val: string) {
+    setBornAt(val)
+    if (diedAt && val >= diedAt) {
+      setDateError('태어난 날은 별이 된 날보다 이전이어야 해요.')
+    } else {
+      setDateError('')
+    }
+  }
+
+  const isValid =
+    name.trim() !== '' &&
+    species !== '' &&
+    bornAt !== '' &&
+    diedAt !== '' &&
+    diedAt <= today &&
+    bornAt < diedAt
+
   function toggleTag(tag: string) {
     setPersonalityTags(prev =>
       prev.includes(tag)
@@ -135,7 +174,7 @@ export default function PetSettingsPage() {
   }
 
   async function handleSave() {
-    if (!petId || saving) return
+    if (!petId || saving || !isValid) return
     setSaving(true)
     try {
       const res = await fetch(`/api/pets/${petId}`, {
@@ -236,13 +275,13 @@ export default function PetSettingsPage() {
 
         {/* 이름 */}
         <Field mt={8}>
-          <Label>이름</Label>
+          <Label>이름 <Required /></Label>
           <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="아이 이름" />
         </Field>
 
         {/* 종 */}
         <Field>
-          <Label>종류</Label>
+          <Label>종류 <Required /></Label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {SPECIES_OPTIONS.map(opt => (
               <button
@@ -264,17 +303,33 @@ export default function PetSettingsPage() {
 
         {/* 생일 / 별날 */}
         <Field>
-          <Label>태어난 날</Label>
-          <input type="date" style={inputStyle} value={bornAt} onChange={e => setBornAt(e.target.value)} />
+          <Label>태어난 날 <Required /></Label>
+          <input
+            type="date"
+            style={{ ...inputStyle, border: `1px solid ${dateError && bornAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.3)'}` }}
+            value={bornAt}
+            onChange={e => handleBornAtChange(e.target.value)}
+          />
         </Field>
         <Field>
-          <Label>별이 된 날</Label>
-          <input type="date" style={inputStyle} value={diedAt} onChange={e => setDiedAt(e.target.value)} />
+          <Label>별이 된 날 <Required /></Label>
+          <input
+            type="date"
+            style={{ ...inputStyle, border: `1px solid ${dateError && diedAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.3)'}` }}
+            value={diedAt}
+            max={today}
+            onChange={e => handleDiedAtChange(e.target.value)}
+          />
         </Field>
+        {dateError && (
+          <div style={{ marginTop: 6, fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--peach-500)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            ⚠️ {dateError}
+          </div>
+        )}
 
         {/* 이별 유형 */}
         <Field>
-          <Label>이별 유형</Label>
+          <Label>이별 유형 <Optional /></Label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {FAREWELL_OPTIONS.map(opt => (
               <button
@@ -296,13 +351,13 @@ export default function PetSettingsPage() {
 
         {/* 호칭 */}
         <Field>
-          <Label>나를 부르는 호칭 (예: 엄마, 아빠)</Label>
+          <Label>나를 부르는 호칭 (예: 엄마, 아빠) <Optional /></Label>
           <input style={inputStyle} value={ownerNickname} onChange={e => setOwnerNickname(e.target.value)} placeholder="엄마" />
         </Field>
 
         {/* 성격 태그 */}
         <Field>
-          <Label>성격 태그 (최대 3개)</Label>
+          <Label>성격 태그 (최대 3개) <Optional /></Label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {PERSONALITY_TAGS.map(tag => {
               const active = personalityTags.includes(tag)
@@ -330,7 +385,7 @@ export default function PetSettingsPage() {
 
         {/* 좋아했던 것들 */}
         <Field>
-          <Label>좋아했던 것들</Label>
+          <Label>좋아했던 것들 <Optional /></Label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
             {favoriteThings.map(t => (
               <span
@@ -370,7 +425,7 @@ export default function PetSettingsPage() {
 
         {/* 한마디 */}
         <Field>
-          <Label>아이가 자주 했던 행동이나 한마디</Label>
+          <Label>아이가 자주 했던 행동이나 한마디 <Optional /></Label>
           <input
             style={inputStyle}
             value={firstWord}
@@ -406,14 +461,14 @@ export default function PetSettingsPage() {
         {/* 저장 버튼 */}
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !isValid}
           style={{
             marginTop: 32, width: '100%', padding: '16px', borderRadius: 999, border: 'none',
-            background: saving ? 'rgba(166,133,199,0.3)' : 'var(--lav-600)',
-            color: saving ? 'var(--lav-400)' : '#fff',
+            background: (saving || !isValid) ? 'var(--lav-200)' : 'var(--lav-600)',
+            color: (saving || !isValid) ? 'var(--lav-400)' : '#fff',
             fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
-            boxShadow: saving ? 'none' : '0 6px 18px rgba(86,52,140,0.25)',
-            cursor: saving ? 'default' : 'pointer', transition: 'all .18s',
+            boxShadow: (saving || !isValid) ? 'none' : '0 6px 18px rgba(86,52,140,0.25)',
+            cursor: (saving || !isValid) ? 'not-allowed' : 'pointer', transition: 'all .18s',
           }}
         >
           {saving ? '저장 중…' : '저장하기'}
