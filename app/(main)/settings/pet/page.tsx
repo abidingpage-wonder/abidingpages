@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 // ─── 상수 ────────────────────────────────────────────────────────────────
@@ -69,6 +69,9 @@ export default function PetSettingsPage() {
   const [firstWord, setFirstWord]             = useState('')
   const [gardenPublic, setGardenPublic]       = useState(true)
   const [commentAllowed, setCommentAllowed]   = useState(true)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
+  const [photoUploading, setPhotoUploading]   = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // activePet 정보 로드
   useEffect(() => {
@@ -90,11 +93,28 @@ export default function PetSettingsPage() {
         setFirstWord(pet.firstWord ?? '')
         setGardenPublic(pet.gardenPublic ?? true)
         setCommentAllowed(pet.commentAllowed ?? true)
+        setProfileImageUrl(pet.profileImageUrl ?? null)
       } catch { /* silent */ }
       setLoading(false)
     }
     load()
   }, [])
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/upload/pet-photo', { method: 'POST', body: formData })
+      if (res.ok) {
+        const { url } = await res.json()
+        setProfileImageUrl(url)
+      }
+    } catch { /* silent */ }
+    setPhotoUploading(false)
+  }
 
   function toggleTag(tag: string) {
     setPersonalityTags(prev =>
@@ -126,6 +146,7 @@ export default function PetSettingsPage() {
           farewellType, ownerNickname,
           personalityTags, favoriteThings,
           firstWord, gardenPublic, commentAllowed,
+          profileImageUrl,
         }),
       })
       if (res.ok) {
@@ -172,6 +193,47 @@ export default function PetSettingsPage() {
 
       <div style={{ padding: '4px 24px 32px' }}>
 
+        {/* 프로필 사진 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0 20px' }}>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              width: 90, height: 90, borderRadius: '50%', cursor: 'pointer',
+              background: 'linear-gradient(145deg, #ece4f3, #d8c8d8)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden', position: 'relative',
+              border: '2px solid rgba(139,107,184,0.2)',
+              boxShadow: '0 2px 12px rgba(86,52,140,0.12)',
+            }}
+          >
+            {photoUploading ? (
+              <div style={{ fontSize: 20 }}>⏳</div>
+            ) : profileImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profileImageUrl} alt="프로필" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ fontSize: 32 }}>
+                {species === 'dog' ? '🐶' : species === 'cat' ? '🐱' : species === 'hamster' ? '🐹' : species === 'parrot' ? '🦜' : '🐾'}
+              </div>
+            )}
+            {/* 카메라 오버레이 */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              background: 'rgba(0,0,0,0.35)', padding: '5px 0',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="13" r="4" stroke="#fff" strokeWidth="1.8"/>
+              </svg>
+            </div>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
+          <div style={{ marginTop: 8, fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--ink-400)' }}>
+            사진을 눌러 변경
+          </div>
+        </div>
+
         {/* 이름 */}
         <Field mt={8}>
           <Label>이름</Label>
@@ -202,16 +264,12 @@ export default function PetSettingsPage() {
 
         {/* 생일 / 별날 */}
         <Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <Label>태어난 날</Label>
-              <input type="date" style={inputStyle} value={bornAt} onChange={e => setBornAt(e.target.value)} />
-            </div>
-            <div>
-              <Label>별이 된 날</Label>
-              <input type="date" style={inputStyle} value={diedAt} onChange={e => setDiedAt(e.target.value)} />
-            </div>
-          </div>
+          <Label>태어난 날</Label>
+          <input type="date" style={inputStyle} value={bornAt} onChange={e => setBornAt(e.target.value)} />
+        </Field>
+        <Field>
+          <Label>별이 된 날</Label>
+          <input type="date" style={inputStyle} value={diedAt} onChange={e => setDiedAt(e.target.value)} />
         </Field>
 
         {/* 이별 유형 */}

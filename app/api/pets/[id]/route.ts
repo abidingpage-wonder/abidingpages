@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       name, species, bornAt, diedAt,
       personalityTags, favoriteThings,
       farewellType, ownerNickname, firstWord,
-      gardenPublic, commentAllowed,
+      gardenPublic, commentAllowed, profileImageUrl,
     } = body
 
     // 소유권 확인
@@ -72,6 +72,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ...(firstWord         !== undefined && { firstWord }),
         ...(gardenPublic      !== undefined && { gardenPublic }),
         ...(commentAllowed    !== undefined && { commentAllowed }),
+        ...(profileImageUrl   !== undefined && { profileImageUrl }),
       },
       select: { id: true, name: true },
     })
