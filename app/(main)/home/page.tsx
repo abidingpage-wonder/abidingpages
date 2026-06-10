@@ -127,7 +127,21 @@ export default async function HomePage() {
   if (!homeData) redirect('/onboarding')
 
   const { status, pet, journey, dayCount } = homeData
-  const weekTheme = WEEK_THEMES[journey.currentWeek] ?? WEEK_THEMES[1]
+
+  // week_guides + 오늘 질문 — 정적 데이터이므로 DEV/PROD 모두 DB 조회
+  const [weekGuide, todayQuestion] = await Promise.all([
+    prisma.weekGuide.findUnique({ where: { week: journey.currentWeek } }),
+    prisma.question.findFirst({
+      where: { week: journey.currentWeek, day: journey.currentDay + 1, isRest: false },
+      select: { day: true, category: true },
+    }),
+  ])
+
+  const weekTheme = {
+    stageName: weekGuide?.keyword ?? (WEEK_THEMES[journey.currentWeek]?.stageName ?? ''),
+    title:     weekGuide?.title    ?? (WEEK_THEMES[journey.currentWeek]?.title    ?? ''),
+    desc:      weekGuide?.guide    ?? (WEEK_THEMES[journey.currentWeek]?.desc     ?? ''),
+  }
   const journeyProgress = Math.min((journey.totalLetters ?? 0) / 49, 1)
 
   return (
@@ -283,14 +297,14 @@ export default async function HomePage() {
               color: 'var(--lav-700)', fontWeight: 600,
               border: '0.5px solid rgba(166,133,199,0.2)',
             }}>
-              {journey.currentStage}단계 · {journey.currentDay}일차
+              {journey.currentDay + 1}일차{todayQuestion?.category ? ` · ${todayQuestion.category}` : ''}
             </div>
             <a href="/write" style={{
               fontFamily: 'var(--font-sans)', fontSize: 11.5,
               color: 'var(--lav-600)', fontWeight: 600,
               textDecoration: 'none',
             }}>
-              편지 쓰기 ›
+              오늘의 편지 쓰기 ›
             </a>
           </div>
         </div>

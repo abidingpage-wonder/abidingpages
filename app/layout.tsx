@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import ReactQueryProvider from '@/providers/ReactQueryProvider'
 
 export const metadata: Metadata = {
   title: 'Abiding Pages',
@@ -48,7 +49,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Allura&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Caveat:wght@400;600&display=swap"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ReactQueryProvider>{children}</ReactQueryProvider>
+      </body>
     </html>
   )
 }

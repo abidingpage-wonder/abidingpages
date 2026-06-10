@@ -2,9 +2,21 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 
-// ── 7주차 메타데이터 ────────────────────────────────────────────────
-const STAGES = [
+// 색상/이모지는 디자인 토큰 — DB에 없으므로 로컬 유지
+const STAGES_META = [
+  { n: 1, color: '#bca4d6', emoji: '🌾' },
+  { n: 2, color: '#a8b9d9', emoji: '🌊' },
+  { n: 3, color: '#a8c997', emoji: '🌿' },
+  { n: 4, color: '#fbb489', emoji: '🌅' },
+  { n: 5, color: '#f4b8d4', emoji: '🌸' },
+  { n: 6, color: '#a8c9b8', emoji: '🌱' },
+  { n: 7, color: '#8b6bb8', emoji: '⭐' },
+]
+
+// fallback (HydrationBoundary가 미적용인 환경)
+const STAGES_FALLBACK = [
   { n: 1, keyword: '머무름', title: '익숙한 온기 속에서',           color: '#bca4d6', emoji: '🌾' },
   { n: 2, keyword: '쏟아냄', title: '참지 않고 소리 내어 울기',      color: '#a8b9d9', emoji: '🌊' },
   { n: 3, keyword: '마주함', title: '미안했던 밤들의 고백',          color: '#a8c997', emoji: '🌿' },
@@ -162,6 +174,17 @@ export default function JourneyPage() {
   const router = useRouter()
   const [data, setData] = useState<JourneyData | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+
+  const { data: weekGuides } = useQuery<{ week: number; keyword: string; title: string }[]>({
+    queryKey: ['week_guides'],
+    staleTime: Infinity,
+  })
+
+  const STAGES = STAGES_META.map(meta => {
+    const g = weekGuides?.find(wg => wg.week === meta.n)
+    const fb = STAGES_FALLBACK[meta.n - 1]
+    return { ...meta, keyword: g?.keyword ?? fb.keyword, title: g?.title ?? fb.title }
+  })
 
   useEffect(() => {
     fetch('/api/journey')
