@@ -117,7 +117,7 @@ export default function PlanPage() {
             </div>
 
             <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <PlanRow label="3일 체험 (1단계 질문 3개)"/>
+              <PlanRow label="3일 체험 (편지 3회)"/>
               <PlanRow label="보관함 1년 보존"/>
               <PlanRow label="추모정원 스티커 & 한줄 작성"/>
             </div>
@@ -184,8 +184,7 @@ export default function PlanPage() {
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 7 }}>
                 <PlanRow dark label="'49일의 여정' 전체 프로그램"/>
                 <PlanRow dark label="매일 편지쓰기 + 아이 답장"/>
-                <PlanRow dark label="사진 첨부 (최대 3장)"/>
-                <PlanRow dark label="단계 완료 시 포토카드 자동 생성"/>
+                <PlanRow dark label="사진 첨부"/>
                 <PlanRow dark label="보관함 영구 보존"/>
               </div>
 
@@ -222,12 +221,6 @@ export default function PlanPage() {
                 </button>
               )}
 
-              <div style={{
-                marginTop: 10, fontFamily: 'var(--font-sans)', fontSize: 10.5,
-                color: 'rgba(255,255,255,0.45)', textAlign: 'center',
-              }}>
-                100일 단위 결제 · 언제든 해지 가능
-              </div>
             </div>
           </div>
         </div>
