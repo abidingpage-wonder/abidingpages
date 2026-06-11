@@ -124,7 +124,7 @@ function MemorialCard({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 28,
               }}>
-                {pet.species === 'dog' ? '🐶' : pet.species === 'cat' ? '🐱' : '🐾'}
+                🤍
               </div>
             )}
           </div>
@@ -137,14 +137,17 @@ function MemorialCard({
 
         {/* 텍스트 */}
         <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{
               fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 600,
               color: 'var(--lav-800)', lineHeight: 1, letterSpacing: '-0.02em',
             }}>
               {pet.name}
             </div>
-            </div>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, opacity: 0.45 }}>
+              <path d="M7 5l5 5-5 5" stroke="var(--lav-600)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
           <div style={{
             marginTop: 5, fontFamily: 'var(--font-sans)', fontSize: 11,
             fontWeight: 500, color: 'var(--lav-600)', letterSpacing: '0.04em',
