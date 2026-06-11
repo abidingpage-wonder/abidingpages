@@ -122,9 +122,10 @@ function MemorialCard({
                 width: '100%', height: '100%', borderRadius: '50%',
                 background: 'linear-gradient(145deg, #ece4f3, #d8c8d8)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28,
               }}>
-                🤍
+                <svg width="38" height="34" viewBox="0 0 24 22" fill="none">
+                  <path d="M12 20s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6.5-8 11-8 11z" fill="#bca4d6"/>
+                </svg>
               </div>
             )}
           </div>
