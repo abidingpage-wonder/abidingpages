@@ -201,7 +201,7 @@ export default function ReplyPage() {
         {/* 텍스트 영역 */}
         <div style={{
           position: 'absolute', top: '8%', left: '10%', right: '10%', height: '62%',
-          overflow: 'hidden', zIndex: 1,
+          overflowY: 'auto', zIndex: 1, scrollbarWidth: 'none',
           backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 27.5px, rgba(180,148,100,0.13) 27.5px, rgba(180,148,100,0.13) 28.5px)',
         }}>
           <div className="reply-letter-text" style={{ fontSize: 15, lineHeight: '1.9', color: '#5c4a3a', whiteSpace: 'pre-wrap', wordBreak: 'keep-all', letterSpacing: '0.01em' }}>

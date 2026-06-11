@@ -214,9 +214,9 @@ export default function LetterPage() {
         <div style={{ position: 'relative', width: '100%', paddingBottom: '95.5%', filter: 'drop-shadow(0 4px 12px rgba(86,52,140,0.15))' }}>
           <Image src="/letter-lav-photo-bg 3.png" alt="편지 봉투" fill
             style={{ objectFit: 'fill', zIndex: 0 }} priority />
-          <div style={{
+          <div className="letter-text-scroll" style={{
             position: 'absolute', top: '8%', left: '10%', right: '10%', height: '50%',
-            overflow: 'hidden', zIndex: 1,
+            overflowY: 'auto', zIndex: 1, scrollbarWidth: 'none',
             backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 27.5px, rgba(139,107,184,0.1) 27.5px, rgba(139,107,184,0.1) 28.5px)',
           }}>
             <div style={{ fontFamily: 'var(--font-handwriting)', fontSize: 17, lineHeight: '2.0', color: '#3d2b5e', whiteSpace: 'pre-wrap', wordBreak: 'keep-all', letterSpacing: '0.02em' }}>
