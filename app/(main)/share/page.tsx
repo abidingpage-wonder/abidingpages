@@ -12,13 +12,15 @@ export default function SharePage() {
   const [copyFailed, setCopyFailed] = useState(false)
 
   async function handleCopy() {
-    // 1순위: Clipboard API
-    try {
-      await navigator.clipboard.writeText(SHARE_URL)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      return
-    } catch { /* fallback으로 이동 */ }
+    // 1순위: Clipboard API (포커스 + 권한 체크 후 시도)
+    if (navigator.clipboard && document.hasFocus()) {
+      try {
+        await navigator.clipboard.writeText(SHARE_URL)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        return
+      } catch { /* fallback으로 이동 */ }
+    }
 
     // 2순위: execCommand (구형 브라우저 / iOS fallback)
     try {

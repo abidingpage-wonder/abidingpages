@@ -23,6 +23,7 @@ export async function GET() {
           firstWord:      '언제나 내 마음속에 따뜻하게 머물러 있어',
         },
         stickers: { candle: 10, flower: 5, heart: 3 },
+        myStickers: [],
         stickerSenders: 18,
         daysSince,
       })
@@ -63,6 +64,12 @@ export async function GET() {
       select: { fromUserId: true },
     })
 
+    const myStickersRows = await prisma.gardenSticker.findMany({
+      where: { fromUserId: userId, toPetId: dbUser.activePetId },
+      select: { stickerType: true },
+    })
+    const myStickers = myStickersRows.map(r => r.stickerType)
+
     const daysSince = pet.diedAt
       ? Math.max(1, Math.floor((Date.now() - new Date(pet.diedAt).getTime()) / 86400000) + 1)
       : 1
@@ -74,6 +81,7 @@ export async function GET() {
         diedAt: pet.diedAt?.toISOString().split('T')[0] ?? null,
       },
       stickers: stickerMap,
+      myStickers,
       stickerSenders: stickerSenders.length,
       daysSince,
     })
