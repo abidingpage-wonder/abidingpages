@@ -65,7 +65,7 @@ export async function GET() {
     })
 
     const myStickersRows = await prisma.gardenSticker.findMany({
-      where: { fromUserId: userId, toPetId: dbUser.activePetId },
+      where: { fromUserId: user.id, toPetId: dbUser.activePetId },
       select: { stickerType: true },
     })
     const myStickers = myStickersRows.map(r => r.stickerType)
