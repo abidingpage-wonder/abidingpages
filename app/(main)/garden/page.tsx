@@ -9,15 +9,6 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 const MAX_MESSAGES = 15
 const GOLDEN_ANGLE = 137.5 // degrees
 
-// placeholder 문구 (메시지 없을 때)
-const PLACEHOLDERS = [
-  '너랑 함께한\n모든 순간이 고마워',
-  '언제나 내 마음속에 있어 ✦',
-  '보고싶어, 우리 아가 ✦',
-  '다시 만나자, 꼭',
-  '오늘도 잘했어 ♥',
-]
-
 // ── 타입 ──────────────────────────────────────────────────────────
 interface GardenMessage { id: string; content: string; createdAt: string }
 interface PetCard {
@@ -51,7 +42,7 @@ function getRadialPosition(index: number, heroH: number, heroW: number) {
   const yPad = 20
   return {
     x: Math.max(xPad, Math.min(heroW - xPad, raw.x)),
-    y: Math.max(yPad, Math.min(heroH - 80, raw.y)),
+    y: Math.max(yPad, Math.min(heroH - 130, raw.y)),
   }
 }
 
@@ -283,6 +274,7 @@ function GardenCardList({
 export default function GardenPage() {
   const router = useRouter()
   const heroRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [heroSize, setHeroSize] = useState({ w: 390, h: 440 })
 
   const [messages, setMessages] = useState<GardenMessage[]>([])
@@ -353,6 +345,7 @@ export default function GardenPage() {
       }
       const newMsg: GardenMessage = { id: data.id, content: data.content, createdAt: data.createdAt }
       setInputText('')
+      inputRef.current?.blur()
       setMessageCount(n => n + 1)
 
       // 15개 초과면 가장 오래된 것 fade-out 후 제거
@@ -402,10 +395,7 @@ export default function GardenPage() {
     } catch {}
   }
 
-  // 전광판에 표시할 항목 (메시지 없으면 placeholder)
-  const displayMessages = messages.length > 0
-    ? messages
-    : PLACEHOLDERS.map((t, i) => ({ id: `ph${i}`, content: t, createdAt: '' }))
+  const displayMessages = messages
 
   return (
     <div style={{ minHeight: '100%', background: '#d9ccdf', fontFamily: 'var(--font-sans)' }}>
@@ -431,22 +421,13 @@ export default function GardenPage() {
             background: 'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.04) 40%, rgba(28,15,46,0.55) 100%)',
           }} />
 
-          {/* center title */}
-          <div style={{ position: 'absolute', bottom: 50, left: 0, right: 0, textAlign: 'center', zIndex: 2 }}>
-            <div style={{
-              fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 700, color: '#fff',
-              letterSpacing: '-0.02em',
-              textShadow: '0 0 10px rgba(255,236,210,0.6), 0 0 22px rgba(143,68,208,0.5)',
-            }}>오늘도 너를 사랑해</div>
-          </div>
-
           {/* 방사형 floating messages */}
           {displayMessages.map((msg, idx) => {
             const { x, y } = getRadialPosition(idx, heroSize.h, heroSize.w)
             const opacity = Math.max(0.38, 1 - idx * 0.048)
             const fontSize = Math.max(10, 14 - idx * 0.3)
             const isRemoving = msg.id === removingId
-            const isNewest = idx === 0 && messages.length > 0 && msg.id !== `ph0`
+            const isNewest = idx === 0 && messages.length > 0
 
             return (
               <div key={msg.id} style={{
@@ -471,7 +452,7 @@ export default function GardenPage() {
 
           {/* count banner */}
           <div style={{
-            position: 'absolute', left: '50%', bottom: 14, transform: 'translateX(-50%)',
+            position: 'absolute', left: '50%', bottom: 68, transform: 'translateX(-50%)',
             padding: '8px 16px', borderRadius: 999, zIndex: 3, whiteSpace: 'nowrap',
             background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
@@ -489,6 +470,56 @@ export default function GardenPage() {
             지금{' '}
             <span style={{ color: '#FEBE98', fontWeight: 700 }}>{messageCount}명</span>
             이 마음을 전하고 있어요
+          </div>
+
+          {/* 입력창 — 전광판 바로 아래 */}
+          <div style={{
+            position: 'absolute', left: 12, right: 12, bottom: 14, zIndex: 4,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <input
+                ref={inputRef}
+                value={inputText}
+                onChange={e => setInputText(e.target.value.slice(0, 20))}
+                onKeyDown={e => e.key === 'Enter' && handlePost()}
+                placeholder="오늘의 마음 한 줄을 남겨보세요"
+                maxLength={20}
+                style={{
+                  width: '100%', height: 40, borderRadius: 20, boxSizing: 'border-box',
+                  background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '0.8px solid rgba(254,190,152,0.35)',
+                  padding: '0 44px 0 16px', fontSize: 12, color: '#fff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)', outline: 'none',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              />
+              {inputText.length > 0 && (
+                <span style={{
+                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                  fontSize: 10, color: inputText.length >= 20 ? '#ff9080' : 'rgba(255,255,255,0.6)',
+                  fontFamily: 'var(--font-sans)', pointerEvents: 'none',
+                }}>
+                  {inputText.length}/20
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handlePost}
+              disabled={posting || !inputText.trim()}
+              style={{
+                width: 40, height: 40, borderRadius: '50%', border: 'none',
+                background: '#8F44D0', cursor: 'pointer', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(143,68,208,0.5)',
+                opacity: posting || !inputText.trim() ? 0.55 : 1,
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -513,62 +544,10 @@ export default function GardenPage() {
           <GardenCardList pets={pets} router={router} handleSticker={handleSticker} />
         </div>
 
-        <div style={{ height: 170 }} />
-
-      {/* BOTTOM INPUT — BottomNav(bottom:12 + height≈62) 위에 배치 */}
-      <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 86,
-        padding: '10px 12px 8px', zIndex: 5,
-        background: 'transparent',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1, position: 'relative' }}>
-            <input
-              value={inputText}
-              onChange={e => setInputText(e.target.value.slice(0, 20))}
-              onKeyDown={e => e.key === 'Enter' && handlePost()}
-              placeholder="오늘의 마음 한 줄을 남겨보세요"
-              maxLength={20}
-              style={{
-                width: '100%', height: 40, borderRadius: 20, boxSizing: 'border-box',
-                background: '#fff', border: '0.8px solid rgba(143,68,208,0.2)',
-                padding: '0 44px 0 16px', fontSize: 12, color: '#3a2a4d',
-                boxShadow: '0 2px 8px rgba(86,52,140,0.06)', outline: 'none',
-                fontFamily: 'var(--font-sans)',
-              }}
-            />
-            {inputText.length > 0 && (
-              <span style={{
-                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                fontSize: 10, color: inputText.length >= 20 ? '#e07060' : '#9a8caa',
-                fontFamily: 'var(--font-sans)', pointerEvents: 'none',
-              }}>
-                {inputText.length}/20
-              </span>
-            )}
-          </div>
-          <button
-            onClick={handlePost}
-            disabled={posting || !inputText.trim()}
-            style={{
-              width: 40, height: 40, borderRadius: '50%', border: 'none',
-              background: '#8F44D0', cursor: 'pointer', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 14px rgba(143,68,208,0.4)',
-              opacity: posting || !inputText.trim() ? 0.55 : 1,
-            }}
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
       {/* TOAST */}
       {toast && (
         <div style={{
-          position: 'fixed', bottom: 148, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(28,15,46,0.88)', color: '#fff', borderRadius: 20,
           padding: '9px 18px', fontSize: 12.5, fontFamily: 'var(--font-sans)',
           whiteSpace: 'nowrap', zIndex: 20,
