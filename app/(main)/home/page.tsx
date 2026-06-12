@@ -480,7 +480,6 @@ function StatusCardA({ petName, letterId }: {
         boxShadow: '0 10px 28px rgba(86,52,140,0.14)',
         cursor: 'pointer',
       }}>
-        <CardSparkles />
         <CornerGlow color="rgba(255,255,255,0.5)" />
         <ObjGlow color="rgba(255,245,238,0.7)" top="40%" />
 
@@ -514,7 +513,6 @@ function StatusCardB({ petName }: {
         boxShadow: '0 10px 28px rgba(86,52,140,0.1)',
         cursor: 'pointer',
       }}>
-        <CardSparkles tint="peach" />
         <CornerGlow color="rgba(255,238,222,0.6)" />
         <ObjGlow color="rgba(255,245,238,0.75)" top="43%" />
 
@@ -543,7 +541,6 @@ function StatusCardC({ petName }: { petName: string; sentAt: string }) {
       border: '0.5px solid rgba(140,100,190,0.25)',
       boxShadow: '0 10px 28px rgba(86,52,140,0.14)',
     }}>
-      <CardSparkles />
       <CornerGlow color="rgba(255,255,255,0.4)" />
       <ObjGlow color="rgba(255,240,210,0.6)" top="42%" />
       {/* 풍등 하단 불빛 빔 */}
@@ -641,20 +638,4 @@ function CardBtn({ children, bg }: { children: React.ReactNode; bg: string }) {
 }
 
 /* ── SVG 일러스트 ── */
-function CardSparkles({ tint = 'lav' }: { tint?: 'lav' | 'peach' }) {
-  const fill = tint === 'peach' ? '#fbd9a8' : '#dcc9f0'
-  const stars: Array<[number, number, number]> = [
-    [12,18,2.5],[88,14,2],[78,32,1.5],[18,42,1.8],[92,52,2],
-    [8,62,1.6],[86,70,2],[22,78,1.8],[70,82,1.6],[50,12,1.4],
-  ]
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-      {stars.map(([x,y,r], i) => (
-        <g key={i} transform={`translate(${x},${y})`} opacity={0.5}>
-          <path d={`M0 ${-r} L${r*0.3} ${-r*0.3} L${r} 0 L${r*0.3} ${r*0.3} L0 ${r} L${-r*0.3} ${r*0.3} L${-r} 0 L${-r*0.3} ${-r*0.3} Z`} fill={fill}/>
-        </g>
-      ))}
-    </svg>
-  )
-}
 
