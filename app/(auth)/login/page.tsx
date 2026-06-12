@@ -2,15 +2,6 @@
 
 import { createClient } from '@/lib/supabase/client'
 
-// 민들레 씨앗 좌표 — 서버/클라이언트 hydration 일치를 위해 미리 계산
-const DANDELION_SEEDS = Array.from({ length: 18 }, (_, i) => {
-  const a = (i / 18) * Math.PI * 2
-  const r = 16 + (i % 3) * 1.2
-  return {
-    x2: parseFloat((Math.cos(a) * r).toFixed(4)),
-    y2: parseFloat((Math.sin(a) * r).toFixed(4)),
-  }
-})
 
 export default function LoginPage() {
   const supabase = createClient()
@@ -46,19 +37,15 @@ export default function LoginPage() {
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', padding: '82px 32px 36px',
       }}>
-        {/* 로고마크 — 민들레 */}
-        <svg width="78" height="78" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.55)" />
-          <g transform="translate(50,46)">
-            {DANDELION_SEEDS.map((s, i) => (
-              <g key={i}>
-                <line x1="0" y1="0" x2={s.x2} y2={s.y2} stroke="#bca4d6" strokeWidth="0.6" />
-                <circle cx={s.x2} cy={s.y2} r="1" fill="#a685c7" opacity="0.7" />
-              </g>
-            ))}
-            <circle cx="0" cy="0" r="2.5" fill="#8b6bb8" />
-          </g>
-        </svg>
+        {/* 로고마크 */}
+        <div style={{
+          width: 78, height: 78, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/logo_heart.svg" alt="Abiding 로고" width={48} height={48} style={{ objectFit: 'contain' }} />
+        </div>
 
         {/* 브랜드 */}
         <div style={{
