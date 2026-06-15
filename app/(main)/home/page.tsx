@@ -514,7 +514,7 @@ function StatusCardB({ petName }: {
         cursor: 'pointer',
       }}>
         <CornerGlow color="rgba(255,238,222,0.6)" />
-        <ObjGlow color="rgba(255,245,238,0.75)" top="43%" />
+        <ObjGlow color="rgba(249,174,123,0.75)" top="43%" />
 
         <CardEyebrow color="var(--peach-500)" />
         <CardTitle>{petName}에게<br/>마음을 전해볼까요?</CardTitle>
