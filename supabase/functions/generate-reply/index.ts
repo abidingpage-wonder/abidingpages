@@ -169,6 +169,77 @@ function buildPastLettersContext(pastLetters: PastLetter[]): string {
   return `\n[지금까지 보호자가 보낸 편지 요약]\n${summaries.join('\n')}\n`
 }
 
+// ── 직전 답장 핵심 문구 추출 (토큰 절약: 전문 대신 패턴만) ──────────────────
+function splitSentences(text: string): string[] {
+  return text
+    .replace(/\r?\n+/g, ' ')
+    .split(/(?<=[.!?…~])\s+|(?<=[.!?…~])(?=\S)/)
+    .map(s => s.trim())
+    .filter(Boolean)
+}
+
+function clip(s: string, n = 40): string {
+  return s.length > n ? s.slice(0, n) + '…' : s
+}
+
+function longestCommonSubstring(a: string, b: string): string {
+  const m = a.length, n = b.length
+  if (m === 0 || n === 0) return ''
+  let prev = new Array(n + 1).fill(0)
+  let best = 0, end = 0
+  for (let i = 1; i <= m; i++) {
+    const cur = new Array(n + 1).fill(0)
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        cur[j] = prev[j - 1] + 1
+        if (cur[j] > best) { best = cur[j]; end = i }
+      }
+    }
+    prev = cur
+  }
+  return a.slice(end - best, end)
+}
+
+// 직전 답장들 사이에서 10자 이상 공통 부분문자열(반복 문구)만 추출
+function repeatedPhrases(texts: string[], minLen = 10, max = 3): string[] {
+  const norm = texts.map(t => t.replace(/\s+/g, ' ').trim())
+  const out: string[] = []
+  for (let i = 0; i < norm.length && out.length < max; i++) {
+    for (let j = i + 1; j < norm.length && out.length < max; j++) {
+      const lcs = longestCommonSubstring(norm[i], norm[j])
+      if (lcs.length >= minLen && !out.some(p => p.includes(lcs) || lcs.includes(p))) {
+        out.push(lcs)
+      }
+    }
+  }
+  return out
+}
+
+// 직전 답장 핵심 문구 섹션 (전문 미주입). 답장 없으면 '' 반환.
+function buildRecentPatternsSection(contents: string[]): string {
+  const texts = contents.map(c => (c ?? '').trim()).filter(Boolean)
+  if (texts.length === 0) return ''
+
+  const intros: string[] = []
+  const endings: string[] = []
+  for (const t of texts) {
+    const sents = splitSentences(t)
+    if (sents.length === 0) continue
+    intros.push(clip(sents[0]))
+    endings.push(clip(sents[sents.length - 1]))
+  }
+  const uniqIntros  = [...new Set(intros)]
+  const uniqEndings = [...new Set(endings)]
+  const reps        = repeatedPhrases(texts)
+
+  const lines = ['[이전 답장에서 사용한 표현 - 반복 금지]']
+  if (uniqIntros.length)  lines.push(`- 도입부: ${uniqIntros.map(s => `"${s}"`).join(' / ')}`)
+  if (reps.length)        lines.push(`- 반복 문구: ${reps.map(s => `"${s}"`).join(', ')}`)
+  if (uniqEndings.length) lines.push(`- 마무리: ${uniqEndings.map(s => `"${s}"`).join(' / ')}`)
+  lines.push('위 도입부·반복 문구·마무리 표현은 반복하지 말 것.')
+  return lines.join('\n')
+}
+
 // ── 프롬프트 빌더 ────────────────────────────────────────────────────────────
 interface PetInfo {
   name: string
@@ -325,9 +396,7 @@ ${emotionLine}
 위 내용과 지금까지의 편지 데이터를 바탕으로 긴 답장을 써주세요.`
   }
 
-  const recentSection = recentReplies.trim()
-    ? `\n\n[직전 답장 3개 - 반복 표현 참고용]\n${recentReplies}\n위 답장에서 사용한 표현·문구·도입부·마무리는 반복하지 말 것.`
-    : ''
+  const recentSection = recentReplies.trim() ? `\n\n${recentReplies}` : ''
 
   return `${josa(ownerName, '이가')} 보내온 편지:
 ---
@@ -426,7 +495,7 @@ Deno.serve(async (req) => {
       pastLetters = (past ?? []) as PastLetter[]
     }
 
-    // 일반 답장 시 직전 답장 3개 전문 조회 (반복 표현 회피용)
+    // 일반 답장 시 직전 답장 3개에서 핵심 문구만 추출 (전문 미주입 — 토큰 절약)
     let recentReplies = ''
     if (letterType === 'normal') {
       const { data: recent } = await adminClient
@@ -436,9 +505,9 @@ Deno.serve(async (req) => {
         .order('generated_at', { ascending: false })
         .limit(3)
 
-      recentReplies = (recent ?? [])
-        .map((r, i) => `[${i + 1}]\n${(r as { content: string }).content}`)
-        .join('\n\n')
+      recentReplies = buildRecentPatternsSection(
+        (recent ?? []).map(r => (r as { content: string }).content)
+      )
     }
 
     const petForPrompt: PetInfo = {
