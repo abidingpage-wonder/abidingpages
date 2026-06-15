@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { getUniqueNonRestCount, WEEK_UNLOCK_THRESHOLD, WEEK_TOTAL_NON_REST, MAX_WEEK } from '@/lib/journey'
+import { WEEK_TOTAL_NON_REST, MAX_WEEK } from '@/lib/journey'
 import LetterEditor from './_components/LetterEditor'
 
 interface Props {
@@ -42,7 +42,6 @@ export default async function LetterPage({ searchParams }: Props) {
     const devWeek = devJourney?.currentWeek ?? DEV_MOCK.week
     const devDay  = devJourney?.currentDay  ?? DEV_MOCK.day
     const devJourneyCompleted = devPet ? await checkJourneyCompleted(devPet.id, devWeek) : false
-    const devUniqueCount = devPet ? await getUniqueNonRestCount(devPet.id, devWeek) : 0
     return (
       <LetterEditor
         petName={devPet?.name ?? DEV_MOCK.petName}
@@ -52,7 +51,6 @@ export default async function LetterPage({ searchParams }: Props) {
         initialQuestionId={questionId ?? null}
         journeyCompleted={devJourneyCompleted}
         freeEntry={freeEntry}
-        weekChoicePending={devUniqueCount >= WEEK_UNLOCK_THRESHOLD && devUniqueCount < WEEK_TOTAL_NON_REST && devWeek < MAX_WEEK}
       />
     )
   }
@@ -81,7 +79,6 @@ export default async function LetterPage({ searchParams }: Props) {
   const week = journey?.currentWeek ?? 1
   const day  = journey?.currentDay  ?? 1
   const journeyCompleted = await checkJourneyCompleted(pet.id, week)
-  const uniqueCount = await getUniqueNonRestCount(pet.id, week)
 
   return (
     <LetterEditor
@@ -92,7 +89,6 @@ export default async function LetterPage({ searchParams }: Props) {
       initialQuestionId={questionId ?? null}
       journeyCompleted={journeyCompleted}
       freeEntry={freeEntry}
-      weekChoicePending={uniqueCount >= WEEK_UNLOCK_THRESHOLD && uniqueCount < WEEK_TOTAL_NON_REST && week < MAX_WEEK}
     />
   )
 }

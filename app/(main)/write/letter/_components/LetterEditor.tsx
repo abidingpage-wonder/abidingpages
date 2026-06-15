@@ -42,12 +42,11 @@ interface Props {
   initialQuestionId?: string | null
   journeyCompleted?:  boolean
   freeEntry?:         boolean   // 자유롭게 쓰기 진입 시 질문 카드 닫힘
-  weekChoicePending?: boolean   // 이번 주 3개 이상 완료 → 진입 시 이어서하기/다음 단계 선택
 }
 
 type ModalType = 'week_choice' | 'journey' | null
 
-export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry, weekChoicePending }: Props) {
+export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry }: Props) {
   const router      = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -56,10 +55,8 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
   const [content,   setContent]   = useState(`우리 ${petName}에게,\n\n`)
   const [sending,   setSending]   = useState(false)
   const [error,     setError]     = useState<string | null>(null)
-  // 진입 시 3개 이상 완료 상태면 이어서하기/다음 단계 선택 오버레이 표시
-  const [modal,     setModal]     = useState<ModalType>(
-    weekChoicePending && !freeEntry && !initialQuestionId && !initJourneyCompleted ? 'week_choice' : null
-  )
+  // 선택 모달은 3번째 질문 전송 직후 1회만 노출 (진입 시 자동 오픈 안 함)
+  const [modal,     setModal]     = useState<ModalType>(null)
   const [toast,     setToast]     = useState<string | null>(null)
   const [advancingWeek, setAdvancingWeek] = useState(false)
   const [journeyDone, setJourneyDone] = useState(initJourneyCompleted ?? false)
@@ -177,7 +174,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       })
       if (!res.ok) throw new Error()
       const result = await res.json()
-      const { id: letterId, weekAllDone, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
+      const { id: letterId, weekAllDone, weekJustUnlocked, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
 
       // 캐시 초기화 (다음 토글 시 최신 writeCount 반영)
       setWeekQuestions(null)
@@ -194,6 +191,14 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
         resetEditor()
         setSending(false)
         setModal('journey')
+        return
+      }
+
+      // 이번 주 3번째 질문 전송 직후 → 이어서하기/다음 단계 선택 모달 1회
+      if (weekJustUnlocked) {
+        resetEditor()
+        setSending(false)
+        setModal('week_choice')
         return
       }
 

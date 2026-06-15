@@ -42,6 +42,7 @@ interface JourneyData {
   longestStreak: number
   nextStageAvailable: boolean
   weekGuides?: WeekGuide[]
+  completedWeeks?: number[]   // 비쉼표 6개 모두 답한 주차 (완료 표시용)
 }
 
 // ── 통계 칩 ────────────────────────────────────────────────────────
@@ -344,11 +345,14 @@ export default function JourneyPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
           {STAGES.map(s => {
             const currentWeek = data?.currentWeek ?? 1
+            const completedWeeks = data?.completedWeeks ?? []
+            // 완료 = 비쉼표 6개 모두 답함. 그 외 현재주차/건너뛴 미완료주차 = 진행중(접근가능), 미래 = 잠금
             const state: 'done' | 'doing' | 'locked' =
-              s.n < currentWeek ? 'done'
-              : s.n === currentWeek ? 'doing'
+              completedWeeks.includes(s.n) ? 'done'
+              : s.n <= currentWeek ? 'doing'
               : 'locked'
-            const pct = state === 'doing' ? stagePct : state === 'done' ? 100 : 0
+            // 진행률 바는 실제 현재 주차에만 (건너뛴 주차엔 현재 주차 진행률을 잘못 표시하지 않도록)
+            const pct = state === 'done' ? 100 : (state === 'doing' && s.n === currentWeek) ? stagePct : 0
             return (
               <StageCard
                 key={s.n}
