@@ -37,6 +37,10 @@ export async function GET(
 
     if (!reply) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     if (reply.userId !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // 노출 시각 도래 전에는 미존재 처리 (visibleAt null = 레거시, 즉시 노출)
+    if (reply.visibleAt && reply.visibleAt > new Date()) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
 
     const pet = await prisma.pet.findUnique({
       where: { id: reply.petId },

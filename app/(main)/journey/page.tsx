@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import { FullPageSpinner } from '@/components/ui/Spinner'
 
 // 색상/이모지는 디자인 토큰 — DB에 없으므로 로컬 유지
 const STAGES_META = [
@@ -202,6 +203,14 @@ export default function JourneyPage() {
 
   const stagePct    = data ? Math.min(Math.round((data.currentDay / 7) * 100), 100) : 0
   const progressPct = data ? Math.round((data.totalDays / 49) * 100) : 0
+
+  if (!data) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--bg-app)' }}>
+        <FullPageSpinner minHeight="70dvh" />
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-app)', position: 'relative' }}>

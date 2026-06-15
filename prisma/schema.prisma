@@ -125,6 +125,10 @@ model Reply {
   isRead      Boolean   @default(false) @map("is_read")
   readAt      DateTime? @map("read_at") @db.Timestamptz
   generatedAt DateTime  @default(now()) @map("generated_at") @db.Timestamptz
+  // 보관함 노출/알림 예약 시각 (null = 즉시 노출, 레거시 호환)
+  visibleAt   DateTime? @map("visible_at") @db.Timestamptz
+  // 푸시 발송 완료 시각 (null = 미발송)
+  notifiedAt  DateTime? @map("notified_at") @db.Timestamptz
 
   letter   Letter        @relation(fields: [letterId], references: [id])
   feedback ReplyFeedback?

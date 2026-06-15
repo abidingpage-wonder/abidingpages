@@ -175,6 +175,7 @@ export default function OnboardingPage() {
   }
 
   const handleSubmit = async () => {
+    if (isSubmitting) return
     setIsSubmitting(true)
     try {
       // 1. 사진 업로드 (있는 경우)

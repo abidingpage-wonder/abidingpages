@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import Spinner from '@/components/ui/Spinner'
 
 // ── 타입 ─────────────────────────────────────────────────────────
 interface ArchiveData {
@@ -116,7 +117,6 @@ export default function ArchivePage() {
   const [photoCount, setPhotoCount]   = useState<number | null>(null)
   const [timelineWeeks, setTimelineWeeks]   = useState<TimelineWeek[]>([])
   const [timelineIsPro, setTimelineIsPro]   = useState(false)
-  const [timelinePhotos, setTimelinePhotos] = useState<{ imageUrl: string; createdAt: string; stage: number }[]>([])
 
   useEffect(() => {
     // archive + timeline 병렬 fetch (timeline 중복 제거)
@@ -128,7 +128,6 @@ export default function ArchivePage() {
       const weeks: TimelineWeek[] = timelineData.items ?? []
       setTimelineWeeks(weeks)
       setTimelineIsPro(timelineData.isPro ?? false)
-      setTimelinePhotos(timelineData.photoCards ?? [])
       // 탭 카운트 계산
       let letters = 0, photos = 0
       for (const week of weeks) {
@@ -175,9 +174,8 @@ export default function ArchivePage() {
     return (
       <div style={{
         minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink-300)',
       }}>
-        불러오는 중...
+        <Spinner size={32} label="불러오는 중..." />
       </div>
     )
   }
@@ -423,7 +421,7 @@ export default function ArchivePage() {
       {tab === 'timeline' ? (
         <TimelineTab petName={pet.name} weeks={timelineWeeks} isPro={timelineIsPro} />
       ) : (
-        <PhotosTab weeks={timelineWeeks} photoCards={timelinePhotos} />
+        <PhotosTab weeks={timelineWeeks} />
       )}
     </div>
   )
@@ -762,13 +760,10 @@ interface PhotoItem {
   date: string
   time: string
   emotionTag?: string | null
-  isPhotoCard?: boolean
-  week?: number
 }
 
-function PhotosTab({ weeks, photoCards }: {
+function PhotosTab({ weeks }: {
   weeks: TimelineWeek[]
-  photoCards: { imageUrl: string; createdAt: string; stage: number }[]
 }) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
@@ -786,19 +781,8 @@ function PhotosTab({ weeks, photoCards }: {
       }
     }
     items.reverse()
-    for (const card of photoCards) {
-      const dt = new Date(card.createdAt)
-      const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), day = String(dt.getDate()).padStart(2,'0')
-      items.push({
-        url: card.imageUrl,
-        date: `${y}.${m}.${day}`,
-        time: `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`,
-        isPhotoCard: true,
-        week: card.stage,
-      })
-    }
     return items
-  }, [weeks, photoCards])
+  }, [weeks])
 
   if (photos.length === 0) {
     return (
@@ -841,19 +825,6 @@ function PhotosTab({ weeks, photoCards }: {
                 src={p.url} alt=""
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              {p.isPhotoCard && (
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent)',
-                  padding: '14px 5px 4px',
-                  display: 'flex', justifyContent: 'center',
-                }}>
-                  <span style={{
-                    fontFamily: 'var(--font-sans)', fontSize: 9, fontWeight: 700,
-                    color: '#fff', letterSpacing: '0.04em',
-                  }}>✨ {p.week}주차 포토카드</span>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -946,15 +917,8 @@ function PhotosTab({ weeks, photoCards }: {
             position: 'absolute', bottom: 48,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
           }}>
-            {current.isPhotoCard && (
-              <span style={{
-                padding: '3px 10px', borderRadius: 999,
-                background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)',
-                fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 700, color: '#fff',
-              }}>✨ {current.week}주차 포토카드</span>
-            )}
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
-              {current.isPhotoCard ? `${current.date} 완성` : `${current.date}에 쓴 편지`}
+              {`${current.date}에 쓴 편지`}
             </span>
           </div>
 

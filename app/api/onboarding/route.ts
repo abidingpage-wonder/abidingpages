@@ -11,6 +11,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // 이미 온보딩 완료된 유저 → 기존 펫 반환 (더블탭 등 중복 생성 방지)
+    const existingUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { onboardingDone: true, activePetId: true },
+    })
+    if (existingUser?.onboardingDone && existingUser.activePetId) {
+      return NextResponse.json({ success: true, petId: existingUser.activePetId })
+    }
+
     const body = await request.json()
     const {
       petName,
@@ -39,45 +48,47 @@ export async function POST(request: NextRequest) {
     const diffMs = passedAt.getTime() - bornAt.getTime()
     const togetherDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
 
-    // pets INSERT
-    const pet = await prisma.pet.create({
-      data: {
-        userId: user.id,
-        name: petName,
-        species: species || 'other',
-        breed: breed || null,
-        bornAt,
-        diedAt: passedAt,
-        profileImageUrl: photoUrl || null,
-        personalityTags: personalityTags ?? [],
-        favoriteThings: favoriteTags ?? [],
-        firstWord: firstWord || null,
-        farewellType,
-        ownerNickname,
-        togetherDays,
-        gardenPublic: gardenPublic ?? true,
-        commentAllowed: commentAllowed ?? true,
-      },
-    })
+    // pets INSERT + journey_progress 초기화 + users 업데이트 (원자적 처리)
+    const pet = await prisma.$transaction(async (tx) => {
+      const created = await tx.pet.create({
+        data: {
+          userId: user.id,
+          name: petName,
+          species: species || 'other',
+          breed: breed || null,
+          bornAt,
+          diedAt: passedAt,
+          profileImageUrl: photoUrl || null,
+          personalityTags: personalityTags ?? [],
+          favoriteThings: favoriteTags ?? [],
+          firstWord: firstWord || null,
+          farewellType,
+          ownerNickname,
+          togetherDays,
+          gardenPublic: gardenPublic ?? true,
+          commentAllowed: commentAllowed ?? true,
+        },
+      })
 
-    // journey_progress 초기화
-    await prisma.journeyProgress.create({
-      data: {
-        petId: pet.id,
-        userId: user.id,
-        currentStage: 1,
-        currentWeek: 1,
-        currentDay: 1,
-      },
-    })
+      await tx.journeyProgress.create({
+        data: {
+          petId: created.id,
+          userId: user.id,
+          currentStage: 1,
+          currentWeek: 1,
+          currentDay: 1,
+        },
+      })
 
-    // users 테이블 onboardingDone 업데이트
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        onboardingDone: true,
-        activePetId: pet.id,
-      },
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          onboardingDone: true,
+          activePetId: created.id,
+        },
+      })
+
+      return created
     })
 
     return NextResponse.json({ success: true, petId: pet.id })

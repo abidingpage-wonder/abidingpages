@@ -34,6 +34,18 @@ const TABS = [
     ),
   },
   {
+    key: 'write',
+    label: '편지',
+    href: '/write',
+    center: true,
+    icon: (_active: boolean) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="6" width="18" height="13" rx="2.5" stroke="#fff" strokeWidth="1.7"/>
+        <path d="M3.5 7.5L12 13.5L20.5 7.5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
     key: 'journey',
     label: '여정',
     href: '/journey',
@@ -70,27 +82,6 @@ const TABS = [
       </svg>
     ),
   },
-  {
-    key: 'profile',
-    label: '내정보',
-    href: '/profile',
-    icon: (active: boolean) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle
-          cx="12" cy="8" r="4"
-          fill={active ? 'var(--lav-200)' : 'none'}
-          stroke={active ? 'var(--lav-600)' : 'var(--ink-300)'}
-          strokeWidth="1.6"
-        />
-        <path
-          d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"
-          stroke={active ? 'var(--lav-600)' : 'var(--ink-300)'}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
 ]
 
 export default function BottomNav() {
@@ -116,6 +107,50 @@ export default function BottomNav() {
     >
       {TABS.map((tab) => {
         const active = pathname.startsWith(tab.href)
+
+        // 가운데 강조 버튼: +편지 (감정선택 → 편지쓰기 진입)
+        if ('center' in tab && tab.center) {
+          return (
+            <Link
+              key={tab.key}
+              href={tab.href}
+              prefetch={false}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 3,
+                padding: '6px 0',
+                textDecoration: 'none',
+              }}
+            >
+              <div style={{
+                width: 48,
+                height: 48,
+                marginTop: -20,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #bca4d6, var(--lav-600))',
+                boxShadow: '0 6px 18px rgba(139,107,184,0.4), 0 0 0 4px rgba(255,255,255,0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {tab.icon(active)}
+              </div>
+              <span style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: 10.5,
+                fontWeight: active ? 600 : 400,
+                color: active ? 'var(--lav-600)' : 'var(--ink-300)',
+                letterSpacing: '-0.01em',
+              }}>
+                {tab.label}
+              </span>
+            </Link>
+          )
+        }
+
         return (
           <Link
             key={tab.key}

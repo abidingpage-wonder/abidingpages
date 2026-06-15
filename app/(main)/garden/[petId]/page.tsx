@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import Spinner from '@/components/ui/Spinner'
 
 // ── 타입 ──────────────────────────────────────────────────────────
 interface PetDetail {
@@ -161,9 +162,10 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
     return (
       <div style={{
         minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink-300)',
         background: '#cfc3d9',
-      }}>불러오는 중...</div>
+      }}>
+        <Spinner size={32} label="불러오는 중..." />
+      </div>
     )
   }
 

@@ -48,5 +48,12 @@ export function usePhotoUpload(max = 3) {
     return urls
   }
 
-  return { fileInputRef, photos, openPicker, handleFileChange, removePhoto, uploadAll }
+  function resetPhotos() {
+    setPhotos(prev => {
+      prev.forEach(p => URL.revokeObjectURL(p.preview))
+      return []
+    })
+  }
+
+  return { fileInputRef, photos, openPicker, handleFileChange, removePhoto, uploadAll, resetPhotos }
 }

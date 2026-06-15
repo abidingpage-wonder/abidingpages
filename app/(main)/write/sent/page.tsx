@@ -34,6 +34,7 @@ function SentContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const letterId     = searchParams.get('letterId')
+  const weekDone     = searchParams.get('weekDone')   // 이번 편지로 주차 6개 완료 → 다음 주차 자동 진행
 
   const [visible, setVisible]           = useState(false)
   const [notifGranted, setNotifGranted] = useState(false)
@@ -127,6 +128,24 @@ function SentContent() {
       }}>
         편지가 별빛을 따라 날아가는 중...
       </div>
+
+      {/* 주차 완료 안내 */}
+      {weekDone && (
+        <div style={{
+          marginTop:      20,
+          padding:        '12px 18px',
+          borderRadius:   14,
+          background:     'rgba(255,255,255,0.08)',
+          border:         '0.5px solid rgba(255,255,255,0.18)',
+          fontFamily:     'var(--font-sans)',
+          fontSize:       13,
+          color:          'rgba(255,255,255,0.8)',
+          lineHeight:     1.6,
+          textAlign:      'center',
+        }}>
+          ✨ {weekDone}주차를 모두 완료했어요.<br />다음 주차가 열렸어요 🌿
+        </div>
+      )}
 
       {/* ── 버튼 영역 ── */}
       <div style={{

@@ -12,16 +12,8 @@ export async function GET() {
   try {
     if (process.env.DEV_BYPASS_AUTH === 'true') {
       const devPet = await prisma.pet.findFirst({ select: { id: true, name: true } })
-      const devPhotoCards = devPet
-        ? await prisma.photoCard.findMany({
-            where: { petId: devPet.id },
-            orderBy: { createdAt: 'desc' },
-            select: { imageUrl: true, stage: true, createdAt: true },
-          })
-        : []
       return NextResponse.json({
         isPro: false,   // DEV: free 유저 테스트
-        photoCards: devPhotoCards,
         items: [
           {
             week: 1, weekKeyword: '머무름',
@@ -112,19 +104,13 @@ export async function GET() {
       select: { name: true },
     })
 
-    // 편지 + 답장 + 포토카드 병렬 조회
-    const [letters, photoCards] = await Promise.all([
-      prisma.letter.findMany({
-        where: { petId: dbUser.activePetId, userId: user.id },
-        include: { reply: { select: { id: true, content: true, generatedAt: true } } },
-        orderBy: { createdAt: 'asc' },
-      }),
-      prisma.photoCard.findMany({
-        where: { petId: dbUser.activePetId },
-        orderBy: { createdAt: 'desc' },
-        select: { imageUrl: true, stage: true, createdAt: true },
-      }),
-    ])
+    // 편지 + 답장 조회
+    const letters = await prisma.letter.findMany({
+      where: { petId: dbUser.activePetId, userId: user.id },
+      include: { reply: { select: { id: true, content: true, generatedAt: true, visibleAt: true } } },
+      orderBy: { createdAt: 'asc' },
+    })
+    const now = new Date()
 
     // 주차별 그룹핑
     const weekMap = new Map<number, {
@@ -164,7 +150,8 @@ export async function GET() {
         emotionTag: letter.emotionTag,
       })
 
-      if (letter.reply) {
+      // 노출 시각 도래 전 답장은 타임라인에서 숨김 (visibleAt null = 즉시 노출)
+      if (letter.reply && (!letter.reply.visibleAt || letter.reply.visibleAt <= now)) {
         group.entries.push({
           type: 'reply',
           id: letter.reply.id,
@@ -184,11 +171,6 @@ export async function GET() {
       isPro,
       items: Array.from(weekMap.values()),
       petName: pet?.name ?? '',
-      photoCards: photoCards.map(c => ({
-        imageUrl: c.imageUrl,
-        stage: c.stage,
-        createdAt: c.createdAt.toISOString(),
-      })),
     }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (err) {
     console.error('[GET /api/archive/timeline]', err)
