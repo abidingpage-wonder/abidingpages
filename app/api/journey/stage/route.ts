@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   // DEV 우회: 인증은 건너뛰고 실제 DB 데이터 사용
   if (process.env.DEV_BYPASS_AUTH === 'true') {
     const devPet = await prisma.pet.findFirst({ select: { id: true, name: true } })
-    const [questions, letters, guide, photoCard] = await Promise.all([
+    const [questions, letters, guide] = await Promise.all([
       prisma.question.findMany({
         where: { week },
         orderBy: { day: 'asc' },
@@ -22,9 +22,6 @@ export async function GET(req: Request) {
         ? prisma.letter.findMany({ where: { petId: devPet.id, week }, select: { questionId: true, id: true } })
         : Promise.resolve([]),
       prisma.weekGuide.findUnique({ where: { week } }),
-      devPet
-        ? prisma.photoCard.findFirst({ where: { petId: devPet.id, stage: week }, select: { imageUrl: true, stage: true } })
-        : Promise.resolve(null),
     ])
 
     const doneIds = new Set(letters.map(l => l.questionId))
@@ -40,7 +37,7 @@ export async function GET(req: Request) {
       letterId: letterByQ[q.id] ?? null,
       writeCount: writeCountByQ[q.id] ?? 0,
     }))
-    return NextResponse.json({ questions: questionsWithStatus, guide, photoCard, petName: devPet?.name ?? '' })
+    return NextResponse.json({ questions: questionsWithStatus, guide, petName: devPet?.name ?? '' })
   }
 
   try {
@@ -60,7 +57,7 @@ export async function GET(req: Request) {
     })
     if (!pet) return NextResponse.json({ error: 'Pet not found' }, { status: 404 })
 
-    const [questions, letters, guide, photoCard] = await Promise.all([
+    const [questions, letters, guide] = await Promise.all([
       prisma.question.findMany({
         where: { week },
         orderBy: { day: 'asc' },
@@ -71,10 +68,6 @@ export async function GET(req: Request) {
         select: { questionId: true, id: true },
       }),
       prisma.weekGuide.findUnique({ where: { week } }),
-      prisma.photoCard.findFirst({
-        where: { petId: pet.id, stage: week },
-        select: { imageUrl: true, stage: true },
-      }),
     ])
 
     const doneIds = new Set(letters.map(l => l.questionId))
@@ -91,7 +84,7 @@ export async function GET(req: Request) {
       writeCount: writeCountByQ[q.id] ?? 0,
     }))
 
-    return NextResponse.json({ questions: questionsWithStatus, guide, photoCard, petName: pet.name })
+    return NextResponse.json({ questions: questionsWithStatus, guide, petName: pet.name })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

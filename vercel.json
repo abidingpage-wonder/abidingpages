@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/send-reply-notifications",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

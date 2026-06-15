@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Image from 'next/image'
+import Spinner from '@/components/ui/Spinner'
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -106,9 +107,8 @@ export default function LetterPage() {
         minHeight: '100dvh', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
         background: `#f3eef6`,
-        fontFamily: 'var(--font-sans)', fontSize: 13, color: '#8b6bb8',
       }}>
-        편지를 불러오는 중...
+        <Spinner size={32} label="편지를 불러오는 중..." />
       </div>
     )
   }

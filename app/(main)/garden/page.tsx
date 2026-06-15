@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import Spinner from '@/components/ui/Spinner'
 
 // ── 상수 ──────────────────────────────────────────────────────────
 const MAX_MESSAGES = 15
@@ -221,16 +222,24 @@ function MemorialCard({
 
 // ── 정원 카드 무한 스크롤 리스트 ─────────────────────────────────
 function GardenCardList({
-  pets, router, handleSticker,
+  pets, router, handleSticker, initialLoaded,
 }: {
   pets: PetCard[]
   router: ReturnType<typeof useRouter>
   handleSticker: (id: string, type: 'candle' | 'flower' | 'heart') => void
+  initialLoaded: boolean
 }) {
   const { visible, loading, hasMore, sentinelRef } = useInfiniteScroll(pets.length, 12, 12)
   const shown = pets.slice(0, visible)
 
   if (pets.length === 0) {
+    if (!initialLoaded) {
+      return (
+        <div style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center' }}>
+          <Spinner size={28} label="불러오는 중..." />
+        </div>
+      )
+    }
     return (
       <div style={{
         textAlign: 'center', padding: '40px 20px',
@@ -288,6 +297,7 @@ export default function GardenPage() {
   const [inputText, setInputText] = useState('')
   const [posting, setPosting] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [gardenLoaded, setGardenLoaded] = useState(false)
 
   // hero 크기 측정
   useEffect(() => {
@@ -319,6 +329,7 @@ export default function GardenPage() {
           if (d.messageCount !== undefined) setMessageCount(d.messageCount)
         })
         .catch(() => {})
+        .finally(() => setGardenLoaded(true))
     }
     loadGarden()
     const interval = setInterval(loadGarden, 20000)
@@ -545,7 +556,7 @@ export default function GardenPage() {
             <LeafSprig />
           </div>
 
-          <GardenCardList pets={pets} router={router} handleSticker={handleSticker} />
+          <GardenCardList pets={pets} router={router} handleSticker={handleSticker} initialLoaded={gardenLoaded} />
         </div>
 
       {/* TOAST */}

@@ -41,11 +41,12 @@ interface Props {
   initialQuestionId?: string | null
   journeyCompleted?:  boolean
   freeEntry?:         boolean   // 자유롭게 쓰기 진입 시 질문 카드 닫힘
+  weekChoicePending?: boolean   // 이번 주 3개 이상 완료 → 진입 시 이어서하기/다음 단계 선택
 }
 
-type ModalType = 'week3' | 'week7_same' | 'week_all' | 'journey' | null
+type ModalType = 'week_choice' | 'journey' | null
 
-export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry }: Props) {
+export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry, weekChoicePending }: Props) {
   const router      = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -54,10 +55,12 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
   const [content,   setContent]   = useState(`우리 ${petName}에게,\n\n`)
   const [sending,   setSending]   = useState(false)
   const [error,     setError]     = useState<string | null>(null)
-  const [modal,     setModal]     = useState<ModalType>(null)
+  // 진입 시 3개 이상 완료 상태면 이어서하기/다음 단계 선택 오버레이 표시
+  const [modal,     setModal]     = useState<ModalType>(
+    weekChoicePending && !freeEntry && !initialQuestionId && !initJourneyCompleted ? 'week_choice' : null
+  )
   const [toast,     setToast]     = useState<string | null>(null)
   const [advancingWeek, setAdvancingWeek] = useState(false)
-  const [completedWeek, setCompletedWeek] = useState(week) // 완료된 주차 (모달 텍스트용)
   const [journeyDone, setJourneyDone] = useState(initJourneyCompleted ?? false)
 
   // 질문 카드 표시: 자유 진입/49일 완주 후 = 기본 닫힘, 그 외 = 기본 열림
@@ -71,7 +74,13 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
   const freeMode   = !showQuestion || !!question?.allAnswered
   const isDirectEntry = !initialQuestionId
 
-  const { fileInputRef, photos, openPicker, handleFileChange, removePhoto, uploadAll } = usePhotoUpload(3)
+  const { fileInputRef, photos, openPicker, handleFileChange, removePhoto, uploadAll, resetPhotos } = usePhotoUpload(3)
+
+  // 전송 성공 후 페이지에 머무는 경우(모달 등) 에디터 초기화 — 재전송으로 인한 중복 생성 방지
+  function resetEditor() {
+    setContent(`우리 ${petName}에게,\n\n`)
+    resetPhotos()
+  }
 
   // ── 질문 로드 ─────────────────────────────────────────────────────
   async function fetchQuestion(questionId?: string, randomWeek?: number) {
@@ -167,7 +176,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       })
       if (!res.ok) throw new Error()
       const result = await res.json()
-      const { id: letterId, uniqueCount, weekUnlockable, weekAllDone, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
+      const { id: letterId, weekAllDone, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
 
       // 캐시 초기화 (다음 토글 시 최신 writeCount 반영)
       setWeekQuestions(null)
@@ -181,29 +190,14 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       // 49일 완주
       if (jc) {
         setJourneyDone(true)
-        setCompletedWeek(cw)
+        resetEditor()
         setSending(false)
         setModal('journey')
         return
       }
 
-      // 이번 주 6개 모두 완료
-      if (weekAllDone) {
-        setCompletedWeek(cw)
-        setSending(false)
-        setModal('week_all')
-        return
-      }
-
-      // 비쉼표 3개 완료 → 다음 주차 잠금 해제 가능
-      if (weekUnlockable && uniqueCount === 3) {
-        setCompletedWeek(cw)
-        setSending(false)
-        setModal('week3')
-        return
-      }
-
-      router.push(`/write/sent?letterId=${letterId}`)
+      // 그 외에는 모달 없이 항상 완료 페이지로 (6개 완료 시 다음 주차 자동 진행 안내)
+      router.push(`/write/sent?letterId=${letterId}${weekAllDone ? `&weekDone=${cw}` : ''}`)
     } catch {
       setError('편지를 보내지 못했어요. 다시 시도해주세요.')
       setSending(false)
@@ -221,23 +215,22 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
     await sendLetter('', type)
   }
 
-  // 다음 주차 이동
-  async function handleAdvanceWeek() {
+  // 진입 선택: 다음 단계 넘어가기 → 주차 진행 후 다음 주차 질문 로드
+  async function handleChoiceAdvance() {
     setAdvancingWeek(true)
     try {
       await fetch('/api/journey/advance', { method: 'POST' })
       setModal(null)
-      const toastMsg = encodeURIComponent(`${completedWeek}주차 질문은 여정 > ${completedWeek}주차에서 언제든 다시 쓸 수 있어요 🌿`)
-      router.push(`/journey?toast=${toastMsg}`)
-    } catch {
+      setToast(`${week}주차 질문은 여정 > ${week}주차에서 언제든 다시 쓸 수 있어요 🌿`)
+      await fetchQuestion()
+    } finally {
       setAdvancingWeek(false)
     }
   }
 
-  function handleContinueWeek() {
+  // 진입 선택: 이어서하기 → 현재 주차 질문 그대로 진행
+  function handleChoiceContinue() {
     setModal(null)
-    // 다음 질문 로드
-    fetchQuestion()
   }
 
   const emotionEmoji  = emotionTag ? EMOTION_EMOJI[emotionTag] : null
@@ -260,7 +253,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {emotionEmoji && <span style={{ fontSize: 16, lineHeight: 1 }}>{emotionEmoji}</span>}
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>
-              {week}주차 · {question?.weekGuide?.keyword ?? `DAY ${day}`}
+              {question?.week ?? week}주차 · {question?.weekGuide?.keyword ?? `DAY ${day}`}
             </span>
           </div>
         </div>
@@ -293,7 +286,18 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
 
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: 15.5, fontWeight: 600, color: '#fff', lineHeight: 1.7, letterSpacing: '-0.01em', minHeight: 48 }}>
               {loadingQ
-                ? <span style={{ color: 'rgba(255,255,255,0.35)' }}>질문을 불러오는 중...</span>
+                ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.35)' }}>
+                    <span style={{
+                      width: 14, height: 14, borderRadius: '50%',
+                      border: '2px solid rgba(255,255,255,0.18)',
+                      borderTopColor: 'rgba(255,255,255,0.7)',
+                      animation: 'spin 0.7s linear infinite',
+                      display: 'inline-block',
+                    }}/>
+                    질문을 불러오는 중...
+                  </span>
+                )
                 : (question?.content ?? '오늘 하루 어떠셨나요?')
               }
             </div>
@@ -596,65 +600,38 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
             boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           }}>
 
-            {/* week3 모달 */}
-            {modal === 'week3' && (
+            {/* week_choice 모달 (3개 이상 완료 후 재진입 시 선택) */}
+            {modal === 'week_choice' && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>🌿</div>
                   <div style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 600, color: '#fff', lineHeight: 1.5, marginBottom: 8 }}>
-                    이번 주 질문을 3개 완료했어요
+                    {week}주차 질문을 3개 완료했어요
                   </div>
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-                    다음 주차로 넘어갈까요?
+                    이번 주를 이어서 쓸 수도 있고,<br/>다음 단계로 넘어갈 수도 있어요.
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button onClick={handleAdvanceWeek} disabled={advancingWeek} style={{
+                  <button onClick={handleChoiceContinue} style={{
                     width: '100%', padding: '14px 0', borderRadius: 999,
                     background: 'linear-gradient(135deg, #faddca, #fbb489)',
                     border: 'none', color: '#2a1c44',
                     fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
-                    cursor: advancingWeek ? 'default' : 'pointer',
+                    cursor: 'pointer',
                   }}>
-                    {advancingWeek ? '이동 중...' : '다음 주차로 이동'}
+                    이어서하기
                   </button>
-                  <button onClick={handleContinueWeek} style={{
+                  <button onClick={handleChoiceAdvance} disabled={advancingWeek} style={{
                     width: '100%', padding: '14px 0', borderRadius: 999,
                     background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
                     color: 'rgba(255,255,255,0.7)',
                     fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
-                    cursor: 'pointer',
+                    cursor: advancingWeek ? 'default' : 'pointer',
                   }}>
-                    이번 주 계속하기
+                    {advancingWeek ? '넘어가는 중...' : '다음 단계 넘어가기'}
                   </button>
                 </div>
-              </>
-            )}
-
-            {/* week_all 모달 (7개 모두 완료) */}
-            {modal === 'week_all' && (
-              <>
-                <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>✨</div>
-                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 600, color: '#fff', lineHeight: 1.5, marginBottom: 8 }}>
-                    {completedWeek}주차 여정을 모두 완료했어요
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-                    {completedWeek + 1}주차로 넘어갈게요.<br/>
-                    <span style={{ marginTop: 6, display: 'inline-block', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                      여정 &gt; {completedWeek}주차에서 아이의 포토카드를<br/>확인하고 다운받을 수 있어요 🐾
-                    </span>
-                  </div>
-                </div>
-                <button onClick={handleAdvanceWeek} disabled={advancingWeek} style={{
-                  width: '100%', padding: '14px 0', borderRadius: 999,
-                  background: 'linear-gradient(135deg, #faddca, #fbb489)',
-                  border: 'none', color: '#2a1c44',
-                  fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
-                  cursor: advancingWeek ? 'default' : 'pointer',
-                }}>
-                  {advancingWeek ? '이동 중...' : '확인'}
-                </button>
               </>
             )}
 

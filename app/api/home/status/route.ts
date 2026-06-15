@@ -128,11 +128,12 @@ export async function GET() {
     const dayCount = calcDayCount(pet.diedAt)
     const { start, end } = todayRange()
 
-    // 4. 읽지 않은 답장 확인 (상태 A)
+    // 4. 읽지 않은 답장 확인 (상태 A) — 노출 시각 도래한 답장만
     const unreadReply = await prisma.reply.findFirst({
       where: {
         petId: pet.id,
         isRead: false,
+        OR: [{ visibleAt: null }, { visibleAt: { lte: new Date() } }],
       },
       orderBy: { generatedAt: 'desc' },
       select: {
@@ -176,12 +177,14 @@ export async function GET() {
       select: {
         id: true,
         createdAt: true,
-        reply: { select: { id: true, isRead: true } },
+        reply: { select: { id: true, isRead: true, visibleAt: true } },
       },
     })
 
-    // 6. 오늘 편지 O + 답장 없음 or 생성중 → 상태 C
-    if (todayLetter && !todayLetter.reply) {
+    // 6. 오늘 편지 O + 답장 없음 or 생성중/노출 대기 → 상태 C
+    const replyVisible = todayLetter?.reply &&
+      (!todayLetter.reply.visibleAt || todayLetter.reply.visibleAt <= new Date())
+    if (todayLetter && !replyVisible) {
       const response: HomeStatusResponse = {
         status: 'C',
         pet: {

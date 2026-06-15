@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 // ── 7주차 메타데이터 ────────────────────────────────────────────────
@@ -35,8 +35,6 @@ interface GuideData {
 interface StageData {
   questions: QuestionItem[]
   guide: GuideData | null
-  photoCard: { imageUrl: string; stage: number } | null
-  petName: string
 }
 
 export default function StageDetailPage() {
@@ -46,8 +44,6 @@ export default function StageDetailPage() {
   const meta = WEEK_META[week] ?? WEEK_META[1]
 
   const [data, setData] = useState<StageData | null>(null)
-  const [slide, setSlide] = useState(0)
-  const touchStartX = useRef(0)
 
   useEffect(() => {
     fetch(`/api/journey/stage?week=${week}`, { cache: 'no-store' })
@@ -59,26 +55,7 @@ export default function StageDetailPage() {
   const doneCount = data?.questions.filter(q => q.done).length ?? 0
   const totalCount = data?.questions.length ?? 7
   const todayQuestion = data?.questions.find(q => !q.done && !q.isRest)
-  const hasPhotoCard = !!data?.photoCard
   const canShare = typeof navigator !== 'undefined' && !!navigator.canShare
-
-  async function handleShare() {
-    const imageUrl = data?.photoCard?.imageUrl
-    const petName  = data?.petName ?? ''
-    if (!imageUrl) return
-    try {
-      const blob = await fetch(imageUrl).then(r => r.blob())
-      const file = new File([blob], `photo-card-week-${week}.png`, { type: 'image/png' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: `${petName}의 ${week}주차 포토카드`, files: [file] })
-        return
-      }
-    } catch { /* fallback */ }
-    const a = document.createElement('a')
-    a.href = imageUrl
-    a.download = `photo-card-week-${week}.png`
-    document.body.appendChild(a); a.click(); document.body.removeChild(a)
-  }
 
   return (
     <div style={{ minHeight: '100dvh', position: 'relative', overflow: 'hidden' }}>
@@ -118,67 +95,20 @@ export default function StageDetailPage() {
           <div style={{ width: 28 }}/>
         </div>
 
-        {/* ── 캐러셀 ── */}
+        {/* ── 주차 이미지 ── */}
         <div style={{ padding: '0 16px', marginBottom: 0 }}>
-          <div
-            style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', userSelect: 'none' }}
-            onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
-            onTouchEnd={e => {
-              const dx = e.changedTouches[0].clientX - touchStartX.current
-              if (dx < -40 && hasPhotoCard) setSlide(1)
-              else if (dx > 40) setSlide(0)
-            }}
-          >
-            {/* 슬라이드 트랙 */}
-            <div style={{
-              display: 'flex',
-              transform: `translateX(-${slide * 100}%)`,
-              transition: 'transform 0.3s ease',
-            }}>
-              {/* 슬라이드 0: 주차 이미지 */}
-              <div style={{ minWidth: '100%', aspectRatio: '1/1' }}>
-                <img
-                  src={`/images/weeks/${week}w_v1.png`}
-                  alt={`${week}주차`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
-                />
-              </div>
-
-              {/* 슬라이드 1: 포토카드 (hasPhotoCard일 때만) */}
-              {hasPhotoCard && (
-                <div style={{ minWidth: '100%', position: 'relative', aspectRatio: '16/9', background: '#1a0f2e' }}>
-                  <img
-                    src={data!.photoCard!.imageUrl}
-                    alt={`${week}주차 포토카드`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
-                  {/* 공유 버튼 */}
-                  <div style={{
-                    position: 'absolute', bottom: 12, right: 12,
-                  }}>
-                    <button
-                      onClick={handleShare}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '8px 14px', borderRadius: 999,
-                        background: 'rgba(255,255,255,0.92)', border: 'none',
-                        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600,
-                        color: '#5a3a8a', cursor: 'pointer',
-                        boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
-                      }}
-                    >
-                      🐾 저장/공유
-                    </button>
-                  </div>
-                </div>
-              )}
+          <div style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', userSelect: 'none' }}>
+            <div style={{ width: '100%', aspectRatio: '1/1' }}>
+              <img
+                src={`/images/weeks/${week}w_v1.png`}
+                alt={`${week}주차`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+              />
             </div>
           </div>
 
-          {/* 카드 저장/공유 버튼 (슬라이드 0 = 여정카드일 때) */}
-          {slide === 0 && (
-            <button
+          {/* 카드 저장/공유 버튼 */}
+          <button
               onClick={async () => {
                 const imageUrl = `/images/weeks/${week}w_v1.png`
                 const title = `${week}주차 · ${meta.keyword}`
@@ -204,25 +134,7 @@ export default function StageDetailPage() {
               }}
             >
               {canShare ? '🌿 카드 공유하기' : '🌿 카드 저장하기'}
-            </button>
-          )}
-
-          {/* 도트 인디케이터 (포토카드 있을 때만) */}
-          {hasPhotoCard && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-              {[0, 1].map(i => (
-                <button
-                  key={i}
-                  onClick={() => setSlide(i)}
-                  style={{
-                    width: slide === i ? 18 : 6, height: 6, borderRadius: 999, border: 'none', padding: 0,
-                    background: slide === i ? meta.color : 'rgba(166,133,199,0.3)',
-                    transition: 'all 0.2s ease', cursor: 'pointer',
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          </button>
         </div>
 
         {/* ── 주차 소개 ── */}

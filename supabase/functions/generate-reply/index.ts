@@ -2,7 +2,20 @@
 // Deno runtime (no Node.js APIs)
 import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic          from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
-import webpush            from 'npm:web-push'
+
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+
+// 답장 노출 시각: KST 기준 다음날, 유저가 설정한 알림 시각 (기본 오전 9시)
+// Deno는 UTC로 동작하므로 epoch 산술로만 계산
+function computeVisibleAt(notifHour: number, notifMinute: number, notifAmpm: string): Date {
+  let hour24 = notifHour % 12
+  if (notifAmpm === '오후') hour24 += 12
+  const kstNow      = Date.now() + KST_OFFSET_MS
+  const kstNextDay  = kstNow + 24 * 60 * 60 * 1000
+  const kstMidnight = Math.floor(kstNextDay / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+  const kstTarget   = kstMidnight + (hour24 * 60 + notifMinute) * 60 * 1000
+  return new Date(kstTarget - KST_OFFSET_MS)
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -389,51 +402,51 @@ Deno.serve(async (req) => {
 
     const content = (message.content[0] as { type: string; text: string }).text.trim()
 
-    // 답장 저장
-    const { data: reply, error: insertError } = await adminClient
+    // 노출/알림 예약 시각: 유저 알림 설정 기준 (최신 구독, 없으면 다음날 오전 9시)
+    const { data: latestSub } = await adminClient
+      .from('push_subscriptions')
+      .select('notif_hour, notif_minute, notif_ampm')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const visibleAt = computeVisibleAt(
+      latestSub?.notif_hour   ?? 9,
+      latestSub?.notif_minute ?? 0,
+      latestSub?.notif_ampm   ?? '오전',
+    )
+
+    // 답장 저장 (visible_at 도래 전에는 보관함에 노출되지 않음, 푸시는 cron이 발송)
+    const { data: inserted, error: insertError } = await adminClient
       .from('replies')
-      .insert({ letter_id: letterId, user_id: user.id, pet_id: letter.pet_id, content })
+      .insert({
+        letter_id:  letterId,
+        user_id:    user.id,
+        pet_id:     letter.pet_id,
+        content,
+        visible_at: visibleAt.toISOString(),
+      })
       .select('id, content')
       .single()
 
-    if (insertError) throw insertError
-
-    // ── 푸시 알림 발송 (실패해도 응답은 정상 반환) ──────────────────────
-    try {
-      const vapidPublic  = Deno.env.get('VAPID_PUBLIC_KEY')
-      const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
-      const vapidEmail   = Deno.env.get('VAPID_EMAIL') ?? 'mailto:hello@abiding.pages'
-
-      if (vapidPublic && vapidPrivate) {
-        webpush.setVapidDetails(vapidEmail, vapidPublic, vapidPrivate)
-
-        // 해당 유저의 모든 구독 조회
-        const { data: subscriptions } = await adminClient
-          .from('push_subscriptions')
-          .select('endpoint, p256dh, auth')
-          .eq('user_id', user.id)
-
-        if (subscriptions && subscriptions.length > 0) {
-          const payload = JSON.stringify({
-            title: `${pet.name}의 편지가 도착했어요 🌿`,
-            body:  '지금 확인해보세요',
-            url:   `/reply/${reply.id}`,
+    // 동시 호출 race: letter_id unique 충돌 시 기존 답장 반환
+    if (insertError) {
+      if (insertError.code === '23505') {
+        const { data: raced } = await adminClient
+          .from('replies')
+          .select('id, content')
+          .eq('letter_id', letterId)
+          .single()
+        if (raced) {
+          return new Response(JSON.stringify({ id: raced.id, content: raced.content, letterId }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           })
-
-          await Promise.allSettled(
-            subscriptions.map((sub) =>
-              webpush.sendNotification(
-                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-                payload,
-              )
-            )
-          )
         }
       }
-    } catch (pushErr) {
-      // 푸시 실패는 로그만 남기고 응답에 영향 없음
-      console.error('[generate-reply] push error:', pushErr)
+      throw insertError
     }
+    const reply = inserted
 
     return new Response(JSON.stringify({ id: reply.id, content: reply.content, letterId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

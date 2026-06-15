@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Image from 'next/image'
 import { SoftCTAButton } from '@/components/ui/Button'
+import Spinner from '@/components/ui/Spinner'
 
 function formatDateTime(iso: string) {
   const d = new Date(iso)
@@ -114,9 +115,8 @@ export default function ReplyPage() {
         minHeight: '100dvh', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
         background: '#f3eef6',
-        fontFamily: 'var(--font-sans)', fontSize: 13, color: '#bba089',
       }}>
-        답장을 불러오는 중...
+        <Spinner size={32} label="답장을 불러오는 중..." />
       </div>
     )
   }
