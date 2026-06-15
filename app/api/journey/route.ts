@@ -20,10 +20,20 @@ function calcLongestStreak(letterDates: Date[]): number {
   return longest
 }
 
+// 주차 키워드/테마 (여정 카드용)
+async function fetchWeekGuides() {
+  const guides = await prisma.weekGuide.findMany({
+    orderBy: { week: 'asc' },
+    select: { week: true, keyword: true, title: true },
+  })
+  return guides
+}
+
 // GET /api/journey — 여정 진행 현황
 export async function GET() {
   // DEV 우회
   if (process.env.DEV_BYPASS_AUTH === 'true') {
+    const weekGuides = await fetchWeekGuides()
     return NextResponse.json({
       currentStage: 1,
       currentWeek: 1,
@@ -33,6 +43,7 @@ export async function GET() {
       emotionCount: 3,       // 날짜 중복 제거
       longestStreak: 3,      // 최장 연속 일수
       nextStageAvailable: false,
+      weekGuides,
     })
   }
 
@@ -49,12 +60,13 @@ export async function GET() {
 
     const petId = dbUser.activePetId
 
-    const [progress, emotionDays, letters] = await Promise.all([
+    const [progress, emotionDays, letters, weekGuides] = await Promise.all([
       prisma.journeyProgress.findUnique({ where: { petId } }),
       // 감정기록: 날짜 중복 제거 (loggedAt이 Date 타입이므로 groupBy로 distinct)
       prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId } }),
       // 편지 날짜 목록 (최장 연속 계산용)
       prisma.letter.findMany({ where: { petId, userId: user.id }, select: { createdAt: true } }),
+      fetchWeekGuides(),
     ])
 
     const emotionCount = emotionDays.length
@@ -71,6 +83,7 @@ export async function GET() {
       emotionCount,
       longestStreak,
       nextStageAvailable: progress?.nextStageAvailable ?? false,
+      weekGuides,
     }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (e) {
     console.error(e)
