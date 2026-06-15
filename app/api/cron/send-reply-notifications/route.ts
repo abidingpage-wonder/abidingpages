@@ -6,10 +6,12 @@ export const dynamic = 'force-dynamic'
 
 const BATCH_LIMIT = 50
 
-// GET /api/cron/send-reply-notifications — Vercel Cron (10분 간격)
+// GET /api/cron/send-reply-notifications — Supabase pg_cron 이 10분 간격 호출
+// (Vercel Hobby cron 제약으로 vercel.json cron 제거 → Supabase pg_cron+pg_net 으로 대체.
+//  supabase/sql/2026-06-15-reply-notify-cron.sql 참고)
 // visible_at이 도래했지만 아직 알림을 보내지 않은 답장에 푸시 발송
 export async function GET(req: Request) {
-  // Vercel Cron은 CRON_SECRET을 Bearer 토큰으로 전달
+  // 호출자는 CRON_SECRET을 Bearer 토큰으로 전달 (Supabase Vault 에 동일 값 보관)
   const auth = req.headers.get('authorization')
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
