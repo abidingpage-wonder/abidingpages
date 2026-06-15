@@ -33,6 +33,29 @@ interface LetterData {
   ownerNickname: string
 }
 
+// ── 쉼표(rest) 도장 오버레이 — CSS만, 편지지 중앙 ──────────────────
+function RestStamp() {
+  return (
+    <div style={{
+      position: 'absolute', top: '34%', left: '50%',
+      transform: 'translate(-50%, -50%) rotate(-7deg)',
+      zIndex: 6, pointerEvents: 'none', userSelect: 'none',
+      width: 132, height: 132, borderRadius: '50%',
+      border: '2.5px solid rgba(139,107,184,0.42)',
+      background: 'rgba(166,133,199,0.14)',
+      boxShadow: 'inset 0 0 0 6px rgba(166,133,199,0.10)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <span style={{
+        fontFamily: 'var(--font-serif)', fontSize: 21, fontWeight: 700,
+        color: 'rgba(107,74,160,0.62)', letterSpacing: '0.08em', whiteSpace: 'nowrap',
+      }}>
+        쉼표 하루
+      </span>
+    </div>
+  )
+}
+
 // ── 폴라로이드 사진 컴포넌트 ──────────────────────────────────────
 function PolaroidPhoto({ url, rotate }: { url: string; rotate: number }) {
   return (
@@ -129,6 +152,9 @@ export default function LetterPage() {
     )
   }
 
+  // 쉼표 편지 = 내용이 빈 편지 (쉼표 버튼으로 생성). 내용을 쓴 편지는 일반 편지 → 도장 없음
+  const isRest = !letter.content?.trim()
+
   return (
     <div style={{ minHeight: '100dvh', background: `#f3eef6`, paddingBottom: 32, position: 'relative' }}>
 
@@ -202,6 +228,8 @@ export default function LetterPage() {
                 {letter.content}
               </div>
             </div>
+            {/* 쉼표 도장 */}
+            {isRest && <RestStamp />}
             {/* Abiding 로고 */}
             <div style={{ position: 'absolute', bottom: '4%', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none', userSelect: 'none' }}>
               <span style={{ fontFamily: 'var(--font-brand)', fontSize: 20, color: '#8b6bb8', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Abiding</span>
@@ -223,6 +251,8 @@ export default function LetterPage() {
               {letter.content}
             </div>
           </div>
+          {/* 쉼표 도장 */}
+          {isRest && <RestStamp />}
           <div style={{ position: 'absolute', bottom: '4%', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none', userSelect: 'none' }}>
             <span style={{ fontFamily: 'var(--font-brand)', fontSize: 20, color: '#8b6bb8', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Abiding</span>
           </div>

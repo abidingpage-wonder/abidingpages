@@ -534,12 +534,15 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
         )}
         {isRestDay ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button onClick={handleCommaDay} disabled={sending} style={{
+            {/* 편지 내용을 쓰면 '오늘은 쉼표'는 비활성화 — 내용 있는 편지는 일반 편지로 전송 */}
+            <button onClick={handleCommaDay} disabled={sending || !letterIsEmpty} style={{
               width: '100%', padding: '15px 0', borderRadius: 999,
-              background: 'transparent', border: '1.5px solid rgba(255,255,255,0.35)',
-              color: 'rgba(255,255,255,0.75)',
+              background: 'transparent',
+              border: (sending || !letterIsEmpty) ? '1.5px solid rgba(255,255,255,0.14)' : '1.5px solid rgba(255,255,255,0.35)',
+              color: (sending || !letterIsEmpty) ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.75)',
               fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em',
-              cursor: sending ? 'default' : 'pointer',
+              cursor: (sending || !letterIsEmpty) ? 'default' : 'pointer',
+              transition: 'all 0.2s ease',
             }}>
               {sending ? '보내는 중...' : '오늘은 쉼표 🌿'}
             </button>
