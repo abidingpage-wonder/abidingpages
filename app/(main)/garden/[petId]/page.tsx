@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import Spinner from '@/components/ui/Spinner'
+import { petJosa } from '@/lib/korean'
 
 // ── 타입 ──────────────────────────────────────────────────────────
 interface PetDetail {
@@ -279,7 +280,7 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
             color: 'rgba(200,180,230,0.85)', letterSpacing: '-0.01em',
             textShadow: '0 1px 4px rgba(0,0,0,0.35)',
           }}>
-            {daysSince}일째 {pet.name}를 기억하는 중
+            {daysSince}일째 {petJosa(pet.name, '을를')} 기억하는 중
           </div>
 
           {/* 한마디 */}

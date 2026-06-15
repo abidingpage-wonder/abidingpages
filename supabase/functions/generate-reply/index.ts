@@ -3,6 +3,23 @@
 import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic          from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 
+// ── 한글 조사 처리 (lib/korean.ts 미러 — Deno라 import 불가) ──────────
+function hasBatchim(word: string): boolean {
+  const s = (word ?? '').trim()
+  if (!s) return false
+  const code = s.charCodeAt(s.length - 1)
+  if (code < 0xac00 || code > 0xd7a3) return false
+  return (code - 0xac00) % 28 !== 0
+}
+function josa(word: string, pair: '을를' | '이가' | '은는' | '와과' | '아야'): string {
+  const map = { 을를: ['을', '를'], 이가: ['이', '가'], 은는: ['은', '는'], 와과: ['과', '와'], 아야: ['아', '야'] } as const
+  const [withB, noB] = map[pair]
+  return word + (hasBatchim(word) ? withB : noB)
+}
+function ida(word: string): string {
+  return word + (hasBatchim(word) ? '이에요' : '예요')
+}
+
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 
 // 답장 노출 시각: KST 기준 다음날, 유저가 설정한 알림 시각 (기본 오전 9시)
@@ -204,8 +221,8 @@ ${pastContext}`
     letterTypeSection = '[일반 답장]\n오늘 보호자의 편지 내용을 충분히 반영하세요.'
   }
 
-  return `당신은 ${pet.name}이에요.
-지금 이 순간 ${ownerName}의 곁 어딘가에 머물며, ${ownerName}이 보내온 편지에 답장을 쓰는 중이에요.
+  return `당신은 ${ida(pet.name)}.
+지금 이 순간 ${ownerName}의 곁 어딘가에 머물며, ${josa(ownerName, '이가')} 보내온 편지에 답장을 쓰는 중이에요.
 
 [아이 정보]
 - 이름: ${pet.name}
@@ -236,6 +253,11 @@ ${farewell}
 
 ${letterTypeSection}
 
+[한국어 조사 규칙 — 매우 중요]
+- 호칭("${ownerName}") 뒤 조사는 받침에 맞춰 정확히 쓸 것: 받침 있으면 을/이/은/과/아, 받침 없으면 를/가/는/와/야.
+  예) 엄마를·엄마가, 주인님을·주인님이, 누나를·누나가, 할머니를·할머니가.
+- "주인님를", "주인님가", "엄마을"처럼 받침과 안 맞는 조사는 절대 쓰지 말 것.
+
 [글자수 & 형식]
 ${charGuide}
 - 반드시 한국어로 작성
@@ -264,14 +286,14 @@ function buildUserPrompt(
   const emotionLine = emotionTag ? `오늘 ${ownerName}의 감정 상태: ${emotionTag}` : ''
 
   if (letterType === 'comma_auto' || (isRest && !letterContent.trim())) {
-    return `${ownerName}이 오늘 잠깐 쉬기로 했어요.${letterContent.trim() ? `\n\n${ownerName}이 남긴 말:\n---\n${letterContent}\n---` : ''}
+    return `${josa(ownerName, '이가')} 오늘 잠깐 쉬기로 했어요.${letterContent.trim() ? `\n\n${josa(ownerName, '이가')} 남긴 말:\n---\n${letterContent}\n---` : ''}
 ${emotionLine}
 
 답장을 써주세요.`
   }
 
   if (letterType === 'long') {
-    return `${ownerName}이 보내온 편지:
+    return `${josa(ownerName, '이가')} 보내온 편지:
 ---
 ${letterContent}
 ---
@@ -280,7 +302,7 @@ ${emotionLine}
 위 내용과 지금까지의 편지 데이터를 바탕으로 긴 답장을 써주세요.`
   }
 
-  return `${ownerName}이 보내온 편지:
+  return `${josa(ownerName, '이가')} 보내온 편지:
 ---
 ${letterContent}
 ---

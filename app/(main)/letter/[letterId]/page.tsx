@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Image from 'next/image'
 import Spinner from '@/components/ui/Spinner'
+import { josa } from '@/lib/korean'
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -176,7 +177,7 @@ export default function LetterPage() {
         </button>
         <div style={{ flex: 1, textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: '#3d2b5e', letterSpacing: '-0.01em' }}>
-            {letter.ownerNickname}가 {letter.petName}에게
+            {josa(letter.ownerNickname, '이가')} {letter.petName}에게
           </div>
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#a890c8', marginTop: 2 }}>
             {formatDate(letter.sentAt)} · {formatTime(letter.sentAt)}

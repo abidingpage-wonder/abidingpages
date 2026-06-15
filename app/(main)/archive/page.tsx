@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import Spinner from '@/components/ui/Spinner'
+import { petJosa } from '@/lib/korean'
 
 // ── 타입 ─────────────────────────────────────────────────────────
 interface ArchiveData {
@@ -289,7 +290,7 @@ export default function ArchivePage() {
                 marginTop: 4, fontFamily: 'var(--font-sans)', fontSize: 11,
                 color: 'var(--lav-600)', letterSpacing: '-0.01em',
               }}>
-                {daysSince}일째 {pet.name}를 기억하는 중
+                {daysSince}일째 {petJosa(pet.name, '을를')} 기억하는 중
               </div>
               {pet.firstWord && (
                 <div style={{
@@ -620,7 +621,7 @@ function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: Timeli
       }}>
         <div style={{ fontSize: 28 }}>🌙</div>
         <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink-300)', textAlign: 'center', lineHeight: 1.6 }}>
-          {petName}와 나눈 편지들이<br/>여기에 쌓여요.
+          {petJosa(petName, '와과')} 나눈 편지들이<br/>여기에 쌓여요.
         </div>
       </div>
     )

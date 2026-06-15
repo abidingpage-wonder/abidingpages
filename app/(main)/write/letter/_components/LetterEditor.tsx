@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
+import { petJosa } from '@/lib/korean'
 
 const EMOTION_EMOJI: Record<string, string> = {
   missing: '🌙', sad: '💧', numb: '🌫️', guilt: '🥀',
@@ -647,7 +648,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
                     49일의 여정을 완주했어요
                   </div>
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-                    {petName}와 함께 걸어온 49일,<br/>
+                    {petJosa(petName, '와과')} 함께 걸어온 49일,<br/>
                     정말 잘 해내셨어요.<br/><br/>
                     아이는 이제 엄마 마음속<br/>
                     가장 따뜻한 방에 영원히 함께해요 🐾

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Image from 'next/image'
 import { SoftCTAButton } from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import { petJosa } from '@/lib/korean'
 
 function formatDateTime(iso: string) {
   const d = new Date(iso)
@@ -175,7 +176,7 @@ export default function ReplyPage() {
         </button>
         <div style={{ flex: 1, textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: '#5c4a3a', letterSpacing: '-0.01em' }}>
-            {reply.petName}가 {reply.ownerNickname}에게
+            {petJosa(reply.petName, '이가')} {reply.ownerNickname}에게
           </div>
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bba089', marginTop: 2 }}>
             {formatDate(reply.receivedAt)} · {formatDateTime(reply.receivedAt)}
