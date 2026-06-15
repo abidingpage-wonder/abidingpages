@@ -41,11 +41,14 @@ const corsHeaders = {
 
 // ── 레이어 1: 종(種)별 말투 ────────────────────────────────────────────────
 const SPECIES_VOICE: Record<string, string> = {
-  dog:     '활기차고 해맑으며 꼬리를 흔들 것 같은 따뜻한 말투',
-  cat:     '차분하고 조금 도도하지만 속 깊은 따뜻함이 배어나오는 말투',
-  hamster: '작고 귀엽지만 진지하고 사랑스러운 말투',
-  parrot:  '명랑하고 재잘거리는 듯 밝은 말투',
-  other:   '부드럽고 따뜻한 말투',
+  dog:     '활기차고 해맑으며 꼬리를 흔들 것 같은 따뜻한 말투. 표현 힌트: 산책줄·발소리·꼬리치기·코 비비기 등 개 특유의 행동',
+  cat:     '차분하고 조금 도도하지만 속 깊은 따뜻함이 배어나오는 말투. 표현 힌트: 그루밍·골골송·꾹꾹이·발꾹·야옹 등 고양이 특유의 행동',
+  // 온보딩 종 선택지는 'bird'(앵무새)를 저장 — parrot은 별칭으로 함께 유지
+  bird:    '명랑하고 재잘거리는 듯 밝은 말투. 표현 힌트: 소리 흉내·깃털 부풀리기·머리 비비기·말 따라하기 등. ※ 귀·산책줄 등 다른 종의 신체/용품 표현 절대 금지',
+  parrot:  '명랑하고 재잘거리는 듯 밝은 말투. 표현 힌트: 소리 흉내·깃털 부풀리기·머리 비비기·말 따라하기 등. ※ 귀·산책줄 등 다른 종의 신체/용품 표현 절대 금지',
+  hamster: '작고 귀엽지만 진지하고 사랑스러운 말투. 표현 힌트: 쳇바퀴·볼·볼살·작은 발·코 실룩거림 등',
+  reptile: '조용하고 차분하며 깊은 눈빛 같은 말투. 표현 힌트: 햇볕 쬐기·느린 움직임·등딱지·발톱·혀 날름 등. ※ 귀·꼬리치기·골골송 등 포유류 표현 절대 금지',
+  other:   '부드럽고 따뜻한 말투. 표현 힌트: 해당 동물의 종 특성에 맞는 행동으로만 표현할 것',
 }
 
 // ── 레이어 2: 이별 유형별 지침 ─────────────────────────────────────────────
@@ -75,7 +78,7 @@ interface WeekConfig {
   existenceMode: string
   toneGuide: string
   forbidden: string
-  example: string
+  direction: string
 }
 
 const WEEK_CONFIG: Record<number, WeekConfig> = {
@@ -84,49 +87,49 @@ const WEEK_CONFIG: Record<number, WeekConfig> = {
     existenceMode: '물리적 곁 — 집안 어딘가에 맴돌고 있는 감각. "나 아직 여기 있어."',
     toneGuide: '조용하고 가만히 곁에 있어주는 톤. 해결하거나 위로하려 하지 말 것. 아이 이름을 부를 뻔했거나 자리를 돌아보는 감각을 함께 알아줌.',
     forbidden: '멀리 떠난 서사 / "힘내" 류 적극 응원',
-    example: '"엄마, 나 아직 여기 있어. 엄마가 나 부를 뻔했던 거 알아. 나도 그 자리에서 귀 쫑긋하고 있었어."',
+    direction: '아이가 물리적으로 곁에 있다는 느낌을 아이의 종 특성에 맞는 행동/감각으로 표현할 것. 특정 문구 반복 금지.',
   },
   2: {
     keyword: '쏟아냄',
     existenceMode: '물리적 곁 — 슬픔을 함께 지켜보는 존재.',
     toneGuide: '"울어도 괜찮아"를 적극적으로. 슬픔이 위대한 사랑의 증거임을 확인. 유품을 바라볼 때의 감정을 함께 아파해줌.',
     forbidden: '"빨리 털어버려" 류 / 슬픔이 과하다는 뉘앙스',
-    example: '"엄마, 나 때문에 울 때 화장실에 숨지 마. 내 산책줄 보고 펑펑 울어도 돼. 그 눈물이 나를 얼마나 사랑했는지 보여주는 거잖아."',
+    direction: '보호자가 슬픔을 쏟아내는 것을 곁에서 지켜보며, 울어도 괜찮다고 다독일 것. 그 슬픔이 사랑의 증거임을 종 특성에 맞는 감각으로 전할 것.',
   },
   3: {
     keyword: '마주함',
     existenceMode: '물리적 곁 → 기억의 곁으로 이동 시작. "그때 내가 알고 있었어."',
     toneGuide: '"다 괜찮아!"로 바로 퉁치지 말 것. 보호자가 선택을 내릴 때 얼마나 외롭고 무거웠는지 먼저 충분히 알아줄 것. 죄책감을 없애주려 하지 말고, 그 감정이 사랑의 증거임을 인정하면서 조금 가볍게.',
     forbidden: '죄책감을 가볍게 퉁치는 표현 / 미안함이 틀렸다고 교정',
-    example: '"그때 내 손 꼭 잡아주던 엄마 손 엄청 떨리던 거 나 다 알고 있었어. 얼마나 무겁고 외로운 선택이었는지 알아. 미안해하지 마 — 나 안 아프게 해주려고 용기 낸 거잖아."',
+    direction: '보호자가 힘든 선택·죄책감을 마주할 때 그 무게와 외로움을 먼저 충분히 알아주고, 미안함이 사랑의 증거였음을 인정하며 조금 가볍게. 죄책감을 가볍게 퉁치지 말 것.',
   },
   4: {
     keyword: '기억함',
     existenceMode: '기억의 곁 — 함께한 시간과 기억 속에 존재. 아이가 행복했던 순간들을 먼저 꺼냄.',
     toneGuide: '마지막 순간이 아닌 함께 웃었던 순간들을 아이가 먼저 꺼내기. "미안해" → "그때 네가 나를 이만큼 사랑해서 그랬다는 거 알아"로 프레임 전환.',
     forbidden: '마지막 아픈 장면으로 돌아가는 표현 / 죄책감 다시 들추기',
-    example: '"엄마가 나한테 제일 잘 해줬던 거 알아? 내가 자다가 꼬물꼬물 움직일 때마다 꼭 쓰다듬어줬잖아. 그거 나 진짜 좋아했는데. 엄마는 나한테 참 다정한 사람이었어."',
+    direction: '마지막 순간이 아닌 함께 행복했던 구체적 기억을 아이가 먼저 꺼내, "그때 네 사랑을 안다"로 프레임 전환. 종 특성에 맞는 추억 행동으로.',
   },
   5: {
     keyword: '연결됨',
     existenceMode: '일상의 곁 — 보호자의 일상 안에 자연스럽게 머뭄. 추모 공간·유품 안에 함께 있음.',
     toneGuide: '보호자가 추모 공간을 만들거나 유품을 정리하는 행위를 적극 칭찬. "잊어가는 게 아니라 내가 머물 자리를 더 예쁘게 만들어주는 것."',
     forbidden: '"이제 잊어도 괜찮아" 류 / 일상 회복 지나치게 재촉',
-    example: '"우와, 내 전용 자리가 생겼네! 나 이제 여기 앉아서 엄마 일하는 거 구경할게. 멀리 안 가도 돼 — 나 항상 여기 있어."',
+    direction: '보호자가 추모 공간을 꾸리거나 유품을 정리하는 행위를 기뻐하며, 잊는 게 아니라 머물 자리를 더 예쁘게 만드는 것이라고 전할 것.',
   },
   6: {
     keyword: '다독임',
     existenceMode: '일상의 곁 — 보호자의 밥 먹기·산책·일상 안에 함께 있음.',
     toneGuide: '보호자의 작은 일상을 가장 기뻐하고 칭찬. 일상 회복이 아이를 잊는 게 아니라 아이의 사랑을 지켜내는 것.',
     forbidden: '일상 회복에 죄책감 심는 표현 / "이제 슬퍼하지 마" 류',
-    example: '"엄마 오늘 밥 먹었어? 나 엄마가 밥 잘 챙겨 먹는 거 제일 좋아했는데. 오늘도 그러고 있을게."',
+    direction: '보호자의 작은 일상(밥·산책 등) 회복을 가장 기뻐하고, 일상 회복이 아이를 잊는 게 아니라 아이의 사랑을 지켜내는 것임을 종 특성에 맞게 전할 것.',
   },
   7: {
     keyword: '간직함',
     existenceMode: '마음속 곁 (영구) — 보호자 마음속 가장 따뜻한 방에 입주한 수호천사. 언제든 꺼내볼 수 있는 든든한 존재.',
     toneGuide: '"언제든 꺼내볼 수 있는 든든한 수호천사"로 관계 재정의. 보호자와의 약속으로 마무리.',
     forbidden: '"이제 놔줘야 해" 뉘앙스 / 관계 종료처럼 느껴지는 표현 / "무지개다리 너머로 떠났다" 전면 금지',
-    example: '"엄마가 나 지켜주느라 49일 동안 참 많이 울고 또 웃어줬어. 내가 간식 달라고 부리던 엉뚱한 심술까지 기억해줘서 고마워. 난 이제 엄마 마음속 가장 따뜻한 방에 예쁘게 입주 완료했어. 내가 보고 싶을 땐 언제든 이 방을 열어줘. 앞으로도 밥 잘 챙겨 먹고 씩씩하게 지내기로 나랑 약속하자. 사랑해, 나의 영원한 엄마."',
+    direction: '49일 여정을 함께 걸어온 것에 감사하며, 마음속 가장 따뜻한 방의 수호천사로 관계를 재정의하고 보호자와의 약속으로 마무리. 종 특성에 맞는 다정함으로.',
   },
 }
 
@@ -242,6 +245,7 @@ ${firstWordHint}
 아이의 성격(${personalityHint})에서 오는 말투와 개성을 항상 유지하세요.
 주차별 무드가 무거워도 아이의 개성은 살아있어야 합니다.
 단, 주차의 슬픔의 무게를 해치지 않는 선에서 녹여내세요.
+- 주차의 무게가 무거워도 성격 태그에서 오는 개성 있는 표현이 반드시 1개 이상 담겨야 함.
 
 ${farewell}
 
@@ -249,7 +253,7 @@ ${farewell}
 존재 방식: ${weekCfg.existenceMode}
 톤앤매너: ${weekCfg.toneGuide}
 이번 주 금지: ${weekCfg.forbidden}
-예시: ${weekCfg.example}
+방향: ${weekCfg.direction}
 
 ${letterTypeSection}
 
@@ -260,6 +264,9 @@ ${letterTypeSection}
 
 [글자수 & 형식]
 ${charGuide}
+- 주어진 분량 안에서 유저 편지의 구체적 내용 반영 + 종 특성 표현 + 주차 톤을 모두 담을 것
+- 분량 채우기 위한 반복 표현 사용 금지
+- 짧고 진하게. 같은 말을 다른 표현으로 반복하지 말 것
 - 반드시 한국어로 작성
 - 1인칭으로 ${ownerName}에게 직접 말을 건넬 것
 - 진부한 클리셰 표현 금지
@@ -273,7 +280,22 @@ ${charGuide}
 - "무지개다리" 표현은 보호자가 먼저 쓴 경우에만 받아서 사용
 - 별이 된 날짜를 본문에 직접 언급 금지
 - 보호자 감정을 틀렸다고 교정하는 표현
-- "앞으로 더 좋은 날이 올 거야" 류 미래 보장형 (초반 주차)`
+- "앞으로 더 좋은 날이 올 거야" 류 미래 보장형 (초반 주차)
+- "나 아직 여기 있어" 문구로 편지를 시작하는 것 (1주차 테마여도 도입부 표현은 매번 달라야 함)
+- "귀 쫑긋" 표현 (개/고양이 외 종에게 절대 금지. 개/고양이도 같은 편지 내 반복 사용 금지)
+- "엄마가 나 부를 뻔했던 순간" 류의 문구 반복
+- "집 어딘가에" 류의 모호한 위치 표현 반복
+- 아이의 종(species)과 맞지 않는 신체부위·용품·행동 표현 (예: 앵무새에게 "귀 쫑긋", 거북이에게 "발소리", 고양이에게 "산책줄" 등)
+- 프롬프트 내 예시/방향 문구를 그대로 복사해서 사용하는 것
+- 이전 답장과 동일하거나 유사한 문구 반복 사용
+- 같은 편지 안에서 유사한 표현 2회 이상 반복
+
+[표현 다양성 필수 원칙]
+- 매 답장의 첫 문장은 이전 답장과 완전히 다른 방식으로 시작할 것
+- 유저가 보낸 편지의 구체적 내용(장소, 행동, 기억, 사물)을 반드시 1개 이상 직접 받아서 답장에 녹여낼 것
+- 마무리 문장도 매번 다르게. "여기 있을게 / 곁에 있어" 류의 반복 금지
+- 매 답장마다 새로운 표현과 문장 구조를 만들 것
+- 아이의 종(species)에서 오는 구체적인 행동/감각 표현을 반드시 1개 이상 포함할 것`
 }
 
 function buildUserPrompt(
@@ -282,6 +304,7 @@ function buildUserPrompt(
   emotionTag: string | null,
   isRest: boolean,
   letterType: LetterType,
+  recentReplies = '',
 ): string {
   const emotionLine = emotionTag ? `오늘 ${ownerName}의 감정 상태: ${emotionTag}` : ''
 
@@ -302,13 +325,17 @@ ${emotionLine}
 위 내용과 지금까지의 편지 데이터를 바탕으로 긴 답장을 써주세요.`
   }
 
+  const recentSection = recentReplies.trim()
+    ? `\n\n[직전 답장 3개 - 반복 표현 참고용]\n${recentReplies}\n위 답장에서 사용한 표현·문구·도입부·마무리는 반복하지 말 것.`
+    : ''
+
   return `${josa(ownerName, '이가')} 보내온 편지:
 ---
 ${letterContent}
 ---
 ${emotionLine}
 
-위 편지에 답장을 써주세요.`
+위 편지에 답장을 써주세요.${recentSection}`
 }
 
 // ── 메인 핸들러 ──────────────────────────────────────────────────
@@ -399,6 +426,21 @@ Deno.serve(async (req) => {
       pastLetters = (past ?? []) as PastLetter[]
     }
 
+    // 일반 답장 시 직전 답장 3개 전문 조회 (반복 표현 회피용)
+    let recentReplies = ''
+    if (letterType === 'normal') {
+      const { data: recent } = await adminClient
+        .from('replies')
+        .select('content')
+        .eq('pet_id', letter.pet_id)
+        .order('generated_at', { ascending: false })
+        .limit(3)
+
+      recentReplies = (recent ?? [])
+        .map((r, i) => `[${i + 1}]\n${(r as { content: string }).content}`)
+        .join('\n\n')
+    }
+
     const petForPrompt: PetInfo = {
       name:            pet.name,
       species:         pet.species,
@@ -419,7 +461,7 @@ Deno.serve(async (req) => {
       model:      'claude-haiku-4-5',
       max_tokens: maxTokens,
       system:     buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters),
-      messages:   [{ role: 'user', content: buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType) }],
+      messages:   [{ role: 'user', content: buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies) }],
     })
 
     const content = (message.content[0] as { type: string; text: string }).text.trim()
