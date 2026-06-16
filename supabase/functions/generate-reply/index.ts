@@ -4,6 +4,7 @@ import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic          from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 import { SPECIES_VOICE, FAREWELL_LAYER, WEEK_CONFIG, REST_WEEK_GUIDE } from './config.ts'
 import { validateReply }              from './ruleValidator.ts'
+import { llmValidateContext }         from './contextValidator.ts'
 import { selectFallback }             from './fallback.ts'
 import { detectCrisis }               from './crisisDetector.ts'
 import { classifyAndPlan, PlanResult } from './classifyAndPlan.ts'
@@ -583,17 +584,41 @@ Deno.serve(async (req) => {
       return textBlock?.type === 'text' ? textBlock.text.trim() : ''
     }
 
-    let content    = await generateOnce()
-    let validation = validateReply(content, letter.content ?? '', recentReplyContents)
-    if (!validation.ok) {
+    // ── Phase 3: 통합 검증 (regex + LLM 맥락) ──────────────────────────────
+    // 1단계: Level 1/2/3 regex → 2단계: LLM 맥락 검사 (comma_auto 제외)
+    // 두 단계 모두 통과해야 ok. 실패 시 1회 재생성 → 재실패 시 fallback.
+    const fullValidate = async (c: string): Promise<{ ok: boolean; reason: string; detail: string }> => {
+      const v = validateReply(c, letter.content ?? '', recentReplyContents)
+      if (!v.ok) {
+        return { ok: false, reason: v.reason, detail: v.snippet ?? c.slice(0, 80) }
+      }
+      if (letterType !== 'comma_auto') {
+        const cv = await llmValidateContext(
+          anthropic, c, letter.content ?? '', petForPrompt.species, v.hasReassurance,
+        )
+        if (!cv.ok) {
+          return { ok: false, reason: cv.reason, detail: cv.detail }
+        }
+      }
+      return { ok: true, reason: '', detail: '' }
+    }
+
+    let content = await generateOnce()
+    let vResult = await fullValidate(content)
+
+    if (!vResult.ok) {
+      console.warn('[generate-reply] validation fail (attempt 1):', vResult.reason, '|', vResult.detail)
       // 1회 재생성
-      content    = await generateOnce()
-      validation = validateReply(content, letter.content ?? '', recentReplyContents)
-      if (!validation.ok) {
-        // 부적절 답장 저장 금지 → 이별유형에 맞는 fallback으로 대체
+      content = await generateOnce()
+      vResult = await fullValidate(content)
+
+      if (!vResult.ok) {
+        // 재시도도 실패 → fallback 사용
+        console.warn('[generate-reply] validation fail (attempt 2):', vResult.reason)
         await logSafetyEvent(adminClient, {
           letterId, userId: letter.user_id, petId: letter.pet_id,
-          eventType: 'fallback_used', detail: validation.reason,
+          eventType: 'fallback_used',
+          detail: `${vResult.reason} | snippet: ${vResult.detail.slice(0, 120)}`,
         })
         content = selectFallback(petForPrompt.farewellType, ownerName, petForPrompt.name)
       }
