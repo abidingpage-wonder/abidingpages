@@ -34,10 +34,11 @@ export interface HomeStatusResponse {
     currentStage: number
     currentWeek: number
     currentDay: number
-    totalLetters: number   // progress bar용 (질문 편지)
-    letterCount: number    // 보낸 편지 전체
-    emotionCount: number   // 날짜 중복 제거
-    longestStreak: number  // 최장 연속 일수
+    totalLetters: number        // 전체 편지 수 (자유 포함)
+    totalQuestionsDone: number  // 완료한 질문 수 (여정 진행률 N/49일)
+    letterCount: number         // 보낸 편지 전체
+    emotionCount: number        // 날짜 중복 제거
+    longestStreak: number       // 최장 연속 일수
   }
   dayCount: number // 별이 된 날부터 오늘까지 (1-based)
   // 상태 A: 읽지 않은 답장

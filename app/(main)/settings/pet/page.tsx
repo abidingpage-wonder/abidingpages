@@ -376,6 +376,8 @@ export default function PetSettingsPage() {
             onChange={e => handleBornAtChange(e.target.value)}
             style={{
               ...inputBase,
+              WebkitAppearance: 'none',
+              appearance: 'none',
               border: `1px solid ${dateError && bornAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
             }}
           />
@@ -391,6 +393,8 @@ export default function PetSettingsPage() {
             onChange={e => handleDiedAtChange(e.target.value)}
             style={{
               ...inputBase,
+              WebkitAppearance: 'none',
+              appearance: 'none',
               border: `1px solid ${dateError && diedAt ? 'rgba(234,126,74,0.5)' : 'rgba(166,133,199,0.25)'}`,
             }}
           />

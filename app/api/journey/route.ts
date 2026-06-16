@@ -3,22 +3,27 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { WEEK_TOTAL_NON_REST } from '@/lib/journey'
 
-// 비쉼표 질문 6개를 모두 답한 주차 목록 (여정 카드 완료 표시용)
-async function computeCompletedWeeks(petId: string): Promise<number[]> {
+// 비쉼표 질문 6개를 모두 답한 주차 목록 + 전체 완료 질문 수
+async function computeCompletedWeeks(petId: string): Promise<{ completedWeeks: number[], totalQuestionsDone: number }> {
   const [letters, restQ] = await Promise.all([
     prisma.letter.findMany({ where: { petId, questionId: { not: null } }, select: { week: true, questionId: true } }),
     prisma.question.findMany({ where: { isRest: true }, select: { id: true } }),
   ])
   const restIds = new Set(restQ.map(q => q.id))
   const byWeek = new Map<number, Set<string>>()
+  let totalQuestionsDone = 0
   for (const l of letters) {
     if (!l.questionId || restIds.has(l.questionId)) continue
     if (!byWeek.has(l.week)) byWeek.set(l.week, new Set())
-    byWeek.get(l.week)!.add(l.questionId)
+    const weekSet = byWeek.get(l.week)!
+    if (!weekSet.has(l.questionId)) {
+      weekSet.add(l.questionId)
+      totalQuestionsDone++
+    }
   }
   const out: number[] = []
   for (const [week, set] of byWeek) if (set.size >= WEEK_TOTAL_NON_REST) out.push(week)
-  return out.sort((a, b) => a - b)
+  return { completedWeeks: out.sort((a, b) => a - b), totalQuestionsDone }
 }
 
 // ── 헬퍼: 편지 날짜(KST) 기준 최장 연속 일수 ──────────────────────
@@ -57,13 +62,13 @@ export async function GET() {
     const progress = devPet
       ? await prisma.journeyProgress.findUnique({ where: { petId: devPet.id }, select: { currentStage: true, currentWeek: true, currentDay: true } })
       : null
-    const completedWeeks = devPet ? await computeCompletedWeeks(devPet.id) : []
+    const { completedWeeks, totalQuestionsDone: devTotalQ } = devPet ? await computeCompletedWeeks(devPet.id) : { completedWeeks: [], totalQuestionsDone: 0 }
     return NextResponse.json({
       currentStage: progress?.currentStage ?? 1,
       currentWeek: progress?.currentWeek ?? 1,
       currentDay: progress?.currentDay ?? 2,
       letterCount: 3,        // 보낸 편지 전체 (mock)
-      totalDays: 3,          // progress bar용 (mock)
+      totalDays: Math.min(devTotalQ, 49),
       emotionCount: 3,       // 날짜 중복 제거 (mock)
       longestStreak: 3,      // 최장 연속 일수 (mock)
       nextStageAvailable: false,
@@ -85,9 +90,9 @@ export async function GET() {
 
     const petId = dbUser.activePetId
 
-    const [progress, emotionDays, letters, weekGuides, completedWeeks] = await Promise.all([
+    const [progress, emotionDays, letters, weekGuides, { completedWeeks, totalQuestionsDone }] = await Promise.all([
       prisma.journeyProgress.findUnique({ where: { petId } }),
-      // 감정기록: 날짜 중복 제거 (loggedAt이 Date 타입이므로 groupBy로 distinct)
+      // 감정기록: loggedAt이 @db.Date 타입이므로 groupBy로 날짜 중복 제거
       prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId } }),
       // 편지 날짜 목록 (최장 연속 계산용)
       prisma.letter.findMany({ where: { petId, userId: user.id }, select: { createdAt: true } }),
@@ -98,7 +103,7 @@ export async function GET() {
     const emotionCount = emotionDays.length
     const letterCount = letters.length
     const longestStreak = calcLongestStreak(letters.map(l => l.createdAt))
-    const totalDays = Math.min(progress?.totalLetters ?? 0, 49)
+    const totalDays = Math.min(totalQuestionsDone, 49)
 
     return NextResponse.json({
       currentStage: progress?.currentStage ?? 1,
