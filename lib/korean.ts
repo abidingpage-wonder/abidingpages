@@ -42,3 +42,6 @@ export function petJosa(name: string, pair: Pair): string {
 export function ida(word: string): string {
   return word + (hasBatchim(word) ? '이에요' : '예요')
 }
+
+/** 이름에 친근형 '이' 접미사. nameWithI('탄탄')='탄탄이', nameWithI('순리')='순리' */
+export const nameWithI = petLabel

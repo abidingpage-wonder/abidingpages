@@ -191,6 +191,7 @@ function buildSystemPrompt(
   plan?: PlanResult,
 ): string {
   const ownerName      = pet.ownerNickname ?? '보호자님'
+  const petSignature   = pet.name + (hasBatchim(pet.name) ? '이' : '') + '가'
   const voice          = SPECIES_VOICE[pet.species] ?? SPECIES_VOICE.other
   const farewell       = FAREWELL_LAYER[pet.farewellType ?? 'other'] ?? FAREWELL_LAYER.other
   const weekCfg        = WEEK_CONFIG[week] ?? WEEK_CONFIG[1]
@@ -305,7 +306,22 @@ ${charGuide}
 - 1인칭으로 ${ownerName}에게 직접 말을 건넬 것
 - 진부한 클리셰 표현 금지
 - 자연스러운 구어체 (문어체·격식체 금지)
-- 마무리 서명: "${pet.name} 올림"
+
+[마무리 형식]
+서명(${petSignature}) 바로 앞에 아이가 보호자에게 직접 건네는 짧은 애정 표현을 포함할 것.
+
+예시 (매번 다른 표현으로):
+- "사랑해, ${ownerName}."
+- "${ownerName}, 고마워."
+- "${ownerName}, 나 행복했어."
+- "보고 싶어, ${ownerName}."
+- "${ownerName}한테 받은 사랑, 다 기억하고 있어."
+
+규칙:
+- 1~2문장. 짧고 진하게.
+- ${ownerName} 호칭 반드시 포함.
+- 매 답장마다 다른 표현으로. "사랑해"와 "고마워"를 한 답장에 함께 쓰지 말 것.
+- 마무리 서명은 반드시 '${petSignature}' 형식만 사용. '올림', '~에서', '이' 단독 등 다른 형식 절대 금지.
 
 [절대 금지]
 - "나는 지금 너무 행복해!" — 완벽한 천국 서사
