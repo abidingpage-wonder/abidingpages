@@ -7,13 +7,13 @@ type OS = 'ios' | 'android'
 
 const STEPS: Record<OS, { icon: string; text: string }[]> = {
   ios: [
-    { icon: '🌐', text: 'Safari 브라우저로 abiding.pages를 열어주세요.' },
+    { icon: '🌐', text: 'Safari 브라우저로 abidingpages.app을 열어주세요.' },
     { icon: '⬆️', text: '하단 또는 ⋮더보기의 공유 버튼(□↑)을 탭하세요.' },
     { icon: '➕', text: '스크롤을 내려 "홈 화면에 추가"를 탭하세요.' },
     { icon: '✅', text: '오른쪽 위 "추가"를 탭하면 완료!' },
   ],
   android: [
-    { icon: '🌐', text: 'Chrome 브라우저로 abiding.pages를 열어주세요.' },
+    { icon: '🌐', text: 'Chrome 브라우저로 abidingpages.app을 열어주세요.' },
     { icon: '⋮', text: '오른쪽 위 메뉴(⋮)를 탭하세요.' },
     { icon: '📱', text: '"앱 설치" 또는 "홈 화면에 추가"를 탭하세요.' },
     { icon: '✅', text: '"설치" 버튼을 탭하면 완료!' },

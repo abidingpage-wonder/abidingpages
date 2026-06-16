@@ -143,7 +143,7 @@ export default function StageDetailPage() {
             fontFamily: 'var(--font-sans)', fontSize: 12.5,
             color: '#7a6a90', lineHeight: 1.7, letterSpacing: '-0.01em',
           }}>
-            {data?.guide?.guide ?? meta.desc}
+            {data?.guide?.guide}
           </div>
 
           {/* 진행률 */}

@@ -660,10 +660,13 @@ function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: Timeli
   }
   allPairs.reverse()
 
-  // Free 유저: 편지 3개까지만 공개
-  const FREE_LIMIT = 3
-  const cappedPairs = isPro ? allPairs : allPairs.slice(0, FREE_LIMIT)
-  const isLocked    = !isPro && allPairs.length > FREE_LIMIT
+  // [BETA] 베타 기간 중 모든 사용자 전체 편지 공개 (isPro 게이팅 해제)
+  const cappedPairs = allPairs
+  const isLocked    = false
+  // [BETA HIDDEN] 결제 기능 활성화 시 아래 주석 해제
+  // const FREE_LIMIT = 3
+  // const cappedPairs = isPro ? allPairs : allPairs.slice(0, FREE_LIMIT)
+  // const isLocked    = !isPro && allPairs.length > FREE_LIMIT
 
   const { visible, loading, hasMore, sentinelRef } = useInfiniteScroll(cappedPairs.length, 10, 10)
   const shownPairs = cappedPairs.slice(0, visible)

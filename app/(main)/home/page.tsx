@@ -146,7 +146,23 @@ export default async function HomePage() {
 
   return (
     <div style={{ paddingBottom: 8 }}>
-      {/* 무료 3일 체험 배너 */}
+      {/* [BETA] 베타 테스트 배너 — TODO: href를 카카오 채널 링크로 교체 */}
+      <div style={{ padding: '12px 18px 0' }}>
+        <a href="#" style={{ textDecoration: 'none' }}>
+          <div style={{
+            padding: '11px 16px', borderRadius: 14,
+            background: 'linear-gradient(96deg, #ece4f3, #ddd0ee)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '0.5px solid rgba(166,133,199,0.35)',
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12.5, fontWeight: 600, color: 'var(--lav-700)' }}>
+              🌿 베타 테스트 중  |  피드백 남기기 →
+            </span>
+          </div>
+        </a>
+      </div>
+      {/* [BETA HIDDEN] 무료 3일 체험 배너 — 결제 기능 활성화 시 아래 주석 해제
       <div style={{ padding: '12px 18px 0' }}>
         <a href="/plan" style={{ textDecoration: 'none' }}>
           <div style={{
@@ -173,6 +189,7 @@ export default async function HomePage() {
           </div>
         </a>
       </div>
+      */}
 
       {/* ── 상태 메인 카드 ── */}
       <div style={{ padding: '12px 18px 0' }}>

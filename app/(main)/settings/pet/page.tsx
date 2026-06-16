@@ -23,7 +23,7 @@ const FAVORITE_TAGS = ['간식', '산책', '낮잠', '담요', '창가햇살', '
 const FAREWELL_OPTIONS = [
   { value: 'natural',    label: '자연사' },
   { value: 'euthanasia', label: '안락사' },
-  { value: 'accident',   label: '사고' },
+  { value: 'accident',   label: '사고사' },
   { value: 'other',      label: '기타' },
 ]
 
@@ -420,6 +420,16 @@ export default function PetSettingsPage() {
               )
             })}
           </div>
+          {/* 프리셋에 없는 기존 커스텀 항목 */}
+          {personalityTags.filter(t => !PERSONALITY_TAGS.includes(t)).length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {personalityTags.filter(t => !PERSONALITY_TAGS.includes(t)).map(t => (
+                <button key={t} onClick={() => setPersonalityTags(p => p.filter(x => x !== t))} style={chip(true)}>
+                  {t} <span style={{ opacity: 0.6, fontSize: 11 }}>×</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── 좋아했던 것 ── */}

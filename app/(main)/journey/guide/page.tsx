@@ -287,8 +287,8 @@ export default function JourneyGuidePage() {
               <span style={{ fontWeight: 600, color: '#b56a3a' }}>심리치료를 대체하지 않습니다.</span>
               {' '}사고나 갑작스러운 충격으로 아이를 잃으셨거나, 일상생활이 어려울 만큼 극심한 슬픔이 지속되고 있다면 전문 심리상담사의 도움을 먼저 받으시길 권합니다.
             </div>
-            <button
-              onClick={() => {/* 추후 연결 예정 */}}
+            <a
+              href="tel:109"
               style={{
                 marginTop: 14, width: '100%', padding: '13px',
                 borderRadius: 13, border: 'none',
@@ -296,20 +296,11 @@ export default function JourneyGuidePage() {
                 fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                 boxShadow: '0 3px 10px rgba(181,106,58,0.12)',
-                cursor: 'not-allowed', opacity: 0.6,
+                cursor: 'pointer', textDecoration: 'none',
               }}
             >
-              마음이음 심리상담 연계 안내 보기
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <path d="M9 5l7 7-7 7" stroke="#b56a3a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <div style={{
-              marginTop: 7, fontFamily: 'var(--font-sans)', fontSize: 10.5,
-              color: 'var(--ink-500)', textAlign: 'center',
-            }}>
-              추후 연결 예정
-            </div>
+              📞 정신건강 상담전화: 109 (24시간 운영)
+            </a>
           </div>
         </div>
 

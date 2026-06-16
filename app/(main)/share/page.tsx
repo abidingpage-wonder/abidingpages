@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-const SHARE_URL  = 'https://abiding.pages'
+const SHARE_URL  = 'https://abidingpages.app'
 const SHARE_TEXT = '반려동물을 떠나보낸 마음을 천천히 돌보는 공간, Abiding에서 49일 여정을 함께해요.'
 
 export default function SharePage() {
@@ -119,7 +119,7 @@ export default function SharePage() {
         </div>
 
         {/* 편지봉투 일러스트 */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
           <div style={{ position: 'relative', width: 180, height: 150 }}>
             {/* 뒤 glow */}
             <div style={{
@@ -156,7 +156,7 @@ export default function SharePage() {
         </div>
 
         {/* 메인 카피 */}
-        <div style={{ padding: '20px 30px 0', textAlign: 'center' }}>
+        <div style={{ padding: '12px 30px 0', textAlign: 'center' }}>
           <div style={{
             fontFamily: 'var(--font-sans)', fontSize: 11.5, fontWeight: 600,
             color: 'var(--peach-500)', letterSpacing: '0.1em', marginBottom: 10,
@@ -179,9 +179,9 @@ export default function SharePage() {
         </div>
 
         {/* 링크 미리보기 카드 */}
-        <div style={{ padding: '16px 24px 0' }}>
+        <div style={{ padding: '12px 24px 0' }}>
           <div style={{
-            padding: '14px 16px', borderRadius: 999,
+            padding: '14px 16px', borderRadius: 16,
             background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(12px)',
             border: '0.5px solid rgba(166,133,199,0.2)',
             boxShadow: '0 4px 18px rgba(86,52,140,0.1)',
@@ -213,64 +213,63 @@ export default function SharePage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, minHeight: 8 }}/>
+        {/* CTA 버튼 (2열) — 링크 미리보기 바로 아래로 */}
+        <div style={{ padding: '28px 24px 0', flexShrink: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {/* 링크 복사 */}
+            <button
+              onClick={handleCopy}
+              style={{
+                width: '100%', padding: '15px', borderRadius: 999,
+                background: copied ? 'rgba(220,255,220,0.9)' : copyFailed ? 'rgba(255,235,220,0.9)' : 'rgba(255,255,255,0.85)',
+                border: copied ? '1px solid rgba(100,180,100,0.4)' : copyFailed ? '1px solid rgba(249,156,105,0.4)' : '1px solid rgba(166,133,199,0.35)',
+                color: copied ? '#2a6a2a' : copyFailed ? '#c0622a' : 'var(--lav-700)',
+                fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 600,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                cursor: 'pointer', boxShadow: '0 2px 10px rgba(86,52,140,0.06)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {copied ? (
+                <>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 6L9 17l-5-5" stroke="#2a6a2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  복사 완료!
+                </>
+              ) : copyFailed ? (
+                <>⚠️ 직접 복사</>
+              ) : (
+                <>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <rect x="9" y="9" width="11" height="11" rx="2.5" stroke="var(--lav-700)" strokeWidth="1.6"/>
+                    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="var(--lav-700)" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                  링크 복사
+                </>
+              )}
+            </button>
 
-        {/* CTA 버튼 */}
-        <div style={{ padding: '12px 24px 36px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
-          {/* 링크 복사 */}
-          <button
-            onClick={handleCopy}
-            style={{
-              width: '100%', padding: '15px', borderRadius: 999,
-              background: copied ? 'rgba(220,255,220,0.9)' : copyFailed ? 'rgba(255,235,220,0.9)' : 'rgba(255,255,255,0.85)',
-              border: copied ? '1px solid rgba(100,180,100,0.4)' : copyFailed ? '1px solid rgba(249,156,105,0.4)' : '1px solid rgba(166,133,199,0.35)',
-              color: copied ? '#2a6a2a' : copyFailed ? '#c0622a' : 'var(--lav-700)',
-              fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 600,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              cursor: 'pointer', boxShadow: '0 2px 10px rgba(86,52,140,0.06)',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {copied ? (
-              <>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="#2a6a2a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                복사 완료!
-              </>
-            ) : copyFailed ? (
-              <>⚠️ 직접 복사해주세요 · {SHARE_URL}</>
-            ) : (
-              <>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                  <rect x="9" y="9" width="11" height="11" rx="2.5" stroke="var(--lav-700)" strokeWidth="1.6"/>
-                  <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="var(--lav-700)" strokeWidth="1.6" strokeLinecap="round"/>
-                </svg>
-                링크 복사
-              </>
-            )}
-          </button>
-
-          {/* 카카오 공유 */}
-          <button
-            onClick={handleKakao}
-            style={{
-              width: '100%', padding: '15px', borderRadius: 999, border: 'none',
-              background: '#FEE500', color: '#3c1e1e',
-              fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              cursor: 'pointer', boxShadow: '0 6px 18px rgba(254,229,0,0.35)',
-            }}
-          >
-            {/* 카카오 말풍선 아이콘 */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 4C7 4 3 7.2 3 11.1c0 2.5 1.7 4.7 4.2 6L6.4 20c-.1.4.3.7.6.5l3.3-2.2c.5.06 1.1.1 1.7.1 5 0 9-3.2 9-7.1S17 4 12 4z" fill="#3c1e1e"/>
-            </svg>
-            카카오 공유
-          </button>
+            {/* 카카오 공유 */}
+            <button
+              onClick={handleKakao}
+              style={{
+                width: '100%', padding: '15px', borderRadius: 999, border: 'none',
+                background: '#FEE500', color: '#3c1e1e',
+                fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                cursor: 'pointer', boxShadow: '0 6px 18px rgba(254,229,0,0.35)',
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 4C7 4 3 7.2 3 11.1c0 2.5 1.7 4.7 4.2 6L6.4 20c-.1.4.3.7.6.5l3.3-2.2c.5.06 1.1.1 1.7.1 5 0 9-3.2 9-7.1S17 4 12 4z" fill="#3c1e1e"/>
+              </svg>
+              카카오 공유
+            </button>
+          </div>
 
           <div style={{
-            marginTop: 2, fontFamily: 'var(--font-sans)', fontSize: 11,
+            marginTop: 12, fontFamily: 'var(--font-sans)', fontSize: 11,
             color: 'var(--ink-500)', textAlign: 'center',
           }}>
             함께 나눌수록 위로는 더 깊어져요

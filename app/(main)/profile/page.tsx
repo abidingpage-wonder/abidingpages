@@ -1,13 +1,15 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+// [BETA HIDDEN] useEffect, useState — 결제 기능 활성화 시 아래 주석 해제
+// import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-interface PlanInfo {
-  plan: string
-  planExpires: string | null
-}
+// [BETA HIDDEN] 결제 기능 활성화 시 아래 주석 해제
+// interface PlanInfo {
+//   plan: string
+//   planExpires: string | null
+// }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -71,19 +73,19 @@ function MenuItem({
 
 export default function ProfilePage() {
   const router = useRouter()
-  const [planInfo, setPlanInfo] = useState<PlanInfo>({ plan: 'free', planExpires: null })
 
-  useEffect(() => {
-    fetch('/api/payments/plan')
-      .then(r => r.json())
-      .then(d => setPlanInfo({ plan: d.plan ?? 'free', planExpires: d.planExpires ?? null }))
-      .catch(() => {})
-  }, [])
-
-  const isPro = planInfo.plan === 'pro'
-  const expiresLabel = planInfo.planExpires
-    ? `${new Date(planInfo.planExpires).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}까지`
-    : null
+  // [BETA HIDDEN] 결제 기능 활성화 시 아래 주석 해제
+  // const [planInfo, setPlanInfo] = useState<PlanInfo>({ plan: 'free', planExpires: null })
+  // useEffect(() => {
+  //   fetch('/api/payments/plan')
+  //     .then(r => r.json())
+  //     .then(d => setPlanInfo({ plan: d.plan ?? 'free', planExpires: d.planExpires ?? null }))
+  //     .catch(() => {})
+  // }, [])
+  // const isPro = planInfo.plan === 'pro'
+  // const expiresLabel = planInfo.planExpires
+  //   ? `${new Date(planInfo.planExpires).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}까지`
+  //   : null
 
   async function handleLogout() {
     const supabase = createClient()
@@ -109,7 +111,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 현재 플랜 카드 */}
+        {/* [BETA HIDDEN] 현재 플랜 카드 — 결제 기능 활성화 시 아래 주석 해제
         <div style={{
           padding: '16px 18px', borderRadius: 18, marginBottom: 4,
           background: isPro
@@ -148,6 +150,7 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+        */}
 
         {/* 아이의 정보 */}
         <SectionLabel>아이의 정보</SectionLabel>
@@ -168,12 +171,13 @@ export default function ProfilePage() {
           onClick={() => router.push('/settings/install')}
         />
 
-        {/* 결제 & 플랜 */}
+        {/* [BETA HIDDEN] 결제 & 플랜 — 결제 기능 활성화 시 아래 주석 해제
         <SectionLabel>결제 & 플랜</SectionLabel>
         <MenuItem
           icon="💳" label="결제 내역"
           onClick={() => router.push('/settings/payments')}
         />
+        */}
 
         {/* 계정 */}
         <SectionLabel>계정</SectionLabel>
