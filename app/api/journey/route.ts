@@ -11,16 +11,14 @@ async function computeCompletedWeeks(petId: string): Promise<{ completedWeeks: n
   ])
   const restIds = new Set(restQ.map(q => q.id))
   const byWeek = new Map<number, Set<string>>()
-  let totalQuestionsDone = 0
+  const globalAnswered = new Set<string>()
   for (const l of letters) {
     if (!l.questionId || restIds.has(l.questionId)) continue
     if (!byWeek.has(l.week)) byWeek.set(l.week, new Set())
-    const weekSet = byWeek.get(l.week)!
-    if (!weekSet.has(l.questionId)) {
-      weekSet.add(l.questionId)
-      totalQuestionsDone++
-    }
+    byWeek.get(l.week)!.add(l.questionId)
+    globalAnswered.add(l.questionId)
   }
+  const totalQuestionsDone = globalAnswered.size
   const out: number[] = []
   for (const [week, set] of byWeek) if (set.size >= WEEK_TOTAL_NON_REST) out.push(week)
   return { completedWeeks: out.sort((a, b) => a - b), totalQuestionsDone }
