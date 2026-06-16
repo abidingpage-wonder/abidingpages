@@ -44,7 +44,7 @@ interface Props {
   freeEntry?:         boolean   // 자유롭게 쓰기 진입 시 질문 카드 닫힘
 }
 
-type ModalType = 'week_choice' | 'journey' | null
+type ModalType = 'week_choice' | 'journey' | 'crisis' | null
 
 export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry }: Props) {
   const router      = useRouter()
@@ -174,6 +174,14 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       })
       if (!res.ok) throw new Error()
       const result = await res.json()
+
+      // 위기(자해/자살) 신호 감지 → 페이지 이동 없이 위기 안내 모달
+      if (result.status === 'crisis_detected') {
+        setSending(false)
+        setModal('crisis')
+        return
+      }
+
       const { id: letterId, weekAllDone, weekJustUnlocked, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
 
       // 캐시 초기화 (다음 토글 시 최신 writeCount 반영)
@@ -676,6 +684,44 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
                     color: 'rgba(255,255,255,0.7)',
                     fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
                   }}>보관함 보기</button>
+                </div>
+              </>
+            )}
+
+            {/* crisis 모달 (자해/자살 신호 감지) — 아이 답장 대신 전문 상담 안내 */}
+            {modal === 'crisis' && (
+              <>
+                <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>🫂</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 600, color: '#fff', lineHeight: 1.5, marginBottom: 10 }}>
+                    지금 많이 힘드신 것 같아요
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
+                    이 아픔은 혼자 견디지 않아도 괜찮아요.<br/>
+                    전문 상담의 도움을 받아보세요.
+                  </div>
+                  <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.06)', fontFamily: 'var(--font-sans)', fontSize: 12.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.9, textAlign: 'left' }}>
+                    · 자살예방상담전화 <strong style={{ color: '#faddca' }}>109</strong> (24시간)<br/>
+                    · 정신건강상담전화 <strong style={{ color: '#faddca' }}>1577-0199</strong>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <a href="tel:109" style={{
+                    width: '100%', padding: '14px 0', borderRadius: 999, textAlign: 'center',
+                    background: 'linear-gradient(135deg, #faddca, #fbb489)',
+                    color: '#2a1c44', textDecoration: 'none',
+                    fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
+                  }}>
+                    109 전화 연결
+                  </a>
+                  <button onClick={() => { setModal(null); router.replace('/home') }} style={{
+                    width: '100%', padding: '14px 0', borderRadius: 999,
+                    background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.7)',
+                    fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+                  }}>
+                    닫기
+                  </button>
                 </div>
               </>
             )}

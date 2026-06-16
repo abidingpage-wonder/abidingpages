@@ -6,7 +6,7 @@ import { WEEK_TOTAL_NON_REST } from '@/lib/journey'
 // 비쉼표 질문 6개를 모두 답한 주차 목록 + 전체 완료 질문 수
 async function computeCompletedWeeks(petId: string): Promise<{ completedWeeks: number[], totalQuestionsDone: number }> {
   const [letters, restQ] = await Promise.all([
-    prisma.letter.findMany({ where: { petId, questionId: { not: null } }, select: { week: true, questionId: true } }),
+    prisma.letter.findMany({ where: { petId, questionId: { not: null }, letterStatus: 'normal' }, select: { week: true, questionId: true } }),
     prisma.question.findMany({ where: { isRest: true }, select: { id: true } }),
   ])
   const restIds = new Set(restQ.map(q => q.id))

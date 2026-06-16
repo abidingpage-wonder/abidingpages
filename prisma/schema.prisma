@@ -101,12 +101,13 @@ model Letter {
   questionId String?  @map("question_id") @db.Uuid
   emotionTag String?  @map("emotion_tag")
   content    String
-  keywords   String[] @default([])
-  imageUrls  String[] @map("image_urls")
-  stage      Int
-  week       Int
-  day        Int
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  keywords     String[] @default([])
+  imageUrls    String[] @map("image_urls")
+  stage        Int
+  week         Int
+  day          Int
+  letterStatus String   @default("normal") @map("letter_status") // normal | crisis_held
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   user     User      @relation(fields: [userId], references: [id])
   pet      Pet       @relation(fields: [petId], references: [id])
@@ -152,6 +153,20 @@ model ReplyFeedback {
   reply Reply @relation(fields: [replyId], references: [id])
 
   @@map("reply_feedbacks")
+}
+
+// 답장 안전 이벤트 로그 (crisis 감지 / fallback 대체 / 검증 실패) — 관리자 사후 추적용
+model ReplySafetyEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  letterId  String?  @map("letter_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  petId     String   @map("pet_id") @db.Uuid
+  eventType String   @map("event_type") // crisis_detected | fallback_used | validation_failed
+  detail    String   // 매칭 사유 / 검증 레벨 / fallback 종류 등
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([eventType, createdAt])
+  @@map("reply_safety_events")
 }
 
 model EmotionLog {

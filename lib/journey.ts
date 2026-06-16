@@ -7,7 +7,7 @@ export const MAX_WEEK              = 7
 // 해당 주차의 고유 비쉼표 완료 수 조회
 export async function getUniqueNonRestCount(petId: string, week: number): Promise<number> {
   const letters = await prisma.letter.findMany({
-    where: { petId, week, questionId: { not: null } },
+    where: { petId, week, questionId: { not: null }, letterStatus: 'normal' },
     select: { questionId: true },
   })
   const restIds = new Set(

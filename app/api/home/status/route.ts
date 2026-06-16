@@ -116,7 +116,7 @@ export async function GET() {
       }),
       prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId: pet.id } }),
       prisma.letter.findMany({ where: { petId: pet.id, userId: user.id }, select: { createdAt: true } }),
-      prisma.letter.groupBy({ by: ['questionId'], where: { petId: pet.id, questionId: { not: null } } }),
+      prisma.letter.groupBy({ by: ['questionId'], where: { petId: pet.id, questionId: { not: null }, letterStatus: 'normal' } }),
       prisma.question.findMany({ where: { isRest: true }, select: { id: true } }),
     ])
 
@@ -179,6 +179,7 @@ export async function GET() {
       where: {
         petId: pet.id,
         createdAt: { gte: start, lte: end },
+        letterStatus: 'normal',
       },
       orderBy: { createdAt: 'desc' },
       select: {

@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { getUniqueNonRestCount, WEEK_UNLOCK_THRESHOLD, WEEK_TOTAL_NON_REST, MAX_WEEK } from '@/lib/journey'
+import { detectCrisis } from '@/lib/ai/crisisDetector'
 
 const DEDUPE_WINDOW_MS = 60_000  // 동일 내용 재전송 무시 윈도우 (더블탭/모달 후 재전송 방지)
 
@@ -78,9 +79,10 @@ export async function POST(req: Request) {
       const devDup = await findRecentDuplicate(devPet.id, devContent, questionId ?? null)
       if (devDup) return NextResponse.json(await progressSnapshot(devPet.id, currentWeek, devDup.id))
 
-      const prevUniqueCount = await getUniqueNonRestCount(devPet.id, currentWeek)
+      // 제출 시점 Crisis 감지 — 편지 생성 전에 확인해 letterStatus를 정확히 세팅
+      const devCrisis = detectCrisis(devContent)
 
-      // 편지의 week/day/stage는 질문의 실제 주차 기준 (주차를 오가며 답해도 그 주차로 귀속)
+      const prevUniqueCount = await getUniqueNonRestCount(devPet.id, currentWeek)
       const devLoc = await resolveLetterLocation(questionId ?? null, currentWeek, currentDay, stage)
 
       const letter = await prisma.letter.create({
@@ -88,12 +90,24 @@ export async function POST(req: Request) {
           userId: devPet.userId, petId: devPet.id,
           content: devContent, stage: devLoc.stage, week: devLoc.week, day: devLoc.day,
           imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
+          letterStatus: devCrisis.isCrisis ? 'crisis_held' : 'normal',
           ...(questionId ? { questionId } : {}),
           ...(emotionTag ? { emotionTag } : {}),
         },
       })
 
-      return NextResponse.json(await calcProgress(devPet.id, devPet.userId, currentWeek, currentDay, letter.id, prevUniqueCount))
+      if (devCrisis.isCrisis) {
+        try {
+          await prisma.replySafetyEvent.create({
+            data: { letterId: letter.id, userId: devPet.userId, petId: devPet.id, eventType: 'crisis_detected', detail: devCrisis.reason },
+          })
+        } catch (e) { console.error('[POST /api/letters dev] safety event log failed:', e) }
+        // crisis 편지는 여정 진행률 미반영 — 현재 상태 스냅샷으로 반환
+        return NextResponse.json({ status: 'crisis_detected', ...await progressSnapshot(devPet.id, currentWeek, letter.id) })
+      }
+
+      const devProgress = await calcProgress(devPet.id, devPet.userId, currentWeek, currentDay, letter.id, prevUniqueCount)
+      return NextResponse.json(devProgress)
     }
 
     // ── 인증 경로 ─────────────────────────────────────────────────────
@@ -118,9 +132,10 @@ export async function POST(req: Request) {
     const dup = await findRecentDuplicate(petId, trimmedContent, questionId ?? null)
     if (dup) return NextResponse.json(await progressSnapshot(petId, currentWeek, dup.id))
 
-    const prevUniqueCount = await getUniqueNonRestCount(petId, currentWeek)
+    // ── 제출 시점 Crisis 감지 — 편지 생성 전에 확인해 letterStatus를 정확히 세팅
+    const crisis = detectCrisis(trimmedContent)
 
-    // 편지의 week/day/stage는 질문의 실제 주차 기준 (주차를 오가며 답해도 그 주차로 귀속)
+    const prevUniqueCount = await getUniqueNonRestCount(petId, currentWeek)
     const loc = await resolveLetterLocation(questionId ?? null, currentWeek, currentDay, stage)
 
     const letter = await prisma.letter.create({
@@ -128,10 +143,23 @@ export async function POST(req: Request) {
         userId: user.id, petId,
         content: trimmedContent, stage: loc.stage, week: loc.week, day: loc.day,
         imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
+        letterStatus: crisis.isCrisis ? 'crisis_held' : 'normal',
         ...(questionId ? { questionId } : {}),
         ...(emotionTag ? { emotionTag } : {}),
       },
     })
+
+    if (crisis.isCrisis) {
+      try {
+        await prisma.replySafetyEvent.create({
+          data: { letterId: letter.id, userId: user.id, petId, eventType: 'crisis_detected', detail: crisis.reason },
+        })
+      } catch (e) { console.error('[POST /api/letters] safety event log failed:', e) }
+      // crisis 편지는 여정 진행률 미반영 — 현재 상태 스냅샷으로 반환 (AI 답장 트리거도 생략)
+      return NextResponse.json({ status: 'crisis_detected', ...await progressSnapshot(petId, currentWeek, letter.id) })
+    }
+
+    const progress = await calcProgress(petId, user.id, currentWeek, currentDay, letter.id, prevUniqueCount)
 
     // AI 답장 생성 — 응답 반환 후 백그라운드에서 트리거 (모달/페이지 이동과 무관하게 항상 실행)
     const { data: { session } } = await supabase.auth.getSession()
@@ -154,7 +182,7 @@ export async function POST(req: Request) {
       })
     }
 
-    return NextResponse.json(await calcProgress(petId, user.id, currentWeek, currentDay, letter.id, prevUniqueCount))
+    return NextResponse.json(progress)
 
   } catch (err) {
     console.error('[POST /api/letters]', err)
