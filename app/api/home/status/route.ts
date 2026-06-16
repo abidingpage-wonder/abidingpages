@@ -109,22 +109,28 @@ export async function GET() {
     }
 
     // 3. 여정 진행 상태
-    const [journey, emotionDays, letters] = await Promise.all([
+    const [journey, emotionDays, letters, questionLetters, restQuestions] = await Promise.all([
       prisma.journeyProgress.findUnique({
         where: { petId: pet.id },
         select: { currentStage: true, currentWeek: true, currentDay: true, totalLetters: true },
       }),
       prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId: pet.id } }),
       prisma.letter.findMany({ where: { petId: pet.id, userId: user.id }, select: { createdAt: true } }),
+      prisma.letter.groupBy({ by: ['questionId'], where: { petId: pet.id, questionId: { not: null } } }),
+      prisma.question.findMany({ where: { isRest: true }, select: { id: true } }),
     ])
 
     const emotionCount = emotionDays.length
     const letterCount = letters.length
     const longestStreak = calcLongestStreak(letters.map(l => l.createdAt))
+    const restIds = new Set(restQuestions.map(q => q.id))
+    const totalQuestionsDone = Math.min(
+      questionLetters.filter(g => g.questionId && !restIds.has(g.questionId)).length, 49
+    )
 
     const journeyData = journey
-      ? { ...journey, letterCount, emotionCount, longestStreak }
-      : { currentStage: 1, currentWeek: 1, currentDay: 1, totalLetters: 0, letterCount: 0, emotionCount: 0, longestStreak: 0 }
+      ? { ...journey, letterCount, emotionCount, longestStreak, totalQuestionsDone }
+      : { currentStage: 1, currentWeek: 1, currentDay: 1, totalLetters: 0, totalQuestionsDone: 0, letterCount: 0, emotionCount: 0, longestStreak: 0 }
 
     const dayCount = calcDayCount(pet.diedAt)
     const { start, end } = todayRange()
