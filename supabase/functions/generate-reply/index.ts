@@ -3,9 +3,10 @@
 import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic          from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 import { SPECIES_VOICE, FAREWELL_LAYER, WEEK_CONFIG, REST_WEEK_GUIDE } from './config.ts'
-import { validateReply }  from './ruleValidator.ts'
-import { selectFallback } from './fallback.ts'
-import { detectCrisis }   from './crisisDetector.ts'
+import { validateReply }              from './ruleValidator.ts'
+import { selectFallback }             from './fallback.ts'
+import { detectCrisis }               from './crisisDetector.ts'
+import { classifyAndPlan, PlanResult } from './classifyAndPlan.ts'
 
 // ── 한글 조사 처리 (lib/korean.ts 미러 — Deno라 import 불가) ──────────
 function hasBatchim(word: string): boolean {
@@ -186,6 +187,7 @@ function buildSystemPrompt(
   pastLetters: PastLetter[],
   // deno-lint-ignore no-unused-vars — Phase 4 대비 시그니처 (본문 미사용)
   memoryProfile?: MemoryProfile | null,
+  plan?: PlanResult,
 ): string {
   const ownerName      = pet.ownerNickname ?? '보호자님'
   const voice          = SPECIES_VOICE[pet.species] ?? SPECIES_VOICE.other
@@ -324,7 +326,11 @@ ${charGuide}
 - 유저가 보낸 편지의 구체적 내용(장소, 행동, 기억, 사물)을 반드시 1개 이상 직접 받아서 답장에 녹여낼 것
 - 마무리 문장도 매번 다르게. "여기 있을게 / 곁에 있어" 류의 반복 금지
 - 매 답장마다 새로운 표현과 문장 구조를 만들 것
-- 아이의 종(species)에서 오는 구체적인 행동/감각 표현을 반드시 1개 이상 포함할 것`
+- 아이의 종(species)에서 오는 구체적인 행동/감각 표현을 반드시 1개 이상 포함할 것${plan ? `
+
+[이번 편지 분석 결과 — 반드시 반영]
+감정 유형: ${plan.emotionCategory}
+답장 방향: ${plan.replyApproach}${plan.riskLevel === 'moderate' ? '\n[주의] 보호자의 감정이 특히 무겁습니다. 고통 인정을 더 충분히, 안심 표현은 감정을 충분히 알아준 뒤에만.' : ''}` : ''}`
 }
 
 function buildUserPrompt(
@@ -334,8 +340,12 @@ function buildUserPrompt(
   isRest: boolean,
   letterType: LetterType,
   recentReplies = '',
+  keyMentions: string[] = [],
 ): string {
   const emotionLine = emotionTag ? `오늘 ${ownerName}의 감정 상태: ${emotionTag}` : ''
+  const mentionsSection = keyMentions.length > 0
+    ? `\n\n[이 편지에서 반드시 직접 받아서 답장에 녹여낼 요소]\n${keyMentions.map(m => `- ${m}`).join('\n')}`
+    : ''
 
   if (letterType === 'comma_auto' || (isRest && !letterContent.trim())) {
     return `${josa(ownerName, '이가')} 오늘 잠깐 쉬기로 했어요.${letterContent.trim() ? `\n\n${josa(ownerName, '이가')} 남긴 말:\n---\n${letterContent}\n---` : ''}
@@ -351,7 +361,7 @@ ${letterContent}
 ---
 ${emotionLine}
 
-위 내용과 지금까지의 편지 데이터를 바탕으로 긴 답장을 써주세요.`
+위 내용과 지금까지의 편지 데이터를 바탕으로 긴 답장을 써주세요.${mentionsSection}`
   }
 
   const recentSection = recentReplies.trim() ? `\n\n${recentReplies}` : ''
@@ -362,7 +372,7 @@ ${letterContent}
 ---
 ${emotionLine}
 
-위 편지에 답장을 써주세요.${recentSection}`
+위 편지에 답장을 써주세요.${recentSection}${mentionsSection}`
 }
 
 // ── 메인 핸들러 ──────────────────────────────────────────────────
@@ -422,13 +432,12 @@ Deno.serve(async (req) => {
       })
     }
 
-    // ── Crisis 가드 ── 자해/자살 신호 감지 시 답장 생성 중단(제출 시점 감지의 방어선)
-    // 책임 분리: 함수는 상태만 반환, 위기 안내 모달은 프론트 책임.
-    const crisis = detectCrisis(letter.content ?? '')
-    if (crisis.isCrisis) {
+    // ── Crisis 가드 1: 키워드 regex (빠른 경로, API 호출 없음) ──────────────
+    const keywordCrisis = detectCrisis(letter.content ?? '')
+    if (keywordCrisis.isCrisis) {
       await logSafetyEvent(adminClient, {
         letterId, userId: letter.user_id, petId: letter.pet_id,
-        eventType: 'crisis_detected', detail: crisis.reason,
+        eventType: 'crisis_detected', detail: keywordCrisis.reason,
       })
       return new Response(JSON.stringify({ status: 'crisis_detected', letterId }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -493,11 +502,29 @@ Deno.serve(async (req) => {
 
     const ownerName = petForPrompt.ownerNickname ?? '보호자님'
 
-    // Anthropic API 호출 — 검증 실패 시 1회 재생성, 그래도 실패면 이별유형 fallback
-    const anthropic  = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
+    // Anthropic 클라이언트
+    const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
+
+    // ── 1차 LLM: 분류 + 전략 수립 (classifyAndPlan) ───────────────────────
+    const plan = await classifyAndPlan(anthropic, letter.content ?? '', petForPrompt.name, petForPrompt.farewellType, week)
+    console.log('[generate-reply] plan:', JSON.stringify(plan))
+
+    // ── Crisis 가드 2: LLM riskLevel (키워드 우회 표현 포착) ──────────────
+    if (plan.riskLevel === 'high') {
+      await logSafetyEvent(adminClient, {
+        letterId, userId: letter.user_id, petId: letter.pet_id,
+        eventType: 'crisis_detected',
+        detail: `LLM riskLevel=high (emotion: ${plan.emotionCategory})`,
+      })
+      return new Response(JSON.stringify({ status: 'crisis_detected', letterId }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── 2차 LLM: 답장 생성 ───────────────────────────────────────────────
     const maxTokens  = letterType === 'long' ? 1500 : 700
-    const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters)
-    const userPrompt = buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies)
+    const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters, undefined, plan)
+    const userPrompt = buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies, plan.keyMentions)
 
     const generateOnce = async (): Promise<string> => {
       const message = await anthropic.messages.create({
