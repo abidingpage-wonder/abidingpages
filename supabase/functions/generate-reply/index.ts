@@ -326,11 +326,22 @@ ${charGuide}
 - 유저가 보낸 편지의 구체적 내용(장소, 행동, 기억, 사물)을 반드시 1개 이상 직접 받아서 답장에 녹여낼 것
 - 마무리 문장도 매번 다르게. "여기 있을게 / 곁에 있어" 류의 반복 금지
 - 매 답장마다 새로운 표현과 문장 구조를 만들 것
-- 아이의 종(species)에서 오는 구체적인 행동/감각 표현을 반드시 1개 이상 포함할 것${plan ? `
+- 아이의 종(species)에서 오는 구체적인 행동/감각 표현을 반드시 1개 이상 포함할 것
 
-[이번 편지 분석 결과 — 반드시 반영]
-감정 유형: ${plan.emotionCategory}
-답장 방향: ${plan.replyApproach}${plan.riskLevel === 'moderate' ? '\n[주의] 보호자의 감정이 특히 무겁습니다. 고통 인정을 더 충분히, 안심 표현은 감정을 충분히 알아준 뒤에만.' : ''}` : ''}`
+[감정 우선순위 — 충돌 시 상위 원칙 우선]
+안전·금지 원칙 > 이별유형 반영 > 보호자 감정 응답 > 주차 테마 > 성격 태그 > 종 말투${plan ? `
+
+[이번 편지 전략 — 반드시 반영]
+주감정: ${plan.primaryEmotion}${plan.secondaryEmotion ? ` / 부감정: ${plan.secondaryEmotion}` : ''}
+톤: ${plan.toneLevel === 'quiet' ? '조용하고 차분하게 — 위로를 강요하지 말 것' : plan.toneLevel === 'warm' ? '따뜻하고 적극적인 위로 톤' : '부드럽고 따뜻한 기본 톤'}
+전략: ${plan.replyStrategy}${plan.guiltPresent ? `
+
+[주의 — 죄책감 감지]
+보호자 편지에서 죄책감 신호가 감지됩니다. "잘했어 / 옳은 선택이었어" 같은 평가형 표현 금지.
+반드시 무게(얼마나 힘들었는지, 얼마나 무거운 결정이었는지)를 먼저 충분히 인정한 뒤에 점진적으로 가볍게.` : ''}${plan.mustAvoid.length > 0 ? `
+
+[이번 답장 추가 금지]
+${plan.mustAvoid.map(v => `- ${v}`).join('\n')}` : ''}` : ''}`
 }
 
 function buildUserPrompt(
@@ -340,11 +351,11 @@ function buildUserPrompt(
   isRest: boolean,
   letterType: LetterType,
   recentReplies = '',
-  keyMentions: string[] = [],
+  mustAddress: string[] = [],
 ): string {
   const emotionLine = emotionTag ? `오늘 ${ownerName}의 감정 상태: ${emotionTag}` : ''
-  const mentionsSection = keyMentions.length > 0
-    ? `\n\n[이 편지에서 반드시 직접 받아서 답장에 녹여낼 요소]\n${keyMentions.map(m => `- ${m}`).join('\n')}`
+  const mentionsSection = mustAddress.length > 0
+    ? `\n\n[이 편지에서 반드시 직접 받아서 답장에 녹여낼 요소]\n${mustAddress.map(m => `- ${m}`).join('\n')}`
     : ''
 
   if (letterType === 'comma_auto' || (isRest && !letterContent.trim())) {
@@ -505,35 +516,59 @@ Deno.serve(async (req) => {
     // Anthropic 클라이언트
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
 
-    // ── 1차 LLM: 분류 + 전략 수립 (classifyAndPlan) ───────────────────────
-    const plan = await classifyAndPlan(anthropic, letter.content ?? '', petForPrompt.name, petForPrompt.farewellType, week)
-    console.log('[generate-reply] plan:', JSON.stringify(plan))
+    // ── 1차 LLM: 분류 + 전략 수립 (쉼표 날은 생략 — REST_WEEK_GUIDE 고정 톤) ──
+    let plan: PlanResult | undefined
+    if (letterType !== 'comma_auto') {
+      plan = await classifyAndPlan(anthropic, letter.content ?? '', petForPrompt.name, petForPrompt.farewellType, week)
+      console.log('[generate-reply] plan:', JSON.stringify(plan))
 
-    // ── Crisis 가드 2: LLM riskLevel (키워드 우회 표현 포착) ──────────────
-    if (plan.riskLevel === 'high') {
-      await logSafetyEvent(adminClient, {
-        letterId, userId: letter.user_id, petId: letter.pet_id,
-        eventType: 'crisis_detected',
-        detail: `LLM riskLevel=high (emotion: ${plan.emotionCategory})`,
-      })
-      return new Response(JSON.stringify({ status: 'crisis_detected', letterId }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      // ── Crisis 가드 2: LLM riskLevel (키워드 우회 표현 포착) ────────────
+      // OR 처리: 키워드 감지(가드 1)를 통과했더라도 LLM이 crisis로 판단하면 차단
+      if (plan.riskLevel === 'crisis') {
+        await logSafetyEvent(adminClient, {
+          letterId, userId: letter.user_id, petId: letter.pet_id,
+          eventType: 'crisis_detected',
+          detail: `LLM riskLevel=crisis (emotion: ${plan.primaryEmotion})`,
+        })
+        return new Response(JSON.stringify({ status: 'crisis_detected', letterId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
-    // ── 2차 LLM: 답장 생성 ───────────────────────────────────────────────
+    // ── 2차 LLM: tool_use {"reply":"..."} 로 답장 생성 ──────────────────
+    const WRITE_REPLY_TOOL: Anthropic.Tool = {
+      name: 'write_reply',
+      description: '아이의 답장 본문을 작성합니다.',
+      input_schema: {
+        type: 'object' as const,
+        properties: {
+          reply: { type: 'string', description: '아이의 답장 본문 전문' },
+        },
+        required: ['reply'],
+      },
+    }
+
     const maxTokens  = letterType === 'long' ? 1500 : 700
     const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters, undefined, plan)
-    const userPrompt = buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies, plan.keyMentions)
+    const userPrompt = buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies, plan?.mustAddress ?? [])
 
     const generateOnce = async (): Promise<string> => {
       const message = await anthropic.messages.create({
-        model:      'claude-haiku-4-5',
-        max_tokens: maxTokens,
+        model:       'claude-haiku-4-5',
+        max_tokens:  maxTokens,
         system,
-        messages:   [{ role: 'user', content: userPrompt }],
+        tools:       [WRITE_REPLY_TOOL],
+        tool_choice: { type: 'tool', name: 'write_reply' },
+        messages:    [{ role: 'user', content: userPrompt }],
       })
-      return (message.content[0] as { type: string; text: string }).text.trim()
+      const toolBlock = message.content.find(b => b.type === 'tool_use')
+      if (toolBlock?.type === 'tool_use') {
+        return ((toolBlock.input as { reply: string }).reply ?? '').trim()
+      }
+      // fallback: tool_use 실패 시 텍스트 블록에서 추출
+      const textBlock = message.content.find(b => b.type === 'text')
+      return textBlock?.type === 'text' ? textBlock.text.trim() : ''
     }
 
     let content    = await generateOnce()
