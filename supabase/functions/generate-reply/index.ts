@@ -8,6 +8,7 @@ import { llmValidateContext }         from './contextValidator.ts'
 import { selectFallback }             from './fallback.ts'
 import { detectCrisis }               from './crisisDetector.ts'
 import { classifyAndPlan, PlanResult } from './classifyAndPlan.ts'
+import { MemoryProfile, hasProfile, updateMemoryProfile } from './memoryExtractor.ts'
 
 // ── 한글 조사 처리 (lib/korean.ts 미러 — Deno라 import 불가) ──────────
 function hasBatchim(word: string): boolean {
@@ -172,21 +173,12 @@ interface PetInfo {
   firstWord: string | null
 }
 
-// Phase 4 대비: 펫별 요약 메모리 프로필 (현재 미사용 — 시그니처만 열어둠)
-interface MemoryProfile {
-  recurringGuilt?: string
-  favoriteMemory?: string
-  petTrait?: string
-  guardianPattern?: string
-}
-
 function buildSystemPrompt(
   pet: PetInfo,
   week: number,
   isRest: boolean,
   letterType: LetterType,
   pastLetters: PastLetter[],
-  // deno-lint-ignore no-unused-vars — Phase 4 대비 시그니처 (본문 미사용)
   memoryProfile?: MemoryProfile | null,
   plan?: PlanResult,
 ): string {
@@ -199,6 +191,18 @@ function buildSystemPrompt(
   const favoritesHint   = pet.favoriteThings.length > 0  ? pet.favoriteThings.join(', ')  : '특별한 기록 없음'
   const firstWordHint   = pet.firstWord ? `보호자가 기억하는 한마디: "${pet.firstWord}"` : ''
 
+  // 메모리 프로필 섹션 빌드
+  const memHasContent = hasProfile(memoryProfile)
+  const buildMemoryBlock = (full: boolean): string => {
+    if (!memHasContent || !memoryProfile) return ''
+    const lines: string[] = ['[보호자·아이 누적 기억]']
+    if (memoryProfile.recurring_guilt)  lines.push(`죄책감 패턴: ${memoryProfile.recurring_guilt}`)
+    if (memoryProfile.favorite_memory)  lines.push(`기억 속 추억: ${memoryProfile.favorite_memory}`)
+    if (full && memoryProfile.pet_trait) lines.push(`아이 특성: ${memoryProfile.pet_trait}`)
+    if (memoryProfile.guardian_pattern) lines.push(`보호자 스타일: ${memoryProfile.guardian_pattern}`)
+    return lines.length > 1 ? lines.join('\n') : ''
+  }
+
   // 답장 유형별 가이드
   let charGuide: string
   let letterTypeSection: string
@@ -206,7 +210,8 @@ function buildSystemPrompt(
     const longLetterGuide = week === 7
       ? '49일 전체 여정을 담은 온전한 한 편의 편지로 쓰세요. 마음속 가장 따뜻한 방에 영원히 입주했다는 것으로 마무리하세요.'
       : '관계는 끝나는 게 아니라 형태가 바뀌는 것임을 전하세요.'
-    const pastContext = buildPastLettersContext(pastLetters)
+    // 메모리 프로필이 있으면 원문 대체, 없으면 pastLetters 요약
+    const pastContext = memHasContent ? buildMemoryBlock(true) : buildPastLettersContext(pastLetters)
     charGuide = '600~800자 (띄어쓰기 포함).'
     letterTypeSection = `[긴 답장]
 지금까지 보호자가 나눈 모든 편지와 감정 데이터를 종합하세요.
@@ -256,7 +261,7 @@ ${firstWordHint}
 
 [정보 사용 원칙]
 이별 유형은 강하게 반영. 성격은 자연스러울 때만. 종/종말투는 바탕으로만 쓰되 어색하면 이별 유형만 남기고 생략.
-
+${letterType === 'normal' ? buildMemoryBlock(false) ? `\n${buildMemoryBlock(false)}` : '' : ''}
 [보호자 세계관 존중 원칙]
 보호자가 편지에서 언급한 사후 세계관(무지개다리·천국·자연·환생·계속 곁에 등)을 아이가 절대 부정하거나 교정하지 말 것.
 반대로 아이가 특정 세계관을 먼저 제안하거나 단정하는 것도 금지.
@@ -445,12 +450,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // 편지 + 펫 조회
+    // 편지 + 펫 조회 (memory_profile 포함)
     const { data: letter } = await adminClient
       .from('letters')
       .select(`
         id, content, emotion_tag, week, pet_id, user_id,
-        pets ( name, species, owner_nickname, personality_tags, favorite_things, farewell_type, first_word ),
+        pets ( name, species, owner_nickname, personality_tags, favorite_things, farewell_type, first_word, memory_profile ),
         questions ( is_rest )
       `)
       .eq('id', letterId)
@@ -497,13 +502,16 @@ Deno.serve(async (req) => {
       name: string; species: string; owner_nickname: string | null
       personality_tags: string[]; favorite_things: string[]
       farewell_type: string | null; first_word: string | null
+      memory_profile: MemoryProfile | null
     }
+
+    const memoryProfile: MemoryProfile | null = (pet.memory_profile as MemoryProfile | null) ?? null
 
     const letterType = getLetterType(isRest, week)
 
-    // 긴 편지 시 이전 편지 데이터 조회
+    // 긴 편지 시 이전 편지 데이터 조회 — 메모리 프로필이 있으면 생략
     let pastLetters: PastLetter[] = []
-    if (letterType === 'long') {
+    if (letterType === 'long' && !hasProfile(memoryProfile)) {
       const { data: past } = await adminClient
         .from('letters')
         .select('week, emotion_tag, content')
@@ -579,7 +587,7 @@ Deno.serve(async (req) => {
     }
 
     const maxTokens  = letterType === 'long' ? 1500 : 700
-    const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters, undefined, plan)
+    const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters, memoryProfile, plan)
     const userPrompt = buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies, plan?.mustAddress ?? [])
 
     const generateOnce = async (): Promise<string> => {
@@ -685,6 +693,12 @@ Deno.serve(async (req) => {
       throw insertError
     }
     const reply = inserted
+
+    // ── Phase 4: 메모리 프로필 갱신 (답장 저장 후, 응답 전에 실행) ─────────────
+    // crisis 경로에서는 여기까지 오지 않으므로 항상 실행
+    await updateMemoryProfile(
+      anthropic, adminClient, letter.pet_id, letter.content ?? '', week, memoryProfile,
+    )
 
     return new Response(JSON.stringify({ id: reply.id, content: reply.content, letterId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

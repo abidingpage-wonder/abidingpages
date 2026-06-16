@@ -48,6 +48,7 @@ model Pet {
   togetherDays    Int      @default(0) @map("together_days")
   gardenPublic    Boolean  @default(true) @map("garden_public")
   commentAllowed  Boolean  @default(true) @map("comment_allowed")
+  memoryProfile   Json?    @map("memory_profile")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   user            User             @relation(fields: [userId], references: [id])
