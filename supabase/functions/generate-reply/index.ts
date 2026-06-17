@@ -34,8 +34,9 @@ const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 // - 이미 지났으면 → 내일 그 시각
 // Deno는 UTC로 동작하므로 epoch 산술로만 계산
 function computeVisibleAt(notifHour: number, notifMinute: number, notifAmpm: string): Date {
-  let hour24 = notifHour % 12
-  if (notifAmpm === '오후') hour24 += 12
+  // 12시간제 → 24시간제: 오전 12시=0, 오후 12시=12, 오전 1~11시=1~11, 오후 1~11시=13~23
+  const base = notifHour % 12  // 12→0, 1~11→1~11
+  const hour24 = notifAmpm === '오후' ? base + 12 : base
   const kstNow      = Date.now() + KST_OFFSET_MS
   const kstMidnight = Math.floor(kstNow / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
   const kstToday    = kstMidnight + (hour24 * 60 + notifMinute) * 60 * 1000
@@ -622,7 +623,9 @@ Deno.serve(async (req) => {
 
     // 노출/알림 예약 시각: 유저 알림 설정 기준 (updated_at 최신 구독, 없으면 오전 9시)
     // 배포 전 REPLY_DELAY_MODE 확인 — 'dev'이면 5분 후, 그 외 운영 로직
-    const isDev = Deno.env.get('REPLY_DELAY_MODE') === 'dev'
+    const replyDelayMode = Deno.env.get('REPLY_DELAY_MODE')
+    const isDev = replyDelayMode === 'dev'
+    console.log('[generate-reply] REPLY_DELAY_MODE:', JSON.stringify(replyDelayMode), '| isDev:', isDev)
 
     const { data: latestSub } = await adminClient
       .from('push_subscriptions')
@@ -632,6 +635,8 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    console.log('[generate-reply] latestSub:', JSON.stringify(latestSub))
+
     const visibleAt = isDev
       ? new Date(Date.now() + 5 * 60 * 1000)
       : computeVisibleAt(
@@ -639,6 +644,8 @@ Deno.serve(async (req) => {
           latestSub?.notif_minute ?? 0,
           latestSub?.notif_ampm   ?? '오전',
         )
+
+    console.log('[generate-reply] visibleAt:', visibleAt.toISOString())
 
     // 답장 저장 (visible_at 도래 전에는 보관함에 노출되지 않음, 푸시는 cron이 발송)
     const { data: inserted, error: insertError } = await adminClient
