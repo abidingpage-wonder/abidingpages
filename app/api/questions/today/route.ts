@@ -95,7 +95,7 @@ export async function GET(req: Request) {
         : []
       const devNext = await prisma.question.findFirst({
         where: {
-          week: devWeek, isRest: false,
+          week: devWeek,
           ...(devAnswered.length > 0 ? { id: { notIn: devAnswered } } : {}),
         },
         orderBy: { orderIndex: 'asc' },
@@ -107,7 +107,7 @@ export async function GET(req: Request) {
       }
       // 이번 주 질문 모두 완료 → day1 (orderIndex 최소) 기본 반환
       const devFirstQ = await prisma.question.findFirst({
-        where: { week: devWeek, isRest: false },
+        where: { week: devWeek },
         orderBy: { orderIndex: 'asc' },
         select: { id: true, content: true, category: true, hintText: true, isRest: true, week: true, day: true, orderIndex: true, restGuide: true },
       })
@@ -178,12 +178,10 @@ export async function GET(req: Request) {
     })
     const answeredIds = answeredLetters.map(l => l.questionId!)
 
-    // 미답변 비쉼표 질문 중 orderIndex 가장 작은 것
-    // 직접 진입: 미답변 비쉼표 질문 순서대로 (excludeId 무시)
+    // 미답변 질문 중 orderIndex 가장 작은 것 (쉼표 포함 전체)
     const nextQuestion = await prisma.question.findFirst({
       where: {
-        week:   currentWeek,
-        isRest: false,
+        week: currentWeek,
         ...(answeredIds.length > 0 ? { id: { notIn: answeredIds } } : {}),
       },
       orderBy: { orderIndex: 'asc' },
@@ -195,10 +193,10 @@ export async function GET(req: Request) {
       select: { keyword: true, title: true },
     })
 
-    // 미답변 일반 질문 없음 → day1 (orderIndex 최소) 기본 반환 (allAnswered: true 포함)
+    // 이번 주 질문 모두 완료 → day1 기본 반환 (allAnswered: true 포함)
     if (!nextQuestion) {
       const firstQuestion = await prisma.question.findFirst({
-        where: { week: currentWeek, isRest: false },
+        where: { week: currentWeek },
         orderBy: { orderIndex: 'asc' },
       })
       if (firstQuestion) {

@@ -1,27 +1,57 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { WEEK_TOTAL_NON_REST } from '@/lib/journey'
+import { WEEK_TOTAL, WEEK_UNLOCK_THRESHOLD, MAX_WEEK } from '@/lib/journey'
 
-// 비쉼표 질문 6개를 모두 답한 주차 목록 + 전체 완료 질문 수
-async function computeCompletedWeeks(petId: string): Promise<{ completedWeeks: number[], totalQuestionsDone: number }> {
+// 주차별 완료·잠금해제 상태 + 전체 완료 질문 수
+async function computeCompletedWeeks(petId: string): Promise<{
+  completedWeeks: number[]   // 7개 모두 완료 (쉼표 포함)
+  unlockedWeeks:  number[]   // 비쉼표 3개 완료 → 다음 주차 접근 가능
+  totalQuestionsDone: number
+}> {
   const [letters, restQ] = await Promise.all([
     prisma.letter.findMany({ where: { petId, questionId: { not: null }, letterStatus: 'normal' }, select: { week: true, questionId: true } }),
     prisma.question.findMany({ where: { isRest: true }, select: { id: true } }),
   ])
   const restIds = new Set(restQ.map(q => q.id))
-  const byWeek = new Map<number, Set<string>>()
+
+  const byWeekAll     = new Map<number, Set<string>>()  // 전체 (쉼표 포함)
+  const byWeekNonRest = new Map<number, Set<string>>()  // 비쉼표만
   const globalAnswered = new Set<string>()
+
   for (const l of letters) {
-    if (!l.questionId || restIds.has(l.questionId)) continue
-    if (!byWeek.has(l.week)) byWeek.set(l.week, new Set())
-    byWeek.get(l.week)!.add(l.questionId)
+    if (!l.questionId) continue
+    if (!byWeekAll.has(l.week)) byWeekAll.set(l.week, new Set())
+    byWeekAll.get(l.week)!.add(l.questionId)
     globalAnswered.add(l.questionId)
+
+    if (!restIds.has(l.questionId)) {
+      if (!byWeekNonRest.has(l.week)) byWeekNonRest.set(l.week, new Set())
+      byWeekNonRest.get(l.week)!.add(l.questionId)
+    }
   }
+
   const totalQuestionsDone = globalAnswered.size
-  const out: number[] = []
-  for (const [week, set] of byWeek) if (set.size >= WEEK_TOTAL_NON_REST) out.push(week)
-  return { completedWeeks: out.sort((a, b) => a - b), totalQuestionsDone }
+
+  // 7개 모두 완료된 주차
+  const completedWeeks: number[] = []
+  for (const [week, set] of byWeekAll) {
+    if (set.size >= WEEK_TOTAL) completedWeeks.push(week)
+  }
+
+  // 비쉼표 3개 이상 → 다음 주차 접근 가능 (1주차는 항상 포함)
+  const unlockedSet = new Set<number>([1])
+  for (const [week, set] of byWeekNonRest) {
+    if (set.size >= WEEK_UNLOCK_THRESHOLD && week + 1 <= MAX_WEEK) {
+      unlockedSet.add(week + 1)
+    }
+  }
+
+  return {
+    completedWeeks: completedWeeks.sort((a, b) => a - b),
+    unlockedWeeks:  [...unlockedSet].sort((a, b) => a - b),
+    totalQuestionsDone,
+  }
 }
 
 // ── 헬퍼: 편지 날짜(KST) 기준 최장 연속 일수 ──────────────────────
@@ -60,7 +90,9 @@ export async function GET() {
     const progress = devPet
       ? await prisma.journeyProgress.findUnique({ where: { petId: devPet.id }, select: { currentStage: true, currentWeek: true, currentDay: true } })
       : null
-    const { completedWeeks, totalQuestionsDone: devTotalQ } = devPet ? await computeCompletedWeeks(devPet.id) : { completedWeeks: [], totalQuestionsDone: 0 }
+    const { completedWeeks, unlockedWeeks, totalQuestionsDone: devTotalQ } = devPet
+      ? await computeCompletedWeeks(devPet.id)
+      : { completedWeeks: [], unlockedWeeks: [1], totalQuestionsDone: 0 }
     return NextResponse.json({
       currentStage: progress?.currentStage ?? 1,
       currentWeek: progress?.currentWeek ?? 1,
@@ -69,9 +101,9 @@ export async function GET() {
       totalDays: Math.min(devTotalQ, 49),
       emotionCount: 3,       // 날짜 중복 제거 (mock)
       longestStreak: 3,      // 최장 연속 일수 (mock)
-      nextStageAvailable: false,
       weekGuides,
       completedWeeks,
+      unlockedWeeks,
     })
   }
 
@@ -88,7 +120,7 @@ export async function GET() {
 
     const petId = dbUser.activePetId
 
-    const [progress, emotionDays, letters, weekGuides, { completedWeeks, totalQuestionsDone }] = await Promise.all([
+    const [progress, emotionDays, letters, weekGuides, { completedWeeks, unlockedWeeks, totalQuestionsDone }] = await Promise.all([
       prisma.journeyProgress.findUnique({ where: { petId } }),
       // 감정기록: loggedAt이 @db.Date 타입이므로 groupBy로 날짜 중복 제거
       prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId } }),
@@ -111,9 +143,9 @@ export async function GET() {
       totalDays,
       emotionCount,
       longestStreak,
-      nextStageAvailable: progress?.nextStageAvailable ?? false,
       weekGuides,
       completedWeeks,
+      unlockedWeeks,
     }, { headers: { 'Cache-Control': 'private, max-age=60' } })
   } catch (e) {
     console.error(e)

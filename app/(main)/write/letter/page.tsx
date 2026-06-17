@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { WEEK_TOTAL_NON_REST, MAX_WEEK } from '@/lib/journey'
+import { WEEK_TOTAL, MAX_WEEK } from '@/lib/journey'
 import LetterEditor from './_components/LetterEditor'
 
 interface Props {
@@ -18,15 +18,12 @@ const DEV_MOCK = {
 
 async function checkJourneyCompleted(petId: string, week: number): Promise<boolean> {
   if (week < MAX_WEEK) return false
-  const restIds = (await prisma.question.findMany({
-    where: { week: MAX_WEEK, isRest: true }, select: { id: true },
-  })).map(q => q.id)
   const week7Letters = await prisma.letter.findMany({
-    where: { petId, week: MAX_WEEK, questionId: { not: null } },
+    where: { petId, week: MAX_WEEK, questionId: { not: null }, letterStatus: 'normal' },
     select: { questionId: true },
   })
-  const uniqueNonRest = new Set(week7Letters.map(l => l.questionId!).filter(id => !restIds.includes(id)))
-  return uniqueNonRest.size >= WEEK_TOTAL_NON_REST
+  const uniqueAll = new Set(week7Letters.map(l => l.questionId!))
+  return uniqueAll.size >= WEEK_TOTAL
 }
 
 export default async function LetterPage({ searchParams }: Props) {

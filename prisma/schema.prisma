@@ -189,9 +189,9 @@ model JourneyProgress {
   petId              String    @unique @map("pet_id") @db.Uuid
   currentStage       Int       @default(1) @map("current_stage")
   currentWeek        Int       @default(1) @map("current_week")
-  // 이번 주 완료한 비쉼표 문항 수 (0~6). 3 이상이면 다음 주 진행.
+  // 이번 주 완료한 문항 수 (0~7, 쉼표 포함)
   currentDay         Int       @default(0) @map("current_day")
-  nextStageAvailable Boolean   @default(false) @map("next_stage_available")
+  weekUnlocked       Boolean   @default(false) @map("week_unlocked")
   totalLetters       Int       @default(0) @map("total_letters")
   totalMinutes       Int       @default(0) @map("total_minutes")
   completedAt        DateTime? @map("completed_at") @db.Timestamptz // 7주차 완료

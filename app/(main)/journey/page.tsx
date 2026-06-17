@@ -40,9 +40,9 @@ interface JourneyData {
   totalDays: number
   emotionCount: number
   longestStreak: number
-  nextStageAvailable: boolean
   weekGuides?: WeekGuide[]
-  completedWeeks?: number[]   // 비쉼표 6개 모두 답한 주차 (완료 표시용)
+  completedWeeks?: number[]   // 7개 모두 완료 (쉼표 포함) 주차
+  unlockedWeeks?: number[]    // 비쉼표 3개 완료 → 다음 주차 접근 가능
 }
 
 // ── 통계 칩 ────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ function StageCard({
 }: {
   n: number; keyword: string; title: string
   color: string; emoji: string
-  state: 'done' | 'doing' | 'locked'
+  state: 'done' | 'doing' | 'open' | 'locked'
   pct: number
   onClick: () => void
 }) {
@@ -344,15 +344,17 @@ export default function JourneyPage() {
         {/* ── 5단계 카드 리스트 ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
           {STAGES.map(s => {
-            const currentWeek = data?.currentWeek ?? 1
+            const currentWeek    = data?.currentWeek    ?? 1
             const completedWeeks = data?.completedWeeks ?? []
-            // 완료 = 비쉼표 6개 모두 답함. 그 외 현재주차/건너뛴 미완료주차 = 진행중(접근가능), 미래 = 잠금
-            const state: 'done' | 'doing' | 'locked' =
+            const unlockedWeeks  = data?.unlockedWeeks  ?? [1]
+            // done: 7개 완료 / doing: 현재 주차 / open: 잠금 해제(비쉼표 3개↑) / locked: 미해제
+            const state: 'done' | 'doing' | 'open' | 'locked' =
               completedWeeks.includes(s.n) ? 'done'
-              : s.n <= currentWeek ? 'doing'
+              : s.n === currentWeek ? 'doing'
+              : unlockedWeeks.includes(s.n) ? 'open'
               : 'locked'
-            // 진행률 바는 실제 현재 주차에만 (건너뛴 주차엔 현재 주차 진행률을 잘못 표시하지 않도록)
-            const pct = state === 'done' ? 100 : (state === 'doing' && s.n === currentWeek) ? stagePct : 0
+            // 진행률 바는 현재 주차에만
+            const pct = state === 'done' ? 100 : state === 'doing' ? stagePct : 0
             return (
               <StageCard
                 key={s.n}

@@ -1,7 +1,7 @@
 import { NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { getUniqueNonRestCount, WEEK_UNLOCK_THRESHOLD, WEEK_TOTAL_NON_REST, MAX_WEEK } from '@/lib/journey'
+import { getUniqueCount, getNonRestCount, WEEK_UNLOCK_THRESHOLD, WEEK_TOTAL, MAX_WEEK } from '@/lib/journey'
 import { detectCrisis } from '@/lib/ai/crisisDetector'
 
 const DEDUPE_WINDOW_MS = 60_000  // 동일 내용 재전송 무시 윈도우 (더블탭/모달 후 재전송 방지)
@@ -38,14 +38,12 @@ async function resolveLetterLocation(
 
 // 중복 시 진행도 변경 없이 현재 상태 플래그만 반환
 async function progressSnapshot(petId: string, currentWeek: number, letterId: string) {
-  const uniqueCount = await getUniqueNonRestCount(petId, currentWeek)
+  const uniqueCount = await getUniqueCount(petId, currentWeek)
   return {
     id: letterId,
     uniqueCount,
-    weekUnlockable:   uniqueCount >= WEEK_UNLOCK_THRESHOLD && currentWeek < MAX_WEEK,
-    weekAllDone:      uniqueCount >= WEEK_TOTAL_NON_REST,
-    weekJustUnlocked: false,
-    journeyCompleted: currentWeek === MAX_WEEK && uniqueCount >= WEEK_TOTAL_NON_REST,
+    weekAllDone:      uniqueCount >= WEEK_TOTAL,
+    journeyCompleted: currentWeek === MAX_WEEK && uniqueCount >= WEEK_TOTAL,
     currentWeek,
     isNewAnswer: false,
   }
@@ -79,10 +77,19 @@ export async function POST(req: Request) {
       const devDup = await findRecentDuplicate(devPet.id, devContent, questionId ?? null)
       if (devDup) return NextResponse.json(await progressSnapshot(devPet.id, currentWeek, devDup.id))
 
+      // 동일 questionId 이미 정상 제출 → 재작성 불가
+      if (questionId) {
+        const existing = await prisma.letter.findFirst({
+          where: { petId: devPet.id, questionId, letterStatus: 'normal' },
+          select: { id: true },
+        })
+        if (existing) return NextResponse.json({ error: 'already_answered' }, { status: 409 })
+      }
+
       // 제출 시점 Crisis 감지 — 편지 생성 전에 확인해 letterStatus를 정확히 세팅
       const devCrisis = detectCrisis(devContent)
 
-      const prevUniqueCount = await getUniqueNonRestCount(devPet.id, currentWeek)
+      const prevUniqueCount = await getUniqueCount(devPet.id, currentWeek)
       const devLoc = await resolveLetterLocation(questionId ?? null, currentWeek, currentDay, stage)
 
       const letter = await prisma.letter.create({
@@ -132,10 +139,19 @@ export async function POST(req: Request) {
     const dup = await findRecentDuplicate(petId, trimmedContent, questionId ?? null)
     if (dup) return NextResponse.json(await progressSnapshot(petId, currentWeek, dup.id))
 
+    // 동일 questionId 이미 정상 제출 → 재작성 불가
+    if (questionId) {
+      const existing = await prisma.letter.findFirst({
+        where: { petId, questionId, letterStatus: 'normal' },
+        select: { id: true },
+      })
+      if (existing) return NextResponse.json({ error: 'already_answered' }, { status: 409 })
+    }
+
     // ── 제출 시점 Crisis 감지 — 편지 생성 전에 확인해 letterStatus를 정확히 세팅
     const crisis = detectCrisis(trimmedContent)
 
-    const prevUniqueCount = await getUniqueNonRestCount(petId, currentWeek)
+    const prevUniqueCount = await getUniqueCount(petId, currentWeek)
     const loc = await resolveLetterLocation(questionId ?? null, currentWeek, currentDay, stage)
 
     const letter = await prisma.letter.create({
@@ -192,21 +208,24 @@ export async function POST(req: Request) {
 
 // ── 공통 진행률 계산 (저장 후) ────────────────────────────────────────────
 async function calcProgress(petId: string, userId: string, currentWeek: number, currentDay: number, letterId: string, prevUniqueCount: number) {
-  const uniqueCount = await getUniqueNonRestCount(petId, currentWeek)
-  const isNewAnswer = uniqueCount > prevUniqueCount  // 이번 편지로 새 질문이 추가됐는지
+  const [uniqueCount, nonRestCount] = await Promise.all([
+    getUniqueCount(petId, currentWeek),    // 쉼표 포함 전체 (0~7)
+    getNonRestCount(petId, currentWeek),   // 비쉼표만 (0~6)
+  ])
+  const isNewAnswer = uniqueCount > prevUniqueCount
 
-  const weekUnlockable   = uniqueCount >= WEEK_UNLOCK_THRESHOLD && currentWeek < MAX_WEEK
-  const weekAllDone      = uniqueCount >= WEEK_TOTAL_NON_REST
+  const weekAllDone      = uniqueCount >= WEEK_TOTAL   // 7개 (쉼표 포함) 완료
   const journeyCompleted = currentWeek === MAX_WEEK && weekAllDone
-  // 현재 주차에서 막 3개째(잠금해제 임계값)가 된 순간만 true → 선택 모달 1회 트리거
-  const weekJustUnlocked = isNewAnswer && uniqueCount === WEEK_UNLOCK_THRESHOLD && currentWeek < MAX_WEEK
+
+  // 비쉼표 3번째 달성 시 → 다음 주차 잠금 해제
+  const justUnlockedNext = isNewAnswer && nonRestCount === WEEK_UNLOCK_THRESHOLD && currentWeek < MAX_WEEK
 
   if (weekAllDone && currentWeek < MAX_WEEK) {
-    // 이번 주 6개 모두 완료 → 다음 주차로 자동 진행
+    // 7개 모두 완료 → 다음 주차로 자동 진행
     await prisma.journeyProgress.upsert({
       where:  { petId },
-      update: { currentWeek: currentWeek + 1, currentStage: { increment: 1 }, currentDay: 0, totalLetters: { increment: 1 } },
-      create: { userId, petId, currentWeek: currentWeek + 1, currentStage: 2, currentDay: 0, totalLetters: 1 },
+      update: { currentWeek: currentWeek + 1, currentStage: { increment: 1 }, currentDay: 0, weekUnlocked: false, totalLetters: { increment: 1 } },
+      create: { userId, petId, currentWeek: currentWeek + 1, currentStage: 2, currentDay: 0, weekUnlocked: false, totalLetters: 1 },
     })
   } else {
     await prisma.journeyProgress.upsert({
@@ -214,11 +233,12 @@ async function calcProgress(petId: string, userId: string, currentWeek: number, 
       update: {
         currentDay: uniqueCount,
         totalLetters: { increment: 1 },
+        ...(justUnlockedNext ? { weekUnlocked: true } : {}),
         ...(journeyCompleted ? { completedAt: new Date() } : {}),
       },
-      create: { userId, petId, currentWeek: 1, currentDay: uniqueCount, totalLetters: 1 },
+      create: { userId, petId, currentWeek: 1, currentDay: uniqueCount, weekUnlocked: justUnlockedNext, totalLetters: 1 },
     })
   }
 
-  return { id: letterId, uniqueCount, weekUnlockable, weekAllDone, weekJustUnlocked, journeyCompleted, currentWeek, isNewAnswer }
+  return { id: letterId, uniqueCount, weekAllDone, journeyCompleted, currentWeek, isNewAnswer }
 }

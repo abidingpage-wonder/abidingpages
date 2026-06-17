@@ -44,7 +44,7 @@ interface Props {
   freeEntry?:         boolean   // 자유롭게 쓰기 진입 시 질문 카드 닫힘
 }
 
-type ModalType = 'week_choice' | 'journey' | 'crisis' | null
+type ModalType = 'journey' | 'crisis' | null
 
 export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry }: Props) {
   const router      = useRouter()
@@ -58,7 +58,6 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
   // 선택 모달은 3번째 질문 전송 직후 1회만 노출 (진입 시 자동 오픈 안 함)
   const [modal,     setModal]     = useState<ModalType>(null)
   const [toast,     setToast]     = useState<string | null>(null)
-  const [advancingWeek, setAdvancingWeek] = useState(false)
   const [journeyDone, setJourneyDone] = useState(initJourneyCompleted ?? false)
 
   // 질문 카드 표시: 자유 진입/49일 완주 후 = 기본 닫힘, 그 외 = 기본 열림
@@ -172,6 +171,11 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
           ...(overrideType ? { letterType: overrideType } : {}),
         }),
       })
+      if (res.status === 409) {
+        setError('이미 작성한 질문이에요. 다른 질문을 선택해주세요.')
+        setSending(false)
+        return
+      }
       if (!res.ok) throw new Error()
       const result = await res.json()
 
@@ -182,7 +186,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
         return
       }
 
-      const { id: letterId, weekAllDone, weekJustUnlocked, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
+      const { id: letterId, weekAllDone, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
 
       // 캐시 초기화 (다음 토글 시 최신 writeCount 반영)
       setWeekQuestions(null)
@@ -202,15 +206,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
         return
       }
 
-      // 이번 주 3번째 질문 전송 직후 → 이어서하기/다음 단계 선택 모달 1회
-      if (weekJustUnlocked) {
-        resetEditor()
-        setSending(false)
-        setModal('week_choice')
-        return
-      }
-
-      // 그 외에는 모달 없이 항상 완료 페이지로 (6개 완료 시 다음 주차 자동 진행 안내)
+      // 7개 완료 시 다음 주차 자동 진행 안내, 그 외 바로 완료 페이지로
       router.push(`/write/sent?letterId=${letterId}${weekAllDone ? `&weekDone=${cw}` : ''}`)
     } catch {
       setError('편지를 보내지 못했어요. 다시 시도해주세요.')
@@ -227,24 +223,6 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
   async function handleCommaDay() {
     const type = isLongWeek ? 'long' : 'comma_auto'
     await sendLetter('', type)
-  }
-
-  // 진입 선택: 다음 단계 넘어가기 → 주차 진행 후 다음 주차 질문 로드
-  async function handleChoiceAdvance() {
-    setAdvancingWeek(true)
-    try {
-      await fetch('/api/journey/advance', { method: 'POST' })
-      setModal(null)
-      setToast(`${week}주차 질문은 여정 > ${week}주차에서 언제든 다시 쓸 수 있어요 🌿`)
-      await fetchQuestion()
-    } finally {
-      setAdvancingWeek(false)
-    }
-  }
-
-  // 진입 선택: 이어서하기 → 현재 주차 질문 그대로 진행
-  function handleChoiceContinue() {
-    setModal(null)
   }
 
   const emotionEmoji  = emotionTag ? EMOTION_EMOJI[emotionTag] : null
@@ -616,41 +594,6 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
             padding: '28px 24px 24px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           }}>
-
-            {/* week_choice 모달 (3개 이상 완료 후 재진입 시 선택) */}
-            {modal === 'week_choice' && (
-              <>
-                <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>🌿</div>
-                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 600, color: '#fff', lineHeight: 1.5, marginBottom: 8 }}>
-                    {week}주차 질문을 3개 완료했어요
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-                    이번 주를 이어서 쓸 수도 있고,<br/>다음 단계로 넘어갈 수도 있어요.
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button onClick={handleChoiceContinue} style={{
-                    width: '100%', padding: '14px 0', borderRadius: 999,
-                    background: 'linear-gradient(135deg, #faddca, #fbb489)',
-                    border: 'none', color: '#2a1c44',
-                    fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
-                    cursor: 'pointer',
-                  }}>
-                    이어서하기
-                  </button>
-                  <button onClick={handleChoiceAdvance} disabled={advancingWeek} style={{
-                    width: '100%', padding: '14px 0', borderRadius: 999,
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
-                    color: 'rgba(255,255,255,0.7)',
-                    fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
-                    cursor: advancingWeek ? 'default' : 'pointer',
-                  }}>
-                    {advancingWeek ? '넘어가는 중...' : '다음 단계 넘어가기'}
-                  </button>
-                </div>
-              </>
-            )}
 
             {/* journey 모달 (49일 완주) */}
             {modal === 'journey' && (
