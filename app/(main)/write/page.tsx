@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { trackEmotionSelected } from '@/lib/analytics'
 
 // ── 감정 데이터 ──────────────────────────────────────────────────────
 interface Emotion {
@@ -31,6 +32,8 @@ function EmotionSelectInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isFree = searchParams.get('free') === '1'
+  const week = parseInt(searchParams.get('week') ?? '1')
+  const day = parseInt(searchParams.get('day') ?? '1')
   const [selected, setSelected] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -44,6 +47,7 @@ function EmotionSelectInner() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ emotionTag: selected }),
         })
+        trackEmotionSelected({ emotion_tag: selected, week, day })
       }
     } catch { /* 저장 실패해도 진행 */ }
     router.push(`/write/letter?emotion=${selected}${isFree ? '&free=1' : ''}`)

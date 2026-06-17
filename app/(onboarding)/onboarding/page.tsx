@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import StepBasicInfo from './_components/StepBasicInfo'
 import StepPersonality from './_components/StepPersonality'
 import StepFarewellGarden from './_components/StepFarewellGarden'
+import { useLoginTracking } from '@/hooks/useLoginTracking'
+import { trackOnboardingCompleted, identifyUser } from '@/lib/analytics'
 
 // ─── 온보딩 공유 데이터 타입 ───────────────────────────────────────
 export interface OnboardingData {
@@ -150,11 +152,13 @@ function TopBar({ step, onBack }: { step: number; onBack: () => void }) {
 }
 
 // ─── 메인 온보딩 페이지 ──────────────────────────────────────────
-export default function OnboardingPage() {
+function OnboardingPageInner() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [data, setData] = useState<OnboardingData>(INITIAL_DATA)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useLoginTracking()
 
   const handleChange = (patch: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...patch }))
@@ -224,6 +228,19 @@ export default function OnboardingPage() {
         throw new Error(err.error || '저장 실패')
       }
 
+      const species = data.species === 'other' ? data.speciesCustom : data.species
+      trackOnboardingCompleted({
+        species,
+        farewell_type: data.farewellType,
+        garden_public: data.gardenPublic,
+      })
+      identifyUser('', {
+        species,
+        farewell_type: data.farewellType,
+        signup_date: new Date().toISOString().slice(0, 10),
+        garden_public: data.gardenPublic,
+      })
+
       router.push('/home')
     } catch (err) {
       console.error('온보딩 저장 실패:', err)
@@ -259,5 +276,13 @@ export default function OnboardingPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: 'var(--lav-50)' }} />}>
+      <OnboardingPageInner />
+    </Suspense>
   )
 }

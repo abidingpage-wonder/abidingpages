@@ -4,6 +4,7 @@ import { memo, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Image from 'next/image'
+import { trackNextStageEntered } from '@/lib/analytics'
 
 const NIGHT_BG  = 'linear-gradient(180deg, #1c0f2e 0%, #2a1c44 38%, #574a7e 72%, #8d80ab 100%)'
 const PEACH_TOP = 'linear-gradient(180deg, rgba(251,180,137,0.18) 0%, rgba(251,180,137,0.06) 18%, transparent 100%)'
@@ -35,6 +36,12 @@ function SentContent() {
   const searchParams = useSearchParams()
   const letterId     = searchParams.get('letterId')
   const weekDone     = searchParams.get('weekDone')   // 이번 편지로 주차 6개 완료 → 다음 주차 자동 진행
+
+  useEffect(() => {
+    if (!weekDone) return
+    const fromWeek = parseInt(weekDone)
+    trackNextStageEntered({ from_week: fromWeek, to_week: fromWeek + 1 })
+  }, [weekDone])
 
   const [visible, setVisible]           = useState(false)
   const [notifGranted, setNotifGranted] = useState(false)

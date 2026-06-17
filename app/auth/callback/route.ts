@@ -24,18 +24,20 @@ export async function GET(request: Request) {
         },
       })
 
+      const provider = supabaseUser.app_metadata.provider ?? 'kakao'
+
       if (!existing) {
         await prisma.user.create({
           data: {
             id: supabaseUser.id,
             email: supabaseUser.email ?? null,
-            provider: supabaseUser.app_metadata.provider ?? 'kakao',
+            provider,
             providerId: supabaseUser.id,
             plan: 'free',
           },
         })
-        // 신규 유저 → 온보딩으로
-        return NextResponse.redirect(`${origin}/onboarding`)
+        // 신규 유저 → 온보딩으로 (login 이벤트 파라미터 전달)
+        return NextResponse.redirect(`${origin}/onboarding?_lp=${provider}&_ln=1`)
       }
 
       // 기존 유저 → 온보딩 완료 여부 확인
@@ -43,7 +45,8 @@ export async function GET(request: Request) {
         where: { userId: existing.id },
       })
 
-      return NextResponse.redirect(`${origin}${pet ? next : '/onboarding'}`)
+      const dest = pet ? next : '/onboarding'
+      return NextResponse.redirect(`${origin}${dest}?_lp=${provider}&_ln=0`)
     }
   }
 

@@ -32,7 +32,7 @@ export async function GET(
 
     const reply = await prisma.reply.findUnique({
       where: { letterId },
-      include: { letter: { select: { content: true } } },
+      include: { letter: { select: { content: true, week: true } } },
     })
 
     if (!reply) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -58,6 +58,7 @@ export async function GET(
       petPhotoUrl: pet?.profileImageUrl ?? null,
       ownerNickname: pet?.ownerNickname ?? '보호자님',
       letterContent: reply.letter.content,
+      week: reply.letter.week,
       receivedAt: reply.generatedAt.toISOString(),
       isRead: reply.isRead,
       hasFeedback: !!feedback,

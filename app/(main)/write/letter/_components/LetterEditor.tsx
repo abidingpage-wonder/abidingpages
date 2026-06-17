@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { petJosa } from '@/lib/korean'
+import { trackLetterSubmitted, trackLetterSubmitFailed, trackCrisisDetected } from '@/lib/analytics'
+
+declare global {
+  interface Window { __letterStartTime?: number }
+}
 
 const EMOTION_EMOJI: Record<string, string> = {
   missing: '🌙', sad: '💧', numb: '🌫️', guilt: '🥀',
@@ -113,6 +118,8 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
   }
 
   useEffect(() => {
+    // 편지 작성 시작 시각 기록 (time_spent_sec 계산용)
+    window.__letterStartTime = Date.now()
     fetchQuestion(initialQuestionId ?? undefined)
   }, [initialQuestionId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -181,12 +188,24 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
 
       // 위기(자해/자살) 신호 감지 → 페이지 이동 없이 위기 안내 모달
       if (result.status === 'crisis_detected') {
+        trackCrisisDetected({ week, day })
         setSending(false)
         setModal('crisis')
         return
       }
 
       const { id: letterId, weekAllDone, journeyCompleted: jc, currentWeek: cw, isNewAnswer } = result
+
+      const submittedContent = overrideContent ?? content.trim()
+      trackLetterSubmitted({
+        emotion_tag: emotionTag ?? 'skip',
+        word_count: submittedContent.replace(/\s+/g, ' ').trim().split(' ').length,
+        has_photo: imageUrls.length > 0,
+        week,
+        day,
+        time_spent_sec: Math.round((Date.now() - (window.__letterStartTime ?? Date.now())) / 1000),
+        letter_type: overrideType ?? 'guided',
+      })
 
       // 캐시 초기화 (다음 토글 시 최신 writeCount 반영)
       setWeekQuestions(null)
@@ -209,6 +228,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       // 7개 완료 시 다음 주차 자동 진행 안내, 그 외 바로 완료 페이지로
       router.push(`/write/sent?letterId=${letterId}${weekAllDone ? `&weekDone=${cw}` : ''}`)
     } catch {
+      trackLetterSubmitFailed({ error_code: 'unknown' })
       setError('편지를 보내지 못했어요. 다시 시도해주세요.')
       setSending(false)
     }

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import type { HomeStatusResponse } from '@/app/api/home/status/route'
 import { ConstellationMini } from '@/components/ui/ConstellationMini'
+import LoginTracker from '@/components/LoginTracker'
 
 // ── 개발용 목업 데이터 ─────────────────────────────────────────────────
 // DEV_BYPASS_AUTH=true 일 때 DB 없이도 화면 확인 가능
@@ -120,7 +121,11 @@ const WEEK_THEMES: Record<number, { stageName: string; title: string; desc: stri
   7: { stageName: '간직함', title: '내 마음속 가장 따뜻한 방에', desc: '아이는 사라지는 것이 아니라, 당신의 마음속에 가장 안전하고 따뜻한 모습으로 영원히 깃들게 됩니다. 아이에게 마지막 약속을 건네고 49일간의 여정을 마무리하는 시간입니다.' },
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>
+}) {
   // ── 개발용 인증 우회 ──────────────────────────────────────────────
   const isBypass = process.env.DEV_BYPASS_AUTH === 'true'
   if (!isBypass) {
@@ -152,8 +157,11 @@ export default async function HomePage() {
   const totalQuestionsDone = journey.totalQuestionsDone ?? 0
   const journeyProgress = totalQuestionsDone / 49
 
+  const sp = await searchParams
+
   return (
     <div style={{ paddingBottom: 8 }}>
+      <LoginTracker provider={sp._lp} isNew={sp._ln} />
       {/* [BETA] 베타 테스트 배너 — TODO: href를 카카오 채널 링크로 교체 */}
       <div style={{ padding: '12px 18px 0' }}>
         <a href="#" style={{ textDecoration: 'none' }}>
@@ -324,7 +332,7 @@ export default async function HomePage() {
             }}>
               {journey.currentDay + 1}일차{todayQuestion?.category ? ` · ${todayQuestion.category}` : ''}
             </div>
-            <a href="/write" style={{
+            <a href={`/write?week=${journey.currentWeek}&day=${journey.currentDay + 1}`} style={{
               fontFamily: 'var(--font-sans)', fontSize: 11.5,
               color: 'var(--lav-600)', fontWeight: 600,
               textDecoration: 'none',
@@ -447,12 +455,12 @@ function StatusCardA({ petName, letterId }: {
 }
 
 /* ── 상태 B: 오늘 편지 쓰기 ── */
-function StatusCardB({ petName }: {
+function StatusCardB({ petName, week, day }: {
   petName: string; stage: number; week: number; day: number
   weekTheme: { title: string; desc: string }
 }) {
   return (
-    <a href="/write" style={{ textDecoration: 'none', display: 'block' }}>
+    <a href={`/write?week=${week}&day=${day + 1}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div style={{
         ...CARD_BASE,
         background: 'linear-gradient(170deg, #fbeee6 0%, #f4e3eb 100%)',

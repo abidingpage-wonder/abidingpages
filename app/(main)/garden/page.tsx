@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import Spinner from '@/components/ui/Spinner'
+import { trackStickerSent, trackGardenMessageSubmitted } from '@/lib/analytics'
 
 // ── 상수 ──────────────────────────────────────────────────────────
 const MAX_MESSAGES = 15
@@ -359,6 +360,7 @@ export default function GardenPage() {
         return
       }
       const newMsg: GardenMessage = { id: data.id, content: data.content, createdAt: data.createdAt }
+      trackGardenMessageSubmitted({ message_length: inputText.trim().length })
       setInputText('')
       inputRef.current?.blur()
       setMessageCount(n => n + 1)
@@ -381,6 +383,7 @@ export default function GardenPage() {
   }
 
   async function handleSticker(petId: string, type: 'candle' | 'flower' | 'heart') {
+    trackStickerSent({ sticker_type: type })
     // 낙관적 업데이트 (stickerSenders는 첫 스티커일 때만 +1)
     setPets(prev => prev.map(p => {
       if (p.id !== petId || p.myStickers.includes(type)) return p

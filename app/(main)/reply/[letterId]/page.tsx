@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { SoftCTAButton } from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import { petJosa } from '@/lib/korean'
+import { trackReplyViewed, trackReplyViewedDuration } from '@/lib/analytics'
 
 function formatDateTime(iso: string) {
   const d = new Date(iso)
@@ -30,6 +31,7 @@ interface ReplyData {
   petPhotoUrl: string | null
   ownerNickname: string
   letterContent: string
+  week: number
   receivedAt: string
   isRead: boolean
   hasFeedback: boolean
@@ -60,8 +62,18 @@ export default function ReplyPage() {
   }, [letterId])
 
   useEffect(() => {
-    if (!reply || reply.isRead) return
-    fetch(`/api/letters/${letterId}/reply`, { method: 'PATCH' })
+    if (!reply) return
+    const viewStart = Date.now()
+
+    if (!reply.isRead) {
+      fetch(`/api/letters/${letterId}/reply`, { method: 'PATCH' })
+      trackReplyViewed({ letter_id: letterId, week: reply.week ?? 1 })
+    }
+
+    return () => {
+      const sec = Math.round((Date.now() - viewStart) / 1000)
+      if (sec >= 3) trackReplyViewedDuration({ read_duration_sec: sec })
+    }
   }, [reply, letterId])
 
   // 토스트 표시
