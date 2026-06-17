@@ -262,7 +262,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-app)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg-app)' }}>
 
       {/* ── 헤더 ── */}
       <div style={{
@@ -281,7 +281,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── 콘텐츠 ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px 24px' }}>
+      <div style={{ padding: '4px 24px 24px' }}>
 
         {/* 상단 안내 */}
         <div style={{ textAlign: 'center', padding: '12px 0 24px' }}>
@@ -461,7 +461,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── CTA ── */}
-      <div style={{ padding: '12px 24px 40px', background: 'var(--bg-app)' }}>
+      <div style={{ padding: '16px 24px 48px', background: 'var(--bg-app)' }}>
         {subscribed && !picked && (
           <button
             onClick={async () => { await unsubscribe() }}
@@ -476,15 +476,15 @@ export default function NotificationsPage() {
           </button>
         )}
         <button
-          disabled={!picked || loading || permission === 'denied'}
+          disabled={!picked || loading}
           onClick={handleSetNotif}
           style={{
             width: '100%', padding: '16px', borderRadius: 999, border: 'none',
-            background: picked && permission !== 'denied' ? 'var(--lav-600)' : 'rgba(166,133,199,0.25)',
-            color: picked && permission !== 'denied' ? '#fff' : 'var(--lav-400)',
+            background: picked ? 'var(--lav-600)' : 'rgba(166,133,199,0.25)',
+            color: picked ? '#fff' : 'var(--lav-400)',
             fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
             boxShadow: picked ? '0 6px 18px rgba(86,52,140,0.25)' : 'none',
-            cursor: picked && !loading && permission !== 'denied' ? 'pointer' : 'default',
+            cursor: picked && !loading ? 'pointer' : 'default',
             transition: 'all .18s',
           }}
         >
