@@ -29,15 +29,18 @@ function ida(word: string): string {
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 
-// 답장 노출 시각: KST 기준 다음날, 유저가 설정한 알림 시각 (기본 오전 9시)
+// 답장 노출 시각: 유저 알림 설정 시각 기준 (KST)
+// - 오늘 알림 시간이 아직 안 지났으면 → 오늘 그 시각
+// - 이미 지났으면 → 내일 그 시각
 // Deno는 UTC로 동작하므로 epoch 산술로만 계산
 function computeVisibleAt(notifHour: number, notifMinute: number, notifAmpm: string): Date {
   let hour24 = notifHour % 12
   if (notifAmpm === '오후') hour24 += 12
   const kstNow      = Date.now() + KST_OFFSET_MS
-  const kstNextDay  = kstNow + 24 * 60 * 60 * 1000
-  const kstMidnight = Math.floor(kstNextDay / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
-  const kstTarget   = kstMidnight + (hour24 * 60 + notifMinute) * 60 * 1000
+  const kstMidnight = Math.floor(kstNow / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+  const kstToday    = kstMidnight + (hour24 * 60 + notifMinute) * 60 * 1000
+  // 오늘 알림 시각이 현재보다 나중이면 오늘, 이미 지났으면 내일
+  const kstTarget   = kstToday > kstNow ? kstToday : kstToday + 24 * 60 * 60 * 1000
   return new Date(kstTarget - KST_OFFSET_MS)
 }
 
@@ -617,20 +620,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 노출/알림 예약 시각: 유저 알림 설정 기준 (최신 구독, 없으면 다음날 오전 9시)
+    // 노출/알림 예약 시각: 유저 알림 설정 기준 (updated_at 최신 구독, 없으면 오전 9시)
+    // 배포 전 REPLY_DELAY_MODE 확인 — 'dev'이면 5분 후, 그 외 운영 로직
+    const isDev = Deno.env.get('REPLY_DELAY_MODE') === 'dev'
+
     const { data: latestSub } = await adminClient
       .from('push_subscriptions')
       .select('notif_hour, notif_minute, notif_ampm')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    const visibleAt = computeVisibleAt(
-      latestSub?.notif_hour   ?? 9,
-      latestSub?.notif_minute ?? 0,
-      latestSub?.notif_ampm   ?? '오전',
-    )
+    const visibleAt = isDev
+      ? new Date(Date.now() + 5 * 60 * 1000)
+      : computeVisibleAt(
+          latestSub?.notif_hour   ?? 9,
+          latestSub?.notif_minute ?? 0,
+          latestSub?.notif_ampm   ?? '오전',
+        )
 
     // 답장 저장 (visible_at 도래 전에는 보관함에 노출되지 않음, 푸시는 cron이 발송)
     const { data: inserted, error: insertError } = await adminClient

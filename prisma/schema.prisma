@@ -266,6 +266,7 @@ model PushSubscription {
   notifAmpm   String   @default("오전") @map("notif_ampm")
   notifDays   String   @default("1111111") @map("notif_days") // Mon~Sun, '1'=on
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt       @map("updated_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id])
 

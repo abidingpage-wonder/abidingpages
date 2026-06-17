@@ -380,8 +380,8 @@ export default function NotificationsPage() {
           })}
         </div>
 
-        {/* ── 직접 설정 섹션 ── */}
-        <SectionLabel>직접 설정</SectionLabel>
+        {/* ── 직접 설정 섹션 (비활성) ── */}
+        {/* <SectionLabel>직접 설정</SectionLabel>
         <button
           onClick={openCustomSheet}
           style={{
@@ -396,7 +396,6 @@ export default function NotificationsPage() {
             transition: 'all .18s',
           }}
         >
-          {/* 체크 원 */}
           <span style={{
             width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
             border: selectedKey === 'custom' ? '1.5px solid var(--peach-400)' : '1.5px solid rgba(166,133,199,0.35)',
@@ -410,30 +409,23 @@ export default function NotificationsPage() {
               </svg>
             )}
           </span>
-
-          {/* 시계 아이콘 */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
             <circle cx="12" cy="13" r="8" stroke="var(--peach-500)" strokeWidth="1.5" />
             <path d="M12 9.5V13l2.5 1.5" stroke="var(--peach-500)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M5 4L8 6.5M19 4l-3 2.5" stroke="var(--peach-500)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14.5, fontWeight: 600, flex: 1, textAlign: 'left' }}>
             {customSet ? fmtTime(customTime.h, customTime.m, customTime.ampm) : '직접 설정'}
           </span>
-
-          {/* 수정 화살표 */}
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <path d="M9 18l6-6-6-6" stroke="var(--ink-300)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </button>
+        </button> */}
 
-        {/* ── 반복 요일 (선택 완료 시에만 표시) ── */}
-        {picked && (
+        {/* ── 반복 요일 섹션 (비활성) ── */}
+        {/* {picked && (
           <div style={{ marginTop: 28 }}>
-            {/* 구분선 */}
             <div style={{ height: 1, background: 'rgba(166,133,199,0.15)', marginBottom: 20 }} />
-
             <SectionLabel>반복</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6 }}>
               {DOW.map((d, i) => (
@@ -465,7 +457,7 @@ export default function NotificationsPage() {
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* ── CTA ── */}
@@ -500,15 +492,15 @@ export default function NotificationsPage() {
         </button>
       </div>
 
-      {/* ── 직접 설정 바텀시트 ── */}
-      {sheet && (
+      {/* ── 직접 설정 바텀시트 (비활성) ── */}
+      {/* {sheet && (
         <TimeSheet
           time={customTime}
           setTime={setCustomTime}
           onConfirm={confirmCustomTime}
           onClose={() => setSheet(false)}
         />
-      )}
+      )} */}
     </div>
   )
 }
