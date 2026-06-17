@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import ReactQueryProvider from '@/providers/ReactQueryProvider'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import SentryInit from '@/components/SentryInit'
 
 export const metadata: Metadata = {
   title: 'Abiding Pages',
@@ -51,6 +52,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <SentryInit />
         <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
       {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
