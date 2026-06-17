@@ -402,14 +402,14 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
                     }}>
                       {q.content}
                     </span>
-                    {/* 작성 횟수 */}
+                    {/* 작성 완료 체크 */}
                     {q.writeCount > 0 && (
                       <span style={{
                         flexShrink: 0,
-                        fontFamily: 'var(--font-sans)', fontSize: 10.5, fontWeight: 600,
+                        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700,
                         color: '#c47a3a',
                       }}>
-                        ✓ {q.writeCount}회
+                        ✓
                       </span>
                     )}
                   </div>

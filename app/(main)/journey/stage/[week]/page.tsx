@@ -177,13 +177,14 @@ export default function StageDetailPage() {
               {data.questions.map((q) => (
                 <div
                   key={q.id}
-                  onClick={() => router.push(`/write/letter?questionId=${q.id}`)}
+                  onClick={q.done ? undefined : () => router.push(`/write/letter?questionId=${q.id}`)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '14px 16px', borderRadius: 14,
-                    background: q.done ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.4)',
-                    border: '0.5px solid rgba(166,133,199,0.16)',
-                    cursor: 'pointer',
+                    background: q.done ? 'rgba(255,255,255,0.82)' : 'rgba(255,255,255,0.4)',
+                    border: q.done ? '0.5px solid rgba(166,133,199,0.1)' : '0.5px solid rgba(166,133,199,0.16)',
+                    cursor: q.done ? 'default' : 'pointer',
+                    opacity: q.done ? 0.7 : 1,
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
