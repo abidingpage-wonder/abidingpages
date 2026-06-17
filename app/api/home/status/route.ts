@@ -116,16 +116,14 @@ export async function GET() {
       }),
       prisma.emotionLog.groupBy({ by: ['loggedAt'], where: { petId: pet.id } }),
       prisma.letter.findMany({ where: { petId: pet.id, userId: user.id }, select: { createdAt: true } }),
-      prisma.letter.groupBy({ by: ['questionId'], where: { petId: pet.id, questionId: { not: null }, letterStatus: 'normal' } }),
-      prisma.question.findMany({ where: { isRest: true }, select: { id: true } }),
+      prisma.letter.findMany({ where: { petId: pet.id, questionId: { not: null }, letterStatus: 'normal' }, select: { questionId: true } }),
     ])
 
     const emotionCount = emotionDays.length
     const letterCount = letters.length
     const longestStreak = calcLongestStreak(letters.map(l => l.createdAt))
-    const restIds = new Set(restQuestions.map(q => q.id))
     const totalQuestionsDone = Math.min(
-      questionLetters.filter(g => g.questionId && !restIds.has(g.questionId)).length, 49
+      new Set(questionLetters.map(l => l.questionId!)).size, 49
     )
 
     const journeyData = journey
