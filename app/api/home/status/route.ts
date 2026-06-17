@@ -109,7 +109,7 @@ export async function GET() {
     }
 
     // 3. 여정 진행 상태
-    const [journey, emotionDays, letters, questionLetters, restQuestions] = await Promise.all([
+    const [journey, emotionDays, letters, questionLetters] = await Promise.all([
       prisma.journeyProgress.findUnique({
         where: { petId: pet.id },
         select: { currentStage: true, currentWeek: true, currentDay: true, totalLetters: true },
