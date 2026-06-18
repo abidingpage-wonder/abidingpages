@@ -47,6 +47,7 @@ export interface HomeStatusResponse {
     replyId: string
     preview: string   // 답장 본문 앞 60자
     receivedAt: string
+    replyType: 'normal' | 'crisis'   // crisis = 위기 안내 답장
   }
   // 상태 C: 오늘 보낸 편지
   todayLetter?: {
@@ -146,6 +147,7 @@ export async function GET() {
         letterId: true,
         content: true,
         generatedAt: true,
+        replyType: true,
       },
     })
 
@@ -167,6 +169,7 @@ export async function GET() {
           replyId: unreadReply.id,
           preview: unreadReply.content.slice(0, 60),
           receivedAt: unreadReply.generatedAt.toISOString(),
+          replyType: unreadReply.replyType as 'normal' | 'crisis',
         },
       }
       return NextResponse.json(response)

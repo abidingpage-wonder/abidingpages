@@ -117,6 +117,24 @@ async function insertCrisisReply(
   return data?.id ?? null
 }
 
+// LLM crisis 보정: /api/letters가 이미 진행 커서(current_day)를 올린 뒤 crisis로 판정된 경우,
+// 해당 주차 normal 편지의 distinct 질문 수로 current_day를 재계산해 즉시 되돌린다.
+// 같은 주차에 머물러 있을 때만 보정(드물게 주차 자동전진을 유발한 경우는 다음 작성 시 자가 보정).
+// deno-lint-ignore no-explicit-any
+async function recomputeCurrentDayAfterCrisis(admin: any, petId: string, letterWeek: number) {
+  const { data: jp } = await admin
+    .from('journey_progress').select('current_week').eq('pet_id', petId).maybeSingle()
+  if (!jp || jp.current_week !== letterWeek) return  // 주차가 이미 넘어갔으면 건드리지 않음
+
+  const { data: rows } = await admin
+    .from('letters')
+    .select('question_id')
+    .eq('pet_id', petId).eq('week', letterWeek)
+    .eq('letter_status', 'normal').not('question_id', 'is', null)
+  const uniq = new Set((rows ?? []).map((r: { question_id: string }) => r.question_id))
+  await admin.from('journey_progress').update({ current_day: uniq.size }).eq('pet_id', petId)
+}
+
 // ── 설정 테이블(SPECIES_VOICE/FAREWELL_LAYER/WEEK_CONFIG/REST_WEEK_GUIDE)은 config.ts로 분리 ──
 
 // ── 편지 유형 판별 ──────────────────────────────────────────────────────────
@@ -594,6 +612,8 @@ Deno.serve(async (req) => {
         })
         const replyId = await insertCrisisReply(adminClient, letterId, letter.user_id, letter.pet_id,
           buildCrisisReplyContent(ownerName, petForPrompt.name))
+        // LLM crisis는 /api/letters에서 진행 커서가 이미 올라갔으므로 되돌림
+        await recomputeCurrentDayAfterCrisis(adminClient, letter.pet_id, letter.week as number)
         return new Response(JSON.stringify({ status: 'crisis_detected', letterId, replyId }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })

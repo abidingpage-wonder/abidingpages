@@ -24,7 +24,7 @@ const DEV_MOCK: HomeStatusResponse = {
   journey: { currentStage: 1, currentWeek: 1, currentDay: 3, totalLetters: 5, totalQuestionsDone: 3, letterCount: 5, emotionCount: 3, longestStreak: 3 },
   dayCount: 22,
   // 상태 A/C 데이터 — DEV_STATUS에 맞게 항상 포함 (렌더링은 status 값으로 결정)
-  unreadReply: { letterId: 'l1', replyId: 'r1', preview: '오늘도 하늘에서 엄마를 바라보고 있었어요. 바람이 살랑살랑', receivedAt: new Date().toISOString() },
+  unreadReply: { letterId: 'l1', replyId: 'r1', preview: '오늘도 하늘에서 엄마를 바라보고 있었어요. 바람이 살랑살랑', receivedAt: new Date().toISOString(), replyType: 'normal' },
   todayLetter: { letterId: 'l1', sentAt: new Date().toISOString() },
 }
 // ──────────────────────────────────────────────────────────────────────
@@ -91,12 +91,13 @@ async function getHomeStatus(): Promise<HomeStatusResponse | null> {
         OR: [{ visibleAt: null }, { visibleAt: { lte: now } }],
       },
       orderBy: { generatedAt: 'desc' },
-      select: { id: true, letterId: true, content: true, generatedAt: true },
+      select: { id: true, letterId: true, content: true, generatedAt: true, replyType: true },
     })
     if (unreadReply) {
       return { status: 'A', pet: petBase, journey: journeyData, dayCount,
         unreadReply: { letterId: unreadReply.letterId, replyId: unreadReply.id,
-          preview: unreadReply.content.slice(0, 60), receivedAt: unreadReply.generatedAt.toISOString() } }
+          preview: unreadReply.content.slice(0, 60), receivedAt: unreadReply.generatedAt.toISOString(),
+          replyType: unreadReply.replyType as 'normal' | 'crisis' } }
     }
 
     const start = new Date(); start.setHours(0,0,0,0)
@@ -225,6 +226,7 @@ export default async function HomePage({
             preview={homeData.unreadReply.preview}
             replyId={homeData.unreadReply.replyId}
             letterId={homeData.unreadReply.letterId}
+            replyType={homeData.unreadReply.replyType}
           />
         )}
         {status === 'B' && (
@@ -431,10 +433,38 @@ const CARD_BASE: React.CSSProperties = {
 }
 
 /* ── 상태 A: 편지 도착 ── */
-function StatusCardA({ petName, letterId }: {
+function StatusCardA({ petName, letterId, replyType = 'normal' }: {
   petName: string; ownerNickname: string | null; preview: string
-  replyId: string; letterId: string
+  replyId: string; letterId: string; replyType?: 'normal' | 'crisis'
 }) {
+  // 위기 안내 답장 — '아이의 답장'과 다른 톤(딥 라벤더), 안내 문구
+  if (replyType === 'crisis') {
+    return (
+      <a href={`/reply/${letterId}`} style={{ textDecoration: 'none', display: 'block' }}>
+        <div style={{
+          ...CARD_BASE,
+          background: 'linear-gradient(135deg, #2a223f 0%, #524080 130%)',
+          border: '0.5px solid rgba(140,100,190,0.3)',
+          boxShadow: '0 10px 28px rgba(42,34,63,0.22)',
+          cursor: 'pointer',
+        }}>
+          <CornerGlow color="rgba(255,255,255,0.18)" />
+          <ObjGlow color="rgba(250,221,202,0.25)" top="40%" />
+
+          <CardEyebrow color="rgba(255,255,255,0.65)" />
+          <CardTitle color="#fff">마음을 살피는<br/>편지가 도착했어요</CardTitle>
+          <CardSub color="rgba(255,255,255,0.8)">잠깐, 함께 들여다보아요.</CardSub>
+
+          <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, fontSize: 64 }}>
+            🫂
+          </div>
+
+          <CardBtn bg="rgba(255,255,255,0.16)">편지 열어보기</CardBtn>
+        </div>
+      </a>
+    )
+  }
+
   return (
     <a href={`/reply/${letterId}`} style={{ textDecoration: 'none', display: 'block' }}>
       <div style={{
