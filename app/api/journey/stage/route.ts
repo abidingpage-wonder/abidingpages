@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         select: { id: true, day: true, content: true, category: true, isRest: true },
       }),
       devPet
-        ? prisma.letter.findMany({ where: { petId: devPet.id, week }, select: { questionId: true, id: true } })
+        ? prisma.letter.findMany({ where: { petId: devPet.id, week, letterStatus: 'normal' }, select: { questionId: true, id: true } })
         : Promise.resolve([]),
       prisma.weekGuide.findUnique({ where: { week } }),
     ])
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
         select: { id: true, day: true, content: true, category: true, isRest: true },
       }),
       prisma.letter.findMany({
-        where: { petId: pet.id, week },
+        where: { petId: pet.id, week, letterStatus: 'normal' },
         select: { questionId: true, id: true },
       }),
       prisma.weekGuide.findUnique({ where: { week } }),

@@ -452,6 +452,7 @@ interface TimelineEntry {
   imageUrls: string[]
   emotionTag?: string | null
   category?: string | null
+  replyType?: 'normal' | 'crisis'
 }
 interface TimelineWeek {
   week: number
@@ -580,6 +581,39 @@ function LetterCardBody({ entry, onClick }: { entry: TimelineEntry; onClick: () 
 
 function ReplyCardBody({ entry, onClick }: { entry: TimelineEntry; onClick: () => void }) {
   const firstLine = entry.content.split('\n')[0]
+  const isCrisis = entry.replyType === 'crisis'
+
+  if (isCrisis) {
+    return (
+      <div onClick={onClick} style={{
+        padding: '13px 15px', cursor: 'pointer', borderRadius: 16,
+        background: 'linear-gradient(135deg, #2a223f 0%, #524080 130%)',
+        boxShadow: '0 2px 12px rgba(42,34,63,0.18)',
+        border: '0.5px solid rgba(140,100,190,0.3)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span style={{
+            padding: '2px 8px', borderRadius: 999,
+            background: 'rgba(255,255,255,0.14)',
+            fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600,
+            color: '#faddca',
+          }}>🫂 마음을 살피는 편지</span>
+          <span style={{
+            fontFamily: 'var(--font-sans)', fontSize: 10.5,
+            color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap',
+          }}>{entry.date} {entry.time}</span>
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 13.5, lineHeight: 1.6,
+          color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.01em',
+          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+        }}>
+          {firstLine}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div onClick={onClick} style={REPLY_CARD_STYLE}>
       {/* 헤더 */}

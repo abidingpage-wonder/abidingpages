@@ -107,7 +107,7 @@ export async function GET() {
     // 편지 + 답장 조회
     const letters = await prisma.letter.findMany({
       where: { petId: dbUser.activePetId, userId: user.id },
-      include: { reply: { select: { id: true, content: true, generatedAt: true, visibleAt: true } } },
+      include: { reply: { select: { id: true, content: true, generatedAt: true, visibleAt: true, replyType: true } } },
       orderBy: { createdAt: 'asc' },
     })
     const now = new Date()
@@ -159,6 +159,7 @@ export async function GET() {
           date: fmtDate(letter.reply.generatedAt),
           time: fmtTime(letter.reply.generatedAt),
           content: letter.reply.content,
+          replyType: letter.reply.replyType,
           imageUrls: [],
         })
       }

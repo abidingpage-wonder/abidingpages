@@ -124,6 +124,8 @@ model Reply {
   userId      String    @map("user_id") @db.Uuid
   petId       String    @map("pet_id") @db.Uuid
   content     String
+  // 답장 유형: normal = 아이의 답장, crisis = 위기 안내 답장
+  replyType   String    @default("normal") @map("reply_type")
   isRead      Boolean   @default(false) @map("is_read")
   readAt      DateTime? @map("read_at") @db.Timestamptz
   generatedAt DateTime  @default(now()) @map("generated_at") @db.Timestamptz

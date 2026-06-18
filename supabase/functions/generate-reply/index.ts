@@ -68,6 +68,55 @@ async function logSafetyEvent(admin: any, e: {
   }
 }
 
+// ── 위기 안내 답장 (정적 문구 — LLM 자유생성 금지) ─────────────────────────
+// crisis 감지 시 '아이의 답장' 대신 이 안내를 저장. 답장이 안 오는 이유를 설명하고
+// 전문 상담(109/1577-0199)으로 연결한다. 즉시 노출(visible_at=now)해 지체 없이 전달.
+function buildCrisisReplyContent(ownerName: string, petName: string): string {
+  const o = ownerName || '보호자님'
+  return `${o}님,
+
+오늘 적어주신 글 안에서, 무겁게 가라앉은 마음이 느껴졌어요. 그래서 오늘은 ${petName}의 답장 대신, 이 편지를 먼저 띄워요.
+
+지금 느끼는 그 아픔은 ${o}님이 ${petName}${josa(petName, '을를')} 그만큼 깊이 사랑했다는 마음이기도 해요. 하지만 그 무게를 혼자 감당하지는 않으셨으면 해요.
+
+잠깐만, 곁에서 들어줄 사람에게 마음을 나눠보면 어떨까요. 전화 한 통이면 돼요.
+
+· 자살예방상담전화 109 (24시간)
+· 정신건강상담전화 1577-0199
+
+${petName}${josa(petName, '은는')} ${o}님이 평온해지기를 누구보다 바라고 있을 거예요. 마음이 조금 가벼워지면, 그때 ${petName}에게 다시 편지를 건네주세요. 그러면 ${petName}의 답장도 다시 도착할 거예요. 🌿`
+}
+
+// 위기 안내 답장 저장 + 편지를 crisis_held로 마킹.
+// crisis_held 편지는 여정 진행률·완료 판정에서 제외(letterStatus='normal'만 집계)되어
+// 키워드 crisis와 동일하게 동작 — 카드 비활성 안 됨, 같은 질문 재작성 가능.
+// letter_id unique 충돌(이미 답장 존재) 등 insert 실패는 무시.
+// deno-lint-ignore no-explicit-any
+async function insertCrisisReply(
+  admin: any, letterId: string, userId: string, petId: string, content: string,
+): Promise<string | null> {
+  // 편지를 crisis_held로 — LLM crisis는 /api/letters에서 normal로 저장됐을 수 있음
+  await admin.from('letters').update({ letter_status: 'crisis_held' }).eq('id', letterId)
+
+  const { data, error } = await admin
+    .from('replies')
+    .insert({
+      letter_id:  letterId,
+      user_id:    userId,
+      pet_id:     petId,
+      content,
+      reply_type: 'crisis',
+      visible_at: new Date().toISOString(),  // 즉시 노출 — 설명을 지체 없이
+    })
+    .select('id')
+    .single()
+  if (error) {
+    console.error('[generate-reply] crisis reply insert failed:', error)
+    return null
+  }
+  return data?.id ?? null
+}
+
 // ── 설정 테이블(SPECIES_VOICE/FAREWELL_LAYER/WEEK_CONFIG/REST_WEEK_GUIDE)은 config.ts로 분리 ──
 
 // ── 편지 유형 판별 ──────────────────────────────────────────────────────────
@@ -457,7 +506,10 @@ Deno.serve(async (req) => {
         letterId, userId: letter.user_id, petId: letter.pet_id,
         eventType: 'crisis_detected', detail: keywordCrisis.reason,
       })
-      return new Response(JSON.stringify({ status: 'crisis_detected', letterId }), {
+      const kp = letter.pets as { name: string; owner_nickname: string | null }
+      const replyId = await insertCrisisReply(adminClient, letterId, letter.user_id, letter.pet_id,
+        buildCrisisReplyContent(kp?.owner_nickname ?? '보호자님', kp?.name ?? '아이'))
+      return new Response(JSON.stringify({ status: 'crisis_detected', letterId, replyId }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -540,7 +592,9 @@ Deno.serve(async (req) => {
           eventType: 'crisis_detected',
           detail: `LLM riskLevel=crisis (emotion: ${plan.primaryEmotion})`,
         })
-        return new Response(JSON.stringify({ status: 'crisis_detected', letterId }), {
+        const replyId = await insertCrisisReply(adminClient, letterId, letter.user_id, letter.pet_id,
+          buildCrisisReplyContent(ownerName, petForPrompt.name))
+        return new Response(JSON.stringify({ status: 'crisis_detected', letterId, replyId }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }

@@ -19,6 +19,26 @@ async function findRecentDuplicate(petId: string, content: string, questionId: s
   })
 }
 
+// AI 답장 생성(generate-reply) 백그라운드 트리거.
+// crisis 편지도 호출 — Edge Function이 위기 안내 답장을 생성한다.
+function triggerGenerateReply(accessToken: string, letterId: string) {
+  after(async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-reply`, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey':        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({ letterId }),
+      })
+    } catch (e) {
+      console.error('[POST /api/letters] generate-reply trigger failed:', e)
+    }
+  })
+}
+
 // 편지의 week/day/stage 결정: questionId가 있으면 그 질문의 실제 주차 기준, 없으면(자유글) 현재 주차 기준
 async function resolveLetterLocation(
   questionId: string | null,
@@ -171,7 +191,9 @@ export async function POST(req: Request) {
           data: { letterId: letter.id, userId: user.id, petId, eventType: 'crisis_detected', detail: crisis.reason },
         })
       } catch (e) { console.error('[POST /api/letters] safety event log failed:', e) }
-      // crisis 편지는 여정 진행률 미반영 — 현재 상태 스냅샷으로 반환 (AI 답장 트리거도 생략)
+      // crisis 편지: 여정 진행률 미반영. 단, 위기 안내 답장은 생성(generate-reply가 처리).
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) triggerGenerateReply(session.access_token, letter.id)
       return NextResponse.json({ status: 'crisis_detected', ...await progressSnapshot(petId, currentWeek, letter.id) })
     }
 
@@ -179,24 +201,7 @@ export async function POST(req: Request) {
 
     // AI 답장 생성 — 응답 반환 후 백그라운드에서 트리거 (모달/페이지 이동과 무관하게 항상 실행)
     const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      const accessToken = session.access_token
-      after(async () => {
-        try {
-          await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-reply`, {
-            method:  'POST',
-            headers: {
-              'Content-Type':  'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'apikey':        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            },
-            body: JSON.stringify({ letterId: letter.id }),
-          })
-        } catch (e) {
-          console.error('[POST /api/letters] generate-reply trigger failed:', e)
-        }
-      })
-    }
+    if (session) triggerGenerateReply(session.access_token, letter.id)
 
     return NextResponse.json(progress)
 

@@ -27,6 +27,7 @@ interface ReplyData {
   id: string
   letterId: string
   content: string
+  replyType: 'normal' | 'crisis'
   petName: string
   petPhotoUrl: string | null
   ownerNickname: string
@@ -176,6 +177,67 @@ export default function ReplyPage() {
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8a6a45', fontSize: 13 }}>
           돌아가기
         </button>
+      </div>
+    )
+  }
+
+  // ── 위기 안내 답장 — '아이의 답장'과 다른 톤(딥 라벤더), 피드백 없음, 109 연결 ──
+  if (reply.replyType === 'crisis') {
+    return (
+      <div style={{ minHeight: '100dvh', background: '#2a223f', paddingBottom: 40 }}>
+        {/* 상단 바 */}
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 10,
+          display: 'flex', alignItems: 'center',
+          padding: '14px 16px 10px', background: '#2a223f',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px 4px 0', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M12 15L7 10L12 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>
+              마음을 살피는 편지
+            </div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+              {formatDate(reply.receivedAt)} · {formatDateTime(reply.receivedAt)}
+            </div>
+          </div>
+          <div style={{ width: 28 }} />
+        </div>
+
+        <div style={{ padding: '24px 22px 0' }}>
+          <div style={{ textAlign: 'center', fontSize: 30, marginBottom: 18 }}>🫂</div>
+          {/* 안내 본문 */}
+          <div style={{
+            fontFamily: 'var(--font-sans)', fontSize: 15, lineHeight: 1.95,
+            color: 'rgba(255,255,255,0.92)', whiteSpace: 'pre-wrap', wordBreak: 'keep-all',
+          }}>
+            {reply.content}
+          </div>
+
+          {/* 액션 */}
+          <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <a href="tel:109" style={{
+              width: '100%', padding: '15px 0', borderRadius: 999, textAlign: 'center',
+              background: 'linear-gradient(135deg, #faddca, #fbb489)',
+              color: '#2a1c44', textDecoration: 'none',
+              fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
+            }}>
+              109 전화 연결
+            </a>
+            <button onClick={() => router.push('/')} style={{
+              width: '100%', padding: '14px 0', borderRadius: 999,
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.22)',
+              color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
+              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
+            }}>
+              홈으로
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
