@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FullPageSpinner } from '@/components/ui/Spinner'
 
@@ -97,10 +98,12 @@ function StageCard({
           border: '1.5px solid rgba(188,164,214,0.53)',
           overflow: 'hidden', position: 'relative',
         }}>
-          <img
-            src={`/images/weeks/${n}w_v1.png`}
+          <Image
+            src={`/images/weeks/${n}w_v1.webp`}
             alt={`${n}주차`}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            fill
+            sizes="52px"
+            style={{ objectFit: 'cover' }}
           />
         </div>
 

@@ -99,7 +99,7 @@ function SentContent() {
         maxWidth:  200,
       }}>
         <Image
-          src="/letter-sent.svg"
+          src="/letter-sent.webp"
           alt="편지 봉투"
           width={200}
           height={200}

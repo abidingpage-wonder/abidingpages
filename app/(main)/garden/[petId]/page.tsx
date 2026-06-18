@@ -195,9 +195,7 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
       {/* ── HERO (garden 메인과 동일 구조) ── */}
       <div style={{ position: 'relative', height: 440, overflow: 'hidden', marginTop: -72 }}>
         {/* 배경 이미지 */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/garden-night.png" alt="" style={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%',
+        <Image src="/garden-night.webp" alt="" fill priority sizes="100vw" style={{
           objectFit: 'cover', objectPosition: 'top center',
         }}/>
         {/* 어두운 오버레이 */}

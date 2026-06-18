@@ -486,7 +486,7 @@ function StatusCardA({ petName, letterId, replyType = 'normal' }: {
 
         <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/letter-lavender.svg" alt="편지+라벤더" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
+          <img src="/letter-lavender.webp" alt="편지+라벤더" decoding="async" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
         </div>
 
         <CardBtn bg="var(--lav-700)">편지 열어보기</CardBtn>
@@ -519,7 +519,7 @@ function StatusCardB({ petName, week, day }: {
 
         <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/book.svg" alt="책" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
+          <img src="/book.webp" alt="책" decoding="async" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
         </div>
 
         <CardBtn bg="#7e63b8">편지 쓰기</CardBtn>
@@ -556,7 +556,7 @@ function StatusCardC({ petName }: { petName: string; sentAt: string }) {
 
       <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/send-letter.svg" alt={`${petName} 편지`} style={{ width: 185, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
+        <img src="/send-letter.webp" alt={`${petName} 편지`} decoding="async" style={{ width: 185, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
       </div>
 
       <a href="/garden" style={{
