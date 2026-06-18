@@ -9,7 +9,7 @@ import LoginTracker from '@/components/LoginTracker'
 // ── 개발용 목업 데이터 ─────────────────────────────────────────────────
 // DEV_BYPASS_AUTH=true 일 때 DB 없이도 화면 확인 가능
 // 'A' | 'B' | 'C' 로 바꾸면 각 상태 UI 확인 가능
-const DEV_STATUS: HomeStatusResponse['status'] = 'B'
+const DEV_STATUS: HomeStatusResponse['status'] = 'A'
 
 const DEV_MOCK: HomeStatusResponse = {
   status: DEV_STATUS,
@@ -83,8 +83,13 @@ async function getHomeStatus(): Promise<HomeStatusResponse | null> {
       diedAt: pet.diedAt.toISOString().split('T')[0],
     }
 
+    const now = new Date()
+    // A: 노출 시각 도래한(visibleAt null=레거시 즉시노출, 또는 <=now) 안 읽은 답장만
     const unreadReply = await prisma.reply.findFirst({
-      where: { petId: pet.id, isRead: false },
+      where: {
+        petId: pet.id, isRead: false,
+        OR: [{ visibleAt: null }, { visibleAt: { lte: now } }],
+      },
       orderBy: { generatedAt: 'desc' },
       select: { id: true, letterId: true, content: true, generatedAt: true },
     })
@@ -99,9 +104,13 @@ async function getHomeStatus(): Promise<HomeStatusResponse | null> {
     const todayLetter = await prisma.letter.findFirst({
       where: { petId: pet.id, createdAt: { gte: start, lte: end } },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, createdAt: true, reply: { select: { id: true } } },
+      select: { id: true, createdAt: true, reply: { select: { id: true, visibleAt: true } } },
     })
-    if (todayLetter && !todayLetter.reply) {
+    // C: 오늘 편지를 썼고, 답장이 없거나 아직 노출 시각 전(=대기 중)
+    const replyPending = todayLetter?.reply
+      ? !!(todayLetter.reply.visibleAt && todayLetter.reply.visibleAt > now)
+      : true
+    if (todayLetter && replyPending) {
       return { status: 'C', pet: petBase, journey: journeyData, dayCount,
         todayLetter: { letterId: todayLetter.id, sentAt: todayLetter.createdAt.toISOString() } }
     }

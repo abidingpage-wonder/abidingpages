@@ -43,6 +43,7 @@ export default function ReplyPage() {
 
   const [reply, setReply]     = useState<ReplyData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pending, setPending] = useState(false)   // 답장 생성됐으나 노출 시각 전
 
   // 피드백 상태
   const [hasFeedback, setHasFeedback]   = useState(false)
@@ -56,8 +57,12 @@ export default function ReplyPage() {
 
   useEffect(() => {
     fetch(`/api/letters/${letterId}/reply`)
-      .then(r => r.json())
-      .then(data => { setReply(data); setHasFeedback(data.hasFeedback); setLoading(false) })
+      .then(async r => {
+        if (!r.ok) { setReply(null); setLoading(false); return }   // 404/403 등
+        const data = await r.json()
+        if (data.pending) { setPending(true); setLoading(false); return }  // 노출 시각 전
+        setReply(data); setHasFeedback(data.hasFeedback); setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [letterId])
 
@@ -130,6 +135,31 @@ export default function ReplyPage() {
         background: '#f3eef6',
       }}>
         <Spinner size={32} label="답장을 불러오는 중..." />
+      </div>
+    )
+  }
+
+  if (pending) {
+    return (
+      <div style={{
+        minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 14,
+        background: '#f3eef6', padding: '0 32px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 30 }}>🌿</div>
+        <div style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 600, color: 'var(--lav-800)', lineHeight: 1.5 }}>
+          답장이 아직 준비 중이에요
+        </div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--lav-600)', lineHeight: 1.7 }}>
+          아이가 마음을 담아 편지를 쓰고 있어요.<br/>준비되면 알림으로 알려드릴게요.
+        </div>
+        <button onClick={() => router.push('/')} style={{
+          marginTop: 8, padding: '12px 28px', borderRadius: 999,
+          background: 'var(--lav-700)', color: '#fff', border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+        }}>
+          홈으로
+        </button>
       </div>
     )
   }

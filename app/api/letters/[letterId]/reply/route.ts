@@ -37,9 +37,9 @@ export async function GET(
 
     if (!reply) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     if (reply.userId !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    // 노출 시각 도래 전에는 미존재 처리 (visibleAt null = 레거시, 즉시 노출)
+    // 노출 시각 도래 전 — 아직 준비 중 (visibleAt null = 레거시, 즉시 노출)
     if (reply.visibleAt && reply.visibleAt > new Date()) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ pending: true, visibleAt: reply.visibleAt.toISOString() }, { status: 200 })
     }
 
     const [pet, feedback] = await Promise.all([
