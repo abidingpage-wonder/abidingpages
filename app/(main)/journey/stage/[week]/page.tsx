@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useParams } from 'next/navigation'
 
 // ── 7주차 메타데이터 ────────────────────────────────────────────────
@@ -98,11 +99,13 @@ export default function StageDetailPage() {
         {/* ── 주차 이미지 ── */}
         <div style={{ padding: '0 16px', marginBottom: 0 }}>
           <div style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', userSelect: 'none' }}>
-            <div style={{ width: '100%', aspectRatio: '1/1' }}>
-              <img
-                src={`/images/weeks/${week}w_v1.png`}
+            <div style={{ width: '100%', aspectRatio: '1/1', position: 'relative' }}>
+              <Image
+                src={`/images/weeks/${week}w_v1.webp`}
                 alt={`${week}주차`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                fill
+                sizes="(max-width: 480px) 100vw, 480px"
+                style={{ objectFit: 'cover', objectPosition: 'center' }}
               />
             </div>
           </div>

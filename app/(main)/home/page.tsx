@@ -170,8 +170,20 @@ export default async function HomePage({
 
   const sp = await searchParams
 
+  // 상태별 메인 카드 일러스트(=LCP 요소)를 preload — fetchpriority high로 조기 발견
+  // (위기 안내 A카드는 이미지가 아닌 이모지라 제외)
+  const lcpImage =
+    status === 'A' && homeData.unreadReply?.replyType !== 'crisis'
+      ? '/letter-lavender.webp'
+      : status === 'B'
+        ? '/book.webp'
+        : status === 'C'
+          ? '/send-letter.webp'
+          : null
+
   return (
     <div style={{ paddingBottom: 8 }}>
+      {lcpImage && <link rel="preload" as="image" href={lcpImage} fetchPriority="high" />}
       <LoginTracker provider={sp._lp} isNew={sp._ln} />
       <InstallPromptSheet />
       {/* [BETA] 베타 테스트 배너 — TODO: href를 카카오 채널 링크로 교체 */}
@@ -486,7 +498,7 @@ function StatusCardA({ petName, letterId, replyType = 'normal' }: {
 
         <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/letter-lavender.svg" alt="편지+라벤더" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
+          <img src="/letter-lavender.webp" alt="편지+라벤더" fetchPriority="high" decoding="async" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
         </div>
 
         <CardBtn bg="var(--lav-700)">편지 열어보기</CardBtn>
@@ -519,7 +531,7 @@ function StatusCardB({ petName, week, day }: {
 
         <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/book.svg" alt="책" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
+          <img src="/book.webp" alt="책" fetchPriority="high" decoding="async" style={{ width: 210, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
         </div>
 
         <CardBtn bg="#7e63b8">편지 쓰기</CardBtn>
@@ -556,7 +568,7 @@ function StatusCardC({ petName }: { petName: string; sentAt: string }) {
 
       <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/send-letter.svg" alt={`${petName} 편지`} style={{ width: 185, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
+        <img src="/send-letter.webp" alt={`${petName} 편지`} fetchPriority="high" decoding="async" style={{ width: 185, height: 'auto', maxHeight: 175, objectFit: 'contain' }} />
       </div>
 
       <a href="/garden" style={{

@@ -197,9 +197,9 @@ export default function LetterPage() {
       {letter.imageUrls.length > 0 ? (
         /* 사진 있을 때: 두 파일 따로 (모두 RGBA 투명 배경) */
         <div style={{ padding: '0 16px' }}>
-          {/* 1. 사진 프레임 — letter-lav-photo-bg 2.png (889×529, 56.6% ratio → 195.27px) */}
+          {/* 1. 사진 프레임 — letter-lav-photo-bg 2.webp (889×529, 56.6% ratio → 195.27px) */}
           <div style={{ position: 'relative', width: '100%', paddingBottom: '59.5%', marginBottom: 16, filter: 'drop-shadow(0 4px 12px rgba(86,52,140,0.15))' }}>
-            <Image src="/letter-lav-photo-bg 2.png" alt="사진 프레임" fill
+            <Image src="/letter-lav-photo-bg 2.webp" alt="사진 프레임" fill
               style={{ objectFit: 'fill', zIndex: 0 }} priority />
             {/* 폴라로이드 — 프레임 내부 */}
             <div style={{
@@ -214,9 +214,9 @@ export default function LetterPage() {
             </div>
           </div>
 
-          {/* 2. 편지지+봉투 — letter-lav-photo-bg 3.png (890×850, 95.5% ratio) */}
+          {/* 2. 편지지+봉투 — letter-lav-photo-bg 3.webp (890×850, 95.5% ratio) */}
           <div style={{ position: 'relative', width: '100%', paddingBottom: '95.5%', filter: 'drop-shadow(0 4px 12px rgba(86,52,140,0.15))' }}>
-            <Image src="/letter-lav-photo-bg 3.png" alt="편지 봉투" fill
+            <Image src="/letter-lav-photo-bg 3.webp" alt="편지 봉투" fill
               style={{ objectFit: 'fill', zIndex: 0 }} />
             {/* 텍스트 — 편지지 흰 영역 (~8%~60%) */}
             <div className="letter-text-scroll" style={{
@@ -238,10 +238,10 @@ export default function LetterPage() {
           </div>
         </div>
       ) : (
-        /* 사진 없을 때: 봉투만 — letter-lav-photo-bg 3.png (RGBA 투명) */
+        /* 사진 없을 때: 봉투만 — letter-lav-photo-bg 3.webp (RGBA 투명) */
         <div style={{ padding: '16px 16px 0' }}>
         <div style={{ position: 'relative', width: '100%', paddingBottom: '95.5%', filter: 'drop-shadow(0 4px 12px rgba(86,52,140,0.15))' }}>
-          <Image src="/letter-lav-photo-bg 3.png" alt="편지 봉투" fill
+          <Image src="/letter-lav-photo-bg 3.webp" alt="편지 봉투" fill
             style={{ objectFit: 'fill', zIndex: 0 }} priority />
           <div className="letter-text-scroll" style={{
             position: 'absolute', top: '8%', left: '10%', right: '10%', height: '50%',

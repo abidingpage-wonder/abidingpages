@@ -430,8 +430,7 @@ export default function GardenPage() {
 
         {/* HERO — 방사형 전광판 (TopBar 높이만큼 위로 올려 full-bleed) */}
         <div ref={heroRef} style={{ position: 'relative', height: 440, overflow: 'hidden', marginTop: -72 }}>
-          <img src="/garden-night.png" alt="" style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
+          <Image src="/garden-night.webp" alt="" fill priority sizes="100vw" style={{
             objectFit: 'cover', objectPosition: 'top center',
           }} />
           <div style={{

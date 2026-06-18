@@ -39,18 +39,46 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full">
       <head>
-        {/* Pretendard */}
+        {/* 폰트 출처 사전 연결 — DNS/TLS 핸드셰이크 선점 */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/*
+          폰트 CSS를 렌더 차단(render-blocking)에서 제외.
+          media="print"로 로드 → 초기 페인트를 막지 않고, 로드 완료 시 아래 스크립트가 media='all'로 전환.
+          한글 글리프(Pretendard·Nanum)는 각 CSS의 unicode-range 서브셋이 그대로 적용 → 글자 깨짐 없음.
+          전환 전에는 globals.css 폴백 체인(Noto Sans KR, system-ui 등)으로 즉시 표시(FOUT).
+        */}
+        {/* Pretendard (본문 sans) */}
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+          media="print"
+          data-lazy-style=""
         />
         {/* Google Fonts: Allura, Nanum Myeongjo, Nanum Pen Script, Caveat */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Allura&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Caveat:wght@400;600&display=swap"
+          media="print"
+          data-lazy-style=""
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var l=document.querySelectorAll('link[data-lazy-style]');for(var i=0;i<l.length;i++){l[i].addEventListener('load',function(){this.media='all'});}})();",
+          }}
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+          />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Allura&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Caveat:wght@400;600&display=swap"
+          />
+        </noscript>
       </head>
       <body className="min-h-full flex flex-col">
         <SentryInit />

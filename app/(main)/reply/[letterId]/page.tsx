@@ -299,7 +299,7 @@ export default function ReplyPage() {
       {/* ── 편지 이미지 ── */}
       <div style={{ position: 'relative', width: '100%', paddingBottom: '150%' }}>
         <Image
-          src="/letter-cream-bg.png" alt="편지 봉투" fill
+          src="/letter-cream-bg.webp" alt="편지 봉투" fill
           style={{ objectFit: 'fill', zIndex: 0, filter: 'drop-shadow(4px 6px 12px rgba(120,90,50,0.18))' }}
           priority
         />
