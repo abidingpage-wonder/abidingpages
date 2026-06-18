@@ -527,7 +527,7 @@ const REPLY_CARD_STYLE: React.CSSProperties = {
   border: '0.5px solid rgba(210,175,120,0.2)',
 }
 
-function LetterCardBody({ entry, onClick }: { entry: TimelineEntry; onClick: () => void }) {
+function LetterCardBody({ entry, onClick, priority = false }: { entry: TimelineEntry; onClick: () => void; priority?: boolean }) {
   const firstLine = entry.content.split('\n')[0]
   return (
     <div onClick={onClick} style={LETTER_CARD_STYLE}>
@@ -571,6 +571,7 @@ function LetterCardBody({ entry, onClick }: { entry: TimelineEntry; onClick: () 
           <Image
             src={entry.imageUrls[0]} alt=""
             width={400} height={140}
+            priority={priority}
             style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }}
           />
         </div>
@@ -731,7 +732,7 @@ function TimelineTab({ petName, weeks, isPro }: { petName: string; weeks: Timeli
 
           {/* ── 편지 카드 (row 1, col 2) ── */}
           <div style={{ minWidth: 0 }}>
-            <LetterCardBody entry={pair.letter} onClick={() => router.push(`/letter/${pair.letter.letterId}`)}/>
+            <LetterCardBody entry={pair.letter} priority={pi === 0} onClick={() => router.push(`/letter/${pair.letter.letterId}`)}/>
           </div>
 
           {/* ── 답장 아이콘 (row 2, col 1) ── */}
