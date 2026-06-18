@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { prisma } from '@/lib/prisma'
+import { sendReplyArrivedEmail, emailEnabled } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,14 +34,20 @@ export async function GET(req: Request) {
     const canPush      = !!vapidPublic && !!vapidPrivate
     if (canPush) webpush.setVapidDetails(vapidEmail, vapidPublic!, vapidPrivate!)
 
-    const [subscriptions, pets] = await Promise.all([
+    const userIds = [...new Set(due.map(r => r.userId))]
+    const [subscriptions, pets, users] = await Promise.all([
       prisma.pushSubscription.findMany({
-        where: { userId: { in: [...new Set(due.map(r => r.userId))] } },
+        where: { userId: { in: userIds } },
         select: { id: true, userId: true, endpoint: true, p256dh: true, auth: true },
       }),
       prisma.pet.findMany({
         where: { id: { in: [...new Set(due.map(r => r.petId))] } },
         select: { id: true, name: true },
+      }),
+      // 이메일 백업용 — 푸시 구독이 없거나 실패한 유저에게 메일 발송
+      prisma.user.findMany({
+        where: { id: { in: userIds }, deletedAt: null },
+        select: { id: true, email: true },
       }),
     ])
     const subsByUser = new Map<string, typeof subscriptions>()
@@ -50,13 +57,18 @@ export async function GET(req: Request) {
       subsByUser.set(sub.userId, list)
     }
     const petNameById = new Map(pets.map(p => [p.id, p.name]))
+    const emailByUser = new Map(users.map(u => [u.id, u.email]))
 
     let pushed = 0
+    let mailed = 0
     for (const reply of due) {
       const subs = subsByUser.get(reply.userId) ?? []
+      const petName = petNameById.get(reply.petId) ?? '아이'
+      let pushOk = false
+
       if (canPush && subs.length > 0) {
         const payload = JSON.stringify({
-          title: `${petNameById.get(reply.petId) ?? '아이'}의 편지가 도착했어요 🌿`,
+          title: `${petName}의 편지가 도착했어요 🌿`,
           body:  '지금 확인해보세요',
           url:   `/reply/${reply.letterId}`,
         })
@@ -78,17 +90,27 @@ export async function GET(req: Request) {
         if (expiredIds.length > 0) {
           await prisma.pushSubscription.deleteMany({ where: { id: { in: expiredIds } } })
         }
-        if (results.some(r => r.status === 'fulfilled')) pushed++
+        pushOk = results.some(r => r.status === 'fulfilled')
+        if (pushOk) pushed++
+      }
+
+      // 백업: 푸시가 안 갔고(미구독 또는 전부 실패) 이메일이 있으면 메일 발송
+      if (!pushOk && emailEnabled()) {
+        const email = emailByUser.get(reply.userId)
+        if (email) {
+          const ok = await sendReplyArrivedEmail(email, petName, reply.letterId)
+          if (ok) mailed++
+        }
       }
     }
 
-    // 푸시 성공 여부와 무관하게 발송 처리 (구독 없는 유저도 답장은 노출됨, 재시도 무한루프 방지)
+    // 푸시/메일 성공 여부와 무관하게 발송 처리 (재시도 무한루프 방지)
     await prisma.reply.updateMany({
       where: { id: { in: due.map(r => r.id) } },
       data: { notifiedAt: now },
     })
 
-    return NextResponse.json({ sent: due.length, pushed })
+    return NextResponse.json({ sent: due.length, pushed, mailed })
   } catch (err) {
     console.error('[GET /api/cron/send-reply-notifications]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

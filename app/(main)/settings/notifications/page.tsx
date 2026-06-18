@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sunrise, Sun, Moon } from 'lucide-react'
 import { usePushSubscription } from '@/hooks/usePushSubscription'
+import { usePwaInstall } from '@/hooks/usePwaInstall'
 
 // ─── 상수 ──────────────────────────────────────────────────────────────────
 const QUICK_PRESETS = [
@@ -133,6 +134,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export default function NotificationsPage() {
   const router = useRouter()
   const { permission, subscribed, loading, subscribe, unsubscribe } = usePushSubscription()
+  const { isStandalone, canPrompt, promptInstall, ready: pwaReady } = usePwaInstall()
 
   // selectedKey: 'morning' | 'noon' | 'night' | 'custom' | null
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -257,6 +259,65 @@ export default function NotificationsPage() {
         }}>
           확인
         </button>
+      </div>
+    )
+  }
+
+  // ── 설치 게이트 — 미설치 상태면 알림 설정을 잠그고 설치부터 유도 ──
+  // (알림은 홈 화면에 설치된 앱에서만 도착함. iOS는 설치 필수)
+  if (pwaReady && !isStandalone) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--bg-app)' }}>
+        {/* 헤더 */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px 10px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-app)',
+        }}>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', display: 'flex' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="var(--lav-700)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600, color: '#6b6080' }}>
+            알림 설정
+          </span>
+          <div style={{ width: 38 }} />
+        </div>
+
+        <div style={{ padding: '12px 24px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ fontSize: 40, margin: '24px 0 16px' }}>📲</div>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 19, fontWeight: 600, color: 'var(--lav-800)', lineHeight: 1.5 }}>
+            먼저 홈 화면에<br />설치해 주세요
+          </div>
+          <div style={{ marginTop: 12, fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--ink-500)', lineHeight: 1.7 }}>
+            아이의 답장 알림은 <strong style={{ color: 'var(--lav-700)' }}>설치된 앱</strong>에서만<br />
+            받을 수 있어요. 설치 후 알림을 설정해 주세요.
+          </div>
+
+          <div style={{ width: '100%', marginTop: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={() => { if (canPrompt) promptInstall(); else router.push('/settings/install') }}
+              style={{
+                width: '100%', padding: '16px', borderRadius: 999, border: 'none',
+                background: 'var(--lav-600)', color: '#fff', cursor: 'pointer',
+                fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 700,
+                boxShadow: '0 6px 18px rgba(86,52,140,0.25)',
+              }}
+            >
+              {canPrompt ? '홈 화면에 추가' : '설치 방법 보기'}
+            </button>
+            {canPrompt && (
+              <button onClick={() => router.push('/settings/install')} style={{
+                width: '100%', padding: '13px', borderRadius: 999,
+                background: 'transparent', border: '1px solid rgba(166,133,199,0.35)',
+                color: 'var(--lav-600)', cursor: 'pointer',
+                fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
+              }}>
+                설치 방법 자세히 보기
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     )
   }

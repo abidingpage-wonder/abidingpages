@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import type { HomeStatusResponse } from '@/app/api/home/status/route'
 import { ConstellationMini } from '@/components/ui/ConstellationMini'
 import LoginTracker from '@/components/LoginTracker'
+import InstallPromptSheet from '@/components/InstallPromptSheet'
 
 // ── 개발용 목업 데이터 ─────────────────────────────────────────────────
 // DEV_BYPASS_AUTH=true 일 때 DB 없이도 화면 확인 가능
@@ -172,6 +173,7 @@ export default async function HomePage({
   return (
     <div style={{ paddingBottom: 8 }}>
       <LoginTracker provider={sp._lp} isNew={sp._ln} />
+      <InstallPromptSheet />
       {/* [BETA] 베타 테스트 배너 — TODO: href를 카카오 채널 링크로 교체 */}
       <div style={{ padding: '12px 18px 0' }}>
         <a href="#" style={{ textDecoration: 'none' }}>
