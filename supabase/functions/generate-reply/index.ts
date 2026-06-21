@@ -2,7 +2,7 @@
 // Deno runtime (no Node.js APIs)
 import { createClient }  from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic          from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
-import { SPECIES_VOICE, FAREWELL_LAYER, WEEK_CONFIG, REST_WEEK_GUIDE } from './config.ts'
+import { SPECIES_VOICE, FAREWELL_LAYER, WEEK_CONFIG, REST_WEEK_GUIDE, ONGOING_CONFIG } from './config.ts'
 import { validateReply }              from './ruleValidator.ts'
 import { llmValidateContext }         from './contextValidator.ts'
 import { selectFallback }             from './fallback.ts'
@@ -252,12 +252,15 @@ function buildSystemPrompt(
   pastLetters: PastLetter[],
   memoryProfile?: MemoryProfile | null,
   plan?: PlanResult,
+  ongoing = false,       // 여정 이후(49일 후) 일상 동행 모드
+  isFreeWrite = false,   // 자유쓰기(질문 없는 normal)
 ): string {
   const ownerName      = pet.ownerNickname ?? '보호자님'
   const petSignature   = pet.name + (hasBatchim(pet.name) ? '이' : '') + '가'
   const voice          = SPECIES_VOICE[pet.species] ?? SPECIES_VOICE.other
   const farewell       = FAREWELL_LAYER[pet.farewellType ?? 'other'] ?? FAREWELL_LAYER.other
-  const weekCfg        = WEEK_CONFIG[week] ?? WEEK_CONFIG[1]
+  // 여정 이후엔 작별 톤의 7주차 대신 일상 동행 설정 사용
+  const weekCfg        = ongoing ? ONGOING_CONFIG : (WEEK_CONFIG[week] ?? WEEK_CONFIG[1])
   const personalityHint = pet.personalityTags.length > 0 ? pet.personalityTags.join(', ') : '특별한 성격 태그 없음'
   const favoritesHint   = pet.favoriteThings.length > 0  ? pet.favoriteThings.join(', ')  : '특별한 기록 없음'
   const firstWordHint   = pet.firstWord ? `보호자가 기억하는 한마디: "${pet.firstWord}"` : ''
@@ -350,11 +353,14 @@ ${letterType === 'normal' ? buildMemoryBlock(false) ? `\n${buildMemoryBlock(fals
 
 ${farewell}
 
-[이번 주 테마: ${weekCfg.keyword}]
+[${ongoing ? '모드' : '이번 주 테마'}: ${weekCfg.keyword}]
 존재 방식: ${weekCfg.existenceMode}
 톤앤매너: ${weekCfg.toneGuide}
-이번 주 금지: ${weekCfg.forbidden}
+${ongoing ? '금지' : '이번 주 금지'}: ${weekCfg.forbidden}
 방향: ${weekCfg.direction}
+${isFreeWrite && !ongoing ? `
+[자유 편지 — 일상 동행]
+오늘 보호자가 정해진 질문 없이 자유롭게 남긴 이야기야. 이번 주 톤은 유지하되, 그날의 마음에 곁에서 함께 반응하는 일상 동행의 다정함을 더할 것.` : ''}
 
 ${letterTypeSection}
 
@@ -566,10 +572,11 @@ Deno.serve(async (req) => {
       pastLetters = (past ?? []) as PastLetter[]
     }
 
-    // 일반 답장 시 직전 답장 3개에서 핵심 문구만 추출 (전문 미주입 — 토큰 절약)
+    // 직전 답장 3개 — 폴백 중복 방지/검증 반복검사용으로 모든 유형에서 조회.
+    // 프롬프트 주입(buildRecentPatternsSection)은 일반 답장에서만.
     let recentReplies = ''
     let recentReplyContents: string[] = []
-    if (letterType === 'normal') {
+    {
       const { data: recent } = await adminClient
         .from('replies')
         .select('content')
@@ -578,6 +585,8 @@ Deno.serve(async (req) => {
         .limit(3)
 
       recentReplyContents = (recent ?? []).map(r => (r as { content: string }).content)
+    }
+    if (letterType === 'normal') {
       recentReplies = buildRecentPatternsSection(recentReplyContents)
     }
 
@@ -592,6 +601,26 @@ Deno.serve(async (req) => {
     }
 
     const ownerName = petForPrompt.ownerNickname ?? '보호자님'
+
+    // ── 자유쓰기(질문 없는 normal) / 여정 이후(ongoing) 모드 판별 ──
+    // ongoing = 자유쓰기 + 7주차 + 7주차 비쉼표 완료수 ≥ 3 (WEEK_UNLOCK_THRESHOLD)
+    const isFreeWrite = letterType === 'normal' && !letter.questions
+    let ongoing = false
+    if (isFreeWrite && week === 7) {
+      const [{ data: w7letters }, { data: w7restQs }] = await Promise.all([
+        adminClient.from('letters').select('question_id')
+          .eq('pet_id', letter.pet_id).eq('week', 7).eq('letter_status', 'normal').not('question_id', 'is', null),
+        adminClient.from('questions').select('id').eq('week', 7).eq('is_rest', true),
+      ])
+      const restSet = new Set((w7restQs ?? []).map((q: { id: string }) => q.id))
+      const w7NonRest = new Set(
+        (w7letters ?? [])
+          .map((l: { question_id: string }) => l.question_id)
+          .filter((id: string) => !restSet.has(id)),
+      ).size
+      ongoing = w7NonRest >= 3
+      console.log('[generate-reply] ongoing mode:', ongoing, '| week7 non-rest count:', w7NonRest)
+    }
 
     // Anthropic 클라이언트
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
@@ -634,12 +663,13 @@ Deno.serve(async (req) => {
     }
 
     const maxTokens  = letterType === 'long' ? 1500 : 700
-    const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters, memoryProfile, plan)
+    const system     = buildSystemPrompt(petForPrompt, week, isRest, letterType, pastLetters, memoryProfile, plan, ongoing, isFreeWrite)
     const userPrompt = buildUserPrompt(letter.content, ownerName, letter.emotion_tag, isRest, letterType, recentReplies, plan?.mustAddress ?? [])
 
     const generateOnce = async (): Promise<string> => {
       const message = await anthropic.messages.create({
-        model:       'claude-haiku-4-5',
+        // 답장 생성은 Sonnet(설교·평가조↓, 공감 뉘앙스↑). 분류/검증은 haiku 유지(비용 절충).
+        model:       'claude-sonnet-4-6',
         max_tokens:  maxTokens,
         system,
         tools:       [WRITE_REPLY_TOOL],
@@ -691,7 +721,7 @@ Deno.serve(async (req) => {
           eventType: 'fallback_used',
           detail: `${vResult.reason} | snippet: ${vResult.detail.slice(0, 120)}`,
         })
-        content = selectFallback(petForPrompt.farewellType, ownerName, petForPrompt.name)
+        content = selectFallback(petForPrompt.farewellType, ownerName, petForPrompt.name, recentReplyContents)
       }
     }
 
