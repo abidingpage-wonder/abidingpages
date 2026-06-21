@@ -48,9 +48,11 @@ const CHECK_TOOL: Anthropic.Tool = {
       preachyTone: {
         type: 'boolean',
         description: [
-          '"슬픔은 시간이 지나면 나아져", "이겨내야 해", "앞으로 나아가야 해" 등',
-          '보호자에게 교훈·조언·방향을 제시하는 톤이 있으면 true.',
-          '위로와 공감은 false. 조언·방향 제시가 있어야 true.',
+          '보호자에게 행동·방향을 지시하거나 교훈을 주는 표현이 있을 때만 true.',
+          '예: "이겨내야 해", "앞으로 나아가야 해", "슬픔은 시간이 지나면 나아져", "~하면 돼", "~해야 해".',
+          '반대로 따뜻한 인정·공감·정서적 칭찬은 지시가 아니므로 false:',
+          '예: "잘 견뎌줘서 고마워", "네 마음 정말 단단해", "그 마음 아름다워", "충분히 그래도 돼", "울어도 괜찮아".',
+          '핵심: 지시/명령/교훈이 있어야 true. 단순 위로·공감·칭찬은 false.',
         ].join(' '),
       },
       failDetail: {
@@ -98,7 +100,7 @@ export async function llmValidateContext(
       : '- prematureReassurance: 답장에 안심 표현이 없으므로 false로 설정.',
     '- forcedAssociation: 편지에 없는 내용을 단어 연상으로 억지 연결했으면 true.',
     '- speciesMismatch: 편지 맥락과 무관하게 종 특성을 억지 삽입했으면 true.',
-    '- preachyTone: 보호자에게 교훈·조언·방향 제시 톤이 있으면 true. 위로·공감만이면 false.',
+    '- preachyTone: 보호자에게 행동·방향을 지시하거나 교훈을 주면("이겨내야 해", "~해야 해", "시간이 지나면 나아져") true. 따뜻한 인정·공감·정서적 칭찬("잘 견뎌줘서 고마워", "그 마음 아름다워", "충분히 그래도 돼")은 false.',
     '모두 해당 없으면 전부 false, failDetail은 빈 문자열.',
   ].join('\n')
 
