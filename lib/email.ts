@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 // RESEND_API_KEY 미설정 시 조용히 비활성(개발/미구성 환경 보호).
 const apiKey = process.env.RESEND_API_KEY
 const from   = process.env.RESEND_FROM ?? 'Abiding <noreply@abidingpages.app>'
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://abidingpages.com'
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://abidingpages.app'
 
 const resend = apiKey ? new Resend(apiKey) : null
 
