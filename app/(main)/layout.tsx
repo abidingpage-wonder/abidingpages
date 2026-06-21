@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import TopBar from '@/components/layout/TopBar'
 import BottomNav from '@/components/layout/BottomNav'
+import PushAutoHeal from '@/components/PushAutoHeal'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   // 기본값
@@ -55,6 +56,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         position: 'relative',
       }}
     >
+      <PushAutoHeal />
       <TopBar petName={petName} dayCount={dayCount} />
 
       {/* 콘텐츠 영역: 상단 헤더(64px) + 하단 네비(80px) 여백 */}

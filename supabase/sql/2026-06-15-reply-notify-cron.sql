@@ -22,7 +22,7 @@ create extension if not exists pg_net;
 --    URL 은 비밀은 아니지만 함수에서 한곳으로 읽기 위해 같이 보관.
 do $$
 declare
-  v_url    text := 'https://abidingpages.com/api/cron/send-reply-notifications';
+  v_url    text := 'https://abidingpages.app/api/cron/send-reply-notifications';
   v_secret text := 'REPLACE_WITH_CRON_SECRET';  -- ← Vercel CRON_SECRET 와 동일 값
   v_id     uuid;
 begin
