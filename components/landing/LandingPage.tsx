@@ -2,8 +2,9 @@
 // 디자인 원본: abiding-design-v2/project/{landing-v2,landing-v2-app,landing-1,abiding-shared}.jsx
 // 서버 컴포넌트(인터랙션은 CSS 애니메이션 + <Link> 네비게이션뿐). CTA는 기존 카카오 로그인 진입점(/login)으로 연결.
 
-import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
+import LandingAnalytics from './LandingAnalytics'
+import LandingCtaLink from './LandingCtaLink'
 
 // VOICES(후기) 섹션 — 베타 이후 공개 예정. 그 전까지 숨김.
 const SHOW_VOICES = false
@@ -149,21 +150,21 @@ function PrimaryCTA({ children, kakao, large }: { children: ReactNode; kakao?: b
   const sizing: CSSProperties = { padding: large ? '17px 36px' : '14px 28px', fontSize: large ? 16 : 14.5 }
   if (kakao) {
     return (
-      <Link href={APP_LINK} style={{ ...ctaBase, ...sizing, background: '#FEE500', color: '#3c1e1e', boxShadow: '0 8px 24px rgba(254,229,0,0.35)' }}>
+      <LandingCtaLink href={APP_LINK} location="final_kakao" style={{ ...ctaBase, ...sizing, background: '#FEE500', color: '#3c1e1e', boxShadow: '0 8px 24px rgba(254,229,0,0.35)' }}>
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
           <path d="M12 4C7 4 3 7.2 3 11.1c0 2.5 1.7 4.7 4.2 6L6.4 20c-.1.4.3.7.6.5l3.3-2.2c.5.06 1.1.1 1.7.1 5 0 9-3.2 9-7.1S17 4 12 4z" fill="#3c1e1e" />
         </svg>
         {children}
-      </Link>
+      </LandingCtaLink>
     )
   }
   return (
-    <Link href={APP_LINK} style={{ ...ctaBase, ...sizing, background: 'var(--lav-600)', color: '#fff', boxShadow: '0 8px 24px rgba(86,52,140,0.30)' }}>
+    <LandingCtaLink href={APP_LINK} location="hero" style={{ ...ctaBase, ...sizing, background: 'var(--lav-600)', color: '#fff', boxShadow: '0 8px 24px rgba(86,52,140,0.30)' }}>
       {children}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M5 12h13M13 6l6 6-6 6" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </Link>
+    </LandingCtaLink>
   )
 }
 
@@ -318,10 +319,10 @@ function LandingNavV2() {
           <a href="#journey" style={navLinkV2}>49일 여정</a>
           <a href="#founder" style={navLinkV2}>만든이</a>
           <span style={{ width: 1, height: 16, background: 'rgba(86,52,140,0.14)' }} />
-          <Link href={APP_LINK} style={{ ...navLinkV2, color: 'var(--lav-600)', fontWeight: 600 }}>로그인</Link>
-          <Link href={APP_LINK} style={{ padding: '9px 18px', borderRadius: 999, background: 'var(--lav-600)', color: '#fff', fontFamily: 'var(--f-sans)', fontSize: 13, fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(86,52,140,0.22)' }}>
+          <LandingCtaLink href={APP_LINK} location="nav_login" style={{ ...navLinkV2, color: 'var(--lav-600)', fontWeight: 600 }}>로그인</LandingCtaLink>
+          <LandingCtaLink href={APP_LINK} location="nav_write" style={{ padding: '9px 18px', borderRadius: 999, background: 'var(--lav-600)', color: '#fff', fontFamily: 'var(--f-sans)', fontSize: 13, fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(86,52,140,0.22)' }}>
             편지 쓰러 가기
-          </Link>
+          </LandingCtaLink>
         </nav>
       </div>
     </header>
@@ -737,6 +738,8 @@ export default function LandingPage() {
         suppressHydrationWarning
       />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CSS }} />
+      <LandingAnalytics />
+
 
       <LandingNavV2 />
       <main>

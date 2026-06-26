@@ -94,6 +94,19 @@ export function trackReplyViewed(params: {
   track('reply_viewed', params)
 }
 
+// ─── 랜딩페이지 이벤트 ────────────────────────────────────
+
+export function trackLandingViewed() {
+  track('landing_viewed')
+}
+
+export function trackLandingCtaClicked(params: {
+  // 'hero' | 'nav_login' | 'nav_write' | 'final_kakao'
+  location: string
+}) {
+  track('landing_cta_clicked', params)
+}
+
 // ─── 2순위 이벤트 ─────────────────────────────────────────
 
 export function trackEmotionSelected(params: {
