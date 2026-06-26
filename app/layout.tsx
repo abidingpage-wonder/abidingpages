@@ -49,12 +49,18 @@ export default function RootLayout({
           한글 글리프(Pretendard·Nanum)는 각 CSS의 unicode-range 서브셋이 그대로 적용 → 글자 깨짐 없음.
           전환 전에는 globals.css 폴백 체인(Noto Sans KR, system-ui 등)으로 즉시 표시(FOUT).
         */}
+        {/*
+          suppressHydrationWarning: 위 스크립트가 load 시 media="print"→"all"로 바꾸는데,
+          이 전환이 하이드레이션보다 먼저 일어나면 서버(print)/DOM(all) 속성이 달라
+          hydration mismatch 경고가 난다. 의도된 DOM 변경이므로 경고만 억제한다.
+        */}
         {/* Pretendard (본문 sans) */}
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
           media="print"
           data-lazy-style=""
+          suppressHydrationWarning
         />
         {/* Google Fonts: Allura, Nanum Myeongjo, Nanum Pen Script, Caveat */}
         <link
@@ -62,6 +68,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Allura&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Caveat:wght@400;600&display=swap"
           media="print"
           data-lazy-style=""
+          suppressHydrationWarning
         />
         <script
           dangerouslySetInnerHTML={{
