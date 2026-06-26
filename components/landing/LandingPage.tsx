@@ -414,10 +414,10 @@ function StatsSection() {
 // ═══════════════════════════════════════════════════════════════════
 function FourValueSection() {
   const cards = [
-    { img: '/landing/icon-book.png', title: '편지쓰기', body: '질문을 따라가다 보면 마음이 저절로 풀려나와요.' },
-    { img: '/landing/icon-envelope-cream.png', title: '아이의 답장', body: '다음 날, 아이가 보낸 답장이 기다리고 있어요.' },
-    { img: '/landing/icon-lavender.png', title: '49일의 여정', body: '슬픔의 들판에서 영원의 별빛까지, 천천히 함께 걸어요.' },
-    { img: '/landing/icon-flower.png', title: '추모의 정원', body: '같은 슬픔을 지나는 사람들이 곁에 있어요.' },
+    { img: '/landing/icon-book.webp', title: '편지쓰기', body: '질문을 따라가다 보면 마음이 저절로 풀려나와요.' },
+    { img: '/landing/icon-envelope-cream.webp', title: '아이의 답장', body: '다음 날, 아이가 보낸 답장이 기다리고 있어요.' },
+    { img: '/landing/icon-lavender.webp', title: '49일의 여정', body: '슬픔의 들판에서 영원의 별빛까지, 천천히 함께 걸어요.' },
+    { img: '/landing/icon-flower.webp', title: '추모의 정원', body: '같은 슬픔을 지나는 사람들이 곁에 있어요.' },
   ]
   return (
     <section style={{ position: 'relative', padding: '100px 24px 110px' }}>
@@ -431,7 +431,7 @@ function FourValueSection() {
             <div key={i} style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(10px)', borderRadius: 22, padding: '30px 24px 28px', border: '0.5px solid rgba(166,133,199,0.2)', boxShadow: '0 10px 30px rgba(86,52,140,0.08)', textAlign: 'center' }}>
               <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.img} alt="" style={{ maxWidth: 72, maxHeight: 72, objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(86,52,140,0.16))' }} />
+                <img src={c.img} alt="" width={72} height={72} loading="lazy" decoding="async" style={{ maxWidth: 72, maxHeight: 72, objectFit: 'contain', filter: 'drop-shadow(0 6px 14px rgba(86,52,140,0.16))' }} />
               </div>
               <div style={{ marginTop: 14, fontFamily: 'var(--f-serif)', fontSize: 18, fontWeight: 600, color: 'var(--lav-800)' }}>{c.title}</div>
               <p style={{ margin: '10px 0 0', fontFamily: 'var(--f-sans)', fontSize: 13, lineHeight: 1.7, color: 'var(--ink-500)', textWrap: 'pretty' }}>{c.body}</p>
@@ -523,7 +523,7 @@ function JourneySectionV2() {
         <div style={{ margin: '56px auto 0', maxWidth: 620, textAlign: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '11px 20px', borderRadius: 999, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.16)' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/landing/icon-book.png" alt="" width="22" height="22" style={{ objectFit: 'contain' }} />
+            <img src="/landing/icon-book.webp" alt="" width="22" height="22" loading="lazy" decoding="async" style={{ objectFit: 'contain' }} />
             <span style={{ fontFamily: 'var(--f-sans)', fontSize: 12.5, lineHeight: 1.6, color: 'rgba(255,255,255,0.78)' }}>
               어바이딩의 여정은 <strong style={{ color: '#fff', fontWeight: 600 }}>퀴블러-로스의 애도 단계</strong>와 <strong style={{ color: '#fff', fontWeight: 600 }}>지속적 유대 이론</strong>에 기반해 설계되었습니다.
             </span>
@@ -559,11 +559,15 @@ function FounderSection() {
             <div style={{ position: 'relative', width: 280 }}>
               <div style={{ position: 'absolute', inset: -14, borderRadius: 28, background: 'radial-gradient(circle at 40% 30%, rgba(250,221,202,0.55), transparent 70%)', filter: 'blur(6px)' }} />
               <div style={{ position: 'relative', padding: 10, borderRadius: 24, background: '#fffaf0', boxShadow: '0 20px 44px rgba(86,52,140,0.18)', border: '0.5px solid rgba(200,170,130,0.35)', transform: 'rotate(-1.5deg)' }}>
-                {/* 순탄이 / 만든이 사진 — public/landing/founder.jpg */}
+                {/* 순탄이 / 만든이 사진 — public/landing/founder.webp (첫 뷰포트 아래라 lazy) */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/landing/founder.png"
+                  src="/landing/founder.webp"
                   alt="우리 순탄이와 만든이"
+                  width={280}
+                  height={300}
+                  loading="lazy"
+                  decoding="async"
                   style={{ display: 'block', width: '100%', height: 300, objectFit: 'cover', borderRadius: 16 }}
                 />
                 <div style={{ textAlign: 'center', padding: '14px 0 6px', fontFamily: 'var(--f-hand)', fontSize: 22, color: 'var(--lav-700)' }}>우리 순탄이를 기억하며,</div>
@@ -639,7 +643,7 @@ function FinalCTAv2() {
       <div className="lp-wrap" style={{ position: 'relative', maxWidth: 680 }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/landing/wax-seal-logo-lavender.png" alt="" width="76" height="76" style={{ display: 'block', filter: 'drop-shadow(0 8px 18px rgba(86,52,140,0.28))', animation: 'lp-float 6s ease-in-out infinite' }} />
+          <img src="/landing/wax-seal-logo-lavender.webp" alt="" width="76" height="76" loading="lazy" decoding="async" style={{ display: 'block', filter: 'drop-shadow(0 8px 18px rgba(86,52,140,0.28))', animation: 'lp-float 6s ease-in-out infinite' }} />
         </div>
         <SectionTitle style={{ fontSize: 33 }}>{'지금이 첫 시간이든, 1년이 지났든\n어바이딩은 당신 곁에 머뭅니다'}</SectionTitle>
         <p style={{ margin: '18px auto 36px', maxWidth: 420, fontFamily: 'var(--f-sans)', fontSize: 15, lineHeight: 1.7, color: 'var(--ink-500)' }}>
@@ -719,10 +723,18 @@ function LandingFooterV2() {
 export default function LandingPage() {
   return (
     <div className="lp-root">
-      {/* 디자인 원본이 쓰는 Noto Serif KR(제목/본문 serif) — 프로젝트 레이아웃엔 없으므로 랜딩에서만 로드 */}
+      {/*
+        디자인 원본이 쓰는 Noto Serif KR(제목/본문 serif) — 프로젝트 레이아웃엔 없으므로 랜딩에서만 로드.
+        media="print" + data-lazy-style 로 렌더 비차단 로드 → layout.tsx 의 전역 인라인 스크립트가
+        link[data-lazy-style] 를 잡아 load 시 media='all' 로 swap. Hero 텍스트는 폴백(Nanum Myeongjo)으로
+        즉시 페인트되고 폰트 로드 후 교체된다(display=swap). preconnect 는 layout.tsx 에 이미 존재.
+      */}
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600&display=swap"
+        media="print"
+        data-lazy-style=""
+        suppressHydrationWarning
       />
       <style dangerouslySetInnerHTML={{ __html: LANDING_CSS }} />
 
