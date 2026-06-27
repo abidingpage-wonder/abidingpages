@@ -37,9 +37,10 @@ async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 공개 경로 — 인증 불필요
+  // '/' = 랜딩페이지(로그아웃 방문자의 진입점)이므로 반드시 공개여야 함.
   // /api 는 각 라우트가 자체 인증을 수행하므로 페이지 리다이렉트 대상에서 제외.
   // (제외하지 않으면 토큰 기반 호출(cron 등)이 /login HTML 로 리다이렉트되어 JSON 대신 HTML 응답을 받음)
-  const publicPaths = ['/login', '/auth/callback']
+  const publicPaths = ['/', '/login', '/auth/callback']
   const isPublic =
     pathname.startsWith('/api') ||
     publicPaths.some((p) => pathname === p || pathname.startsWith('/auth/'))
@@ -48,7 +49,8 @@ async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && pathname === '/login') {
+  // 로그인 상태로 pre-auth 페이지(랜딩 '/' · '/login')에 오면 앱 홈으로 보냄.
+  if (user && (pathname === '/' || pathname === '/login')) {
     return NextResponse.redirect(new URL('/home', request.url))
   }
 
