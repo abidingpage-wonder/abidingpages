@@ -5,6 +5,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import LandingAnalytics from './LandingAnalytics'
 import LandingCtaLink from './LandingCtaLink'
+import LandingNav from './LandingNav'
 
 // VOICES(후기) 섹션 — 베타 이후 공개 예정. 그 전까지 숨김.
 const SHOW_VOICES = false
@@ -49,6 +50,14 @@ html:has(.lp-root) { max-width: 100%; }
 .lp-founder { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 48px; align-items: center; }
 .lp-sec-title { font-size: 34px; }
 
+/* nav: 데스크탑 인라인 메뉴 / 모바일 햄버거 토글 */
+.lp-nav-desktop { display: flex; }
+.lp-nav-burger { display: none; }
+@media (max-width: 680px) {
+  .lp-nav-desktop { display: none; }
+  .lp-nav-burger { display: inline-flex; }
+}
+
 @media (max-width: 920px) {
   .lp-wrap { padding: 0 28px; }
   .lp-cards4 { grid-template-columns: 1fr 1fr; }
@@ -70,14 +79,6 @@ html:has(.lp-root) { max-width: 100%; }
 // ═══════════════════════════════════════════════════════════════════
 // 공용 아톰
 // ═══════════════════════════════════════════════════════════════════
-function AbidingMark({ size = 22, color = 'var(--lav-700)' }: { size?: number; color?: string }) {
-  return (
-    <span style={{ fontFamily: 'var(--f-brand)', fontSize: size, fontWeight: 400, color, lineHeight: 1, letterSpacing: '-0.02em' }}>
-      Abiding
-    </span>
-  )
-}
-
 function Paw({ size = 16, color = 'currentColor', opacity = 1 }: { size?: number; color?: string; opacity?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ opacity }}>
@@ -300,36 +301,6 @@ function MockReply() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Nav
-// ═══════════════════════════════════════════════════════════════════
-const navLinkV2: CSSProperties = {
-  fontFamily: 'var(--f-sans)', fontSize: 13.5, fontWeight: 500,
-  color: 'var(--ink-500)', textDecoration: 'none', letterSpacing: '-0.01em',
-}
-
-function LandingNavV2() {
-  return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(247,243,251,0.72)', backdropFilter: 'blur(16px) saturate(160%)', WebkitBackdropFilter: 'blur(16px) saturate(160%)', borderBottom: '0.5px solid rgba(86,52,140,0.10)' }}>
-      <div className="lp-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 66 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-          <AbidingMark size={28} />
-        </div>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
-          <a href="#how" style={navLinkV2}>이용 흐름</a>
-          <a href="#journey" style={navLinkV2}>49일 여정</a>
-          <a href="#founder" style={navLinkV2}>만든이</a>
-          <span style={{ width: 1, height: 16, background: 'rgba(86,52,140,0.14)' }} />
-          <LandingCtaLink href={APP_LINK} location="nav_login" style={{ ...navLinkV2, color: 'var(--lav-600)', fontWeight: 600 }}>로그인</LandingCtaLink>
-          <LandingCtaLink href={APP_LINK} location="nav_write" style={{ padding: '9px 18px', borderRadius: 999, background: 'var(--lav-600)', color: '#fff', fontFamily: 'var(--f-sans)', fontSize: 13, fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(86,52,140,0.22)' }}>
-            편지 쓰러 가기
-          </LandingCtaLink>
-        </nav>
-      </div>
-    </header>
-  )
-}
-
-// ═══════════════════════════════════════════════════════════════════
 // S1 — HERO
 // ═══════════════════════════════════════════════════════════════════
 function HeroSectionV2() {
@@ -361,7 +332,7 @@ function HeroSectionV2() {
 
         <div style={{ animation: 'lp-rise .7s ease .32s both' }}>
           <PrimaryCTA large>편지 쓰러가기</PrimaryCTA>
-          <div style={{ marginTop: 16, fontFamily: 'var(--f-sans)', fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>지금 베타로 운영 중이에요.</div>
+          <div style={{ marginTop: 16, fontFamily: 'var(--f-sans)', fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>지금 베타로 무료 운영 중이에요.</div>
         </div>
       </div>
     </section>
@@ -741,7 +712,7 @@ export default function LandingPage() {
       <LandingAnalytics />
 
 
-      <LandingNavV2 />
+      <LandingNav />
       <main>
         <HeroSectionV2 />
         <StatsSection />
