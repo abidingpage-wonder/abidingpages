@@ -6,6 +6,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import LandingAnalytics from './LandingAnalytics'
 import LandingCtaLink from './LandingCtaLink'
 import LandingNav from './LandingNav'
+import LandingStickyCta from './LandingStickyCta'
 
 // VOICES(후기) 섹션 — 베타 이후 공개 예정. 그 전까지 숨김.
 const SHOW_VOICES = false
@@ -53,9 +54,12 @@ html:has(.lp-root) { max-width: 100%; }
 /* nav: 데스크탑 인라인 메뉴 / 모바일 햄버거 토글 */
 .lp-nav-desktop { display: flex; }
 .lp-nav-burger { display: none; }
+/* 모바일 전용 하단 고정 CTA */
+.lp-sticky-cta { display: none; }
 @media (max-width: 680px) {
   .lp-nav-desktop { display: none; }
   .lp-nav-burger { display: inline-flex; }
+  .lp-sticky-cta { display: block; }
 }
 
 @media (max-width: 920px) {
@@ -724,6 +728,7 @@ export default function LandingPage() {
         <FinalCTAv2 />
       </main>
       <LandingFooterV2 />
+      <LandingStickyCta />
     </div>
   )
 }

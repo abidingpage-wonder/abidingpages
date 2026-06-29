@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 
@@ -7,9 +8,27 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/home'
 
+  // 카카오/Supabase 가 code 대신 error 를 돌려준 경우(사용자 취소·거부·서버오류 등)
+  const providerError = searchParams.get('error')
+  if (providerError) {
+    Sentry.captureMessage('oauth_callback_provider_error', {
+      level: 'warning',
+      extra: {
+        error: providerError,
+        error_code: searchParams.get('error_code'),
+        error_description: searchParams.get('error_description'),
+      },
+    })
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(providerError)}`)
+  }
+
   if (code) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      Sentry.captureException(error, { tags: { stage: 'exchange_code_for_session' } })
+    }
 
     if (!error && data.user) {
       const supabaseUser = data.user
