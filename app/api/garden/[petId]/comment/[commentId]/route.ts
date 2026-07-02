@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     const { petId, commentId } = await params
     const { content } = await req.json()
     if (!content?.trim()) return NextResponse.json({ error: 'content_required' }, { status: 400 })
-    if (content.trim().length > 50) return NextResponse.json({ error: 'content_too_long' }, { status: 400 })
+    if (content.trim().length > 100) return NextResponse.json({ error: 'content_too_long' }, { status: 400 })
 
     // DEV mock
     if (process.env.DEV_BYPASS_AUTH === 'true' && petId.startsWith('mock-')) {
