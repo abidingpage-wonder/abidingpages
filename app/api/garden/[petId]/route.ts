@@ -41,8 +41,8 @@ export async function GET(
         stickerSenders: 18,
         myStickers: [],
         comments: [
-          { id: 'c1', content: '순탄아, 보고 싶어. 잘 지내고 있지?', createdAt: new Date(Date.now() - 86400000).toISOString(), authorLabel: '하늘이·엄마', isOwner: true },
-          { id: 'c2', content: '따뜻한 곳에서 잘 쉬고 있기를 바라요 🕯️', createdAt: new Date(Date.now() - 172800000).toISOString(), authorLabel: '별이·아빠', isOwner: false },
+          { id: 'c1', content: '순탄아, 보고 싶어. 잘 지내고 있지?', createdAt: new Date(Date.now() - 86400000).toISOString(), authorLabel: '하늘이·엄마', isOwner: true, authorPetId: 'mock-pet-suntan', authorPetPublic: true },
+          { id: 'c2', content: '따뜻한 곳에서 잘 쉬고 있기를 바라요 🕯️', createdAt: new Date(Date.now() - 172800000).toISOString(), authorLabel: '별이·아빠', isOwner: false, authorPetId: 'mock-pet-byeol', authorPetPublic: false },
         ],
         daysSince: Math.floor((Date.now() - new Date('2024-05-20').getTime()) / 86400000) + 1,
       })
@@ -87,7 +87,7 @@ export async function GET(
           user: {
             select: {
               activePetId: true,
-              pets: { select: { id: true, name: true, ownerNickname: true }, take: 5 },
+              pets: { select: { id: true, name: true, ownerNickname: true, gardenPublic: true }, take: 5 },
             },
           },
         },
@@ -110,6 +110,8 @@ export async function GET(
         createdAt: c.createdAt.toISOString(),
         authorLabel,
         isOwner: userId ? c.userId === userId : false,
+        authorPetId: activePet?.id ?? null,
+        authorPetPublic: activePet?.gardenPublic ?? false,
       }
     })
 

@@ -54,6 +54,7 @@ type ModalType = 'journey' | 'crisis' | null
 export default function LetterEditor({ petName, week, day, emotionTag, initialQuestionId, journeyCompleted: initJourneyCompleted, freeEntry }: Props) {
   const router      = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const sendingRef  = useRef(false)
 
   const [question,  setQuestion]  = useState<Question | null>(null)
   const [loadingQ,  setLoadingQ]  = useState(true)
@@ -160,7 +161,8 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
 
   // ── 편지 전송 ─────────────────────────────────────────────────────
   async function sendLetter(overrideContent?: string, overrideType?: string) {
-    if (sending) return
+    if (sendingRef.current) return
+    sendingRef.current = true
     setSending(true)
     setError(null)
     try {
@@ -180,6 +182,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       })
       if (res.status === 409) {
         setError('이미 작성한 질문이에요. 다른 질문을 선택해주세요.')
+        sendingRef.current = false
         setSending(false)
         return
       }
@@ -189,6 +192,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       // 위기(자해/자살) 신호 감지 → 페이지 이동 없이 위기 안내 모달
       if (result.status === 'crisis_detected') {
         trackCrisisDetected({ week, day })
+        sendingRef.current = false
         setSending(false)
         setModal('crisis')
         return
@@ -220,6 +224,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
       if (jc) {
         setJourneyDone(true)
         resetEditor()
+        sendingRef.current = false
         setSending(false)
         setModal('journey')
         return
@@ -230,6 +235,7 @@ export default function LetterEditor({ petName, week, day, emotionTag, initialQu
     } catch {
       trackLetterSubmitFailed({ error_code: 'unknown' })
       setError('편지를 보내지 못했어요. 다시 시도해주세요.')
+      sendingRef.current = false
       setSending(false)
     }
   }

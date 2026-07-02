@@ -297,6 +297,7 @@ export default function GardenPage() {
   const [messageCount, setMessageCount] = useState(0)
   const [inputText, setInputText] = useState('')
   const [posting, setPosting] = useState(false)
+  const postingRef = useRef(false)
   const [toast, setToast] = useState<string | null>(null)
   const [gardenLoaded, setGardenLoaded] = useState(false)
 
@@ -343,7 +344,8 @@ export default function GardenPage() {
   }
 
   async function handlePost() {
-    if (!inputText.trim() || posting) return
+    if (!inputText.trim() || postingRef.current) return
+    postingRef.current = true
     setPosting(true)
     try {
       const res = await fetch('/api/garden/message', {
@@ -356,7 +358,6 @@ export default function GardenPage() {
         if (data.error === 'daily_limit') showToast('오늘은 3회까지 올릴 수 있어요 🌙')
         else if (data.error === 'content_too_long') showToast('20자 이내로 입력해주세요')
         else showToast('잠시 후 다시 시도해주세요')
-        setPosting(false)
         return
       }
       const newMsg: GardenMessage = { id: data.id, content: data.content, createdAt: data.createdAt }
@@ -378,8 +379,10 @@ export default function GardenPage() {
       }
     } catch {
       showToast('잠시 후 다시 시도해주세요')
+    } finally {
+      postingRef.current = false
+      setPosting(false)
     }
-    setPosting(false)
   }
 
   async function handleSticker(petId: string, type: 'candle' | 'flower' | 'heart') {

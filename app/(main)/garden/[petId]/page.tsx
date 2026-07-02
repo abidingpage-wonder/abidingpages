@@ -24,6 +24,7 @@ interface PageData {
 }
 interface Comment {
   id: string; content: string; createdAt: string; authorLabel: string; isOwner?: boolean
+  authorPetId?: string | null; authorPetPublic?: boolean
 }
 
 // ── 유틸 ──────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const postingRef = useRef(false)
 
   useEffect(() => {
     params.then(p => setPetId(p.petId))
@@ -134,7 +136,8 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
   }
 
   async function handleComment() {
-    if (!petId || !inputText.trim() || posting) return
+    if (!petId || !inputText.trim() || postingRef.current) return
+    postingRef.current = true
     setPosting(true)
     try {
       const res = await fetch(`/api/garden/${petId}/comment`, {
@@ -145,15 +148,24 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
       const d = await res.json()
       if (!res.ok) {
         showToast(d.error === 'comments_disabled' ? '댓글이 비공개 상태입니다' : '잠시 후 다시 시도해주세요')
-        setPosting(false)
         return
       }
       setInputText('')
       setData(prev => prev ? { ...prev, comments: [d, ...prev.comments] } : prev)
     } catch {
       showToast('잠시 후 다시 시도해주세요')
+    } finally {
+      postingRef.current = false
+      setPosting(false)
     }
-    setPosting(false)
+  }
+
+  // 댓글 클릭 → 작성자 추모관으로 이동 (비공개/익명이면 토스트)
+  function handleCommentClick(c: Comment) {
+    if (editingId === c.id) return
+    if (c.authorPetId === petId) return // 현재 보고 있는 추모관과 동일하면 무시
+    if (c.authorPetId && c.authorPetPublic) router.push(`/garden/${c.authorPetId}`)
+    else showToast('공개된 추모관이 아니에요')
   }
 
   const commentCount = data?.comments.length ?? 0
@@ -369,12 +381,13 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {comments.slice(0, visibleComments).map(c => (
-              <div key={c.id} style={{
+              <div key={c.id} onClick={() => handleCommentClick(c)} style={{
                 padding: '12px 14px', borderRadius: 14,
                 background: 'rgba(255,255,255,0.45)',
                 border: '0.5px solid rgba(166,133,199,0.2)',
                 boxShadow: '0 1px 8px rgba(86,52,140,0.07)',
                 position: 'relative',
+                cursor: editingId === c.id ? 'default' : 'pointer',
               }}>
                 {/* 헤더 */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -390,14 +403,14 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
                     {c.isOwner && (
                       <div style={{ position: 'relative' }}>
                         <button
-                          onClick={() => setMenuOpenId(menuOpenId === c.id ? null : c.id)}
+                          onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === c.id ? null : c.id) }}
                           style={{
                             background: 'none', border: 'none', cursor: 'pointer',
                             padding: '2px 4px', color: '#b0a0c0', fontSize: 14, lineHeight: 1,
                           }}
                         >···</button>
                         {menuOpenId === c.id && (
-                          <div style={{
+                          <div onClick={e => e.stopPropagation()} style={{
                             position: 'absolute', right: 0, top: '100%', zIndex: 10,
                             background: '#fff', borderRadius: 10,
                             boxShadow: '0 4px 16px rgba(86,52,140,0.15)',
@@ -432,11 +445,11 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
 
                 {/* 내용 or 수정 인풋 */}
                 {editingId === c.id ? (
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4 }}>
+                  <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4 }}>
                     <input
                       autoFocus
                       value={editText}
-                      onChange={e => setEditText(e.target.value.slice(0, 50))}
+                      onChange={e => setEditText(e.target.value.slice(0, 100))}
                       onKeyDown={e => { if (e.key === 'Enter') handleEditComment(c.id); if (e.key === 'Escape') setEditingId(null) }}
                       style={{
                         flex: 1, height: 34, borderRadius: 10, border: '1px solid rgba(143,68,208,0.3)',
@@ -504,10 +517,10 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
               <input
                 ref={inputRef}
                 value={inputText}
-                onChange={e => setInputText(e.target.value.slice(0, 50))}
+                onChange={e => setInputText(e.target.value.slice(0, 100))}
                 onKeyDown={e => e.key === 'Enter' && handleComment()}
                 placeholder={`${pet.name}에게 마음 한 줄을 남겨보세요`}
-                maxLength={50}
+                maxLength={100}
                 style={{
                   width: '100%', height: 40, borderRadius: 20, boxSizing: 'border-box',
                   background: '#fff', border: '0.8px solid rgba(143,68,208,0.2)',
@@ -519,9 +532,9 @@ export default function GardenDetailPage({ params }: { params: Promise<{ petId: 
               {inputText.length > 0 && (
                 <span style={{
                   position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)',
-                  fontSize: 10, color: inputText.length >= 50 ? '#e07060' : '#9a8caa',
+                  fontSize: 10, color: inputText.length >= 100 ? '#e07060' : '#9a8caa',
                   fontFamily: 'var(--font-sans)', pointerEvents: 'none',
-                }}>{inputText.length}/50</span>
+                }}>{inputText.length}/100</span>
               )}
             </div>
             <button

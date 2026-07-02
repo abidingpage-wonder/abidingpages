@@ -14,7 +14,7 @@ export async function POST(
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return NextResponse.json({ error: 'content_required' }, { status: 400 })
     }
-    if (content.trim().length > 50) {
+    if (content.trim().length > 100) {
       return NextResponse.json({ error: 'content_too_long' }, { status: 400 })
     }
 
@@ -54,22 +54,39 @@ export async function POST(
       activePetId = dbUser.activePetId
     }
 
-    // 작성자 레이블: {내 펫 이름}·{ownerNickname}
+    // 작성자 레이블: {내 펫 이름}·{ownerNickname} + 이동용 pet 정보
     let authorLabel = '익명'
+    let authorPetId: string | null = null
+    let authorPetPublic = false
     if (activePetId) {
       const myPet = await prisma.pet.findUnique({
         where: { id: activePetId },
-        select: { name: true, ownerNickname: true },
+        select: { id: true, name: true, ownerNickname: true, gardenPublic: true },
       })
       if (myPet) {
         authorLabel = myPet.ownerNickname
           ? `${myPet.name}·${myPet.ownerNickname}`
           : myPet.name
+        authorPetId = myPet.id
+        authorPetPublic = myPet.gardenPublic
       }
     }
 
-    const comment = await prisma.gardenComment.create({
-      data: { userId, toPetId: petId, content: content.trim() },
+    // 이중생성 방지: 동일 유저·추모관·내용이 최근 60초 내 존재하면 기존 것 반환
+    const trimmed = content.trim()
+    const DEDUPE_WINDOW_MS = 60_000
+    const existing = await prisma.gardenComment.findFirst({
+      where: {
+        userId,
+        toPetId: petId,
+        content: trimmed,
+        createdAt: { gte: new Date(Date.now() - DEDUPE_WINDOW_MS) },
+      },
+      select: { id: true, content: true, createdAt: true },
+    })
+
+    const comment = existing ?? await prisma.gardenComment.create({
+      data: { userId, toPetId: petId, content: trimmed },
       select: { id: true, content: true, createdAt: true },
     })
 
@@ -78,6 +95,9 @@ export async function POST(
       content: comment.content,
       createdAt: comment.createdAt.toISOString(),
       authorLabel,
+      isOwner: true,
+      authorPetId,
+      authorPetPublic,
     })
   } catch (e) {
     console.error('[POST /api/garden/[petId]/comment]', e)
